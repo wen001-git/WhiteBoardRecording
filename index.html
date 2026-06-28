@@ -348,17 +348,46 @@ function mulberry32(a){
     return ((t^t>>>14)>>>0)/4294967296;
   };
 }
-// 一条带随机扰动、略带弓形的手绘笔画（用 cubic bezier 画出）
+// 手绘描边的基准线宽（drawObject 里按对象 width 设置，逐段在此上下浮动）
+let strokeBase = 4;
+// 生成一条平滑随机的线宽序列，模拟手绘力度不均（同一条线有的粗有的细）
+function widthProfile(rng,n,base){
+  const raw=[]; let v=1;
+  for(let i=0;i<n;i++){ v+=(rng()*2-1)*0.35; v=Math.max(0.5,Math.min(1.55,v)); raw.push(v); }
+  // 轻度平滑，避免突变；并保证两端略细，像起笔/收笔
+  return raw.map((x,i)=>{
+    const a=raw[Math.max(0,i-1)], b=raw[Math.min(n-1,i+1)];
+    let m=(a+x+b)/3;
+    return base*m;
+  });
+}
+// 沿点序列用「逐段变化的线宽」描边（圆角端点让接缝平滑连续）
+function strokeVarWidth(rng,pts,base){
+  if(pts.length<2) return;
+  const w=widthProfile(rng,pts.length,base);
+  for(let i=1;i<pts.length;i++){
+    ctx.lineWidth=Math.max(0.5,(w[i-1]+w[i])/2);
+    ctx.beginPath(); ctx.moveTo(pts[i-1][0],pts[i-1][1]); ctx.lineTo(pts[i][0],pts[i][1]); ctx.stroke();
+  }
+}
+function sampleBezier(p0,p1,p2,p3,n){
+  const pts=[];
+  for(let i=0;i<=n;i++){
+    const t=i/n, mt=1-t, a=mt*mt*mt, b=3*mt*mt*t, c=3*mt*t*t, d=t*t*t;
+    pts.push([a*p0[0]+b*p1[0]+c*p2[0]+d*p3[0], a*p0[1]+b*p1[1]+c*p2[1]+d*p3[1]]);
+  }
+  return pts;
+}
+// 一条带随机扰动、略带弓形、且粗细不均的手绘笔画
 function sketchStroke(rng,x1,y1,x2,y2,rough){
   const len=Math.hypot(x2-x1,y2-y1);
   const off=Math.min(rough*(1+len/200), rough*2.2);
   const r=()=>(rng()*2-1)*off;
-  const m1x=x1+(x2-x1)/3+r(), m1y=y1+(y2-y1)/3+r();
-  const m2x=x1+2*(x2-x1)/3+r(), m2y=y1+2*(y2-y1)/3+r();
-  ctx.beginPath();
-  ctx.moveTo(x1+r()*0.5, y1+r()*0.5);
-  ctx.bezierCurveTo(m1x,m1y,m2x,m2y, x2+r()*0.5, y2+r()*0.5);
-  ctx.stroke();
+  const p0=[x1+r()*0.5, y1+r()*0.5];
+  const p1=[x1+(x2-x1)/3+r(), y1+(y2-y1)/3+r()];
+  const p2=[x1+2*(x2-x1)/3+r(), y1+2*(y2-y1)/3+r()];
+  const p3=[x2+r()*0.5, y2+r()*0.5];
+  strokeVarWidth(rng, sampleBezier(p0,p1,p2,p3,10), strokeBase);
 }
 // 手绘直线：单条笔画（保持手绘弓形，但不重叠两条以免显得杂乱）
 function roughLine(rng,x1,y1,x2,y2,rough){
@@ -373,24 +402,30 @@ function roughRect(rng,x,y,w,h,rough){
   roughLine(rng,x+w+o(),y+h, x+o(),y+h, rough);
   roughLine(rng,x,y+h+o(), x,y+o(), rough);
 }
-// 手绘椭圆：单条带半径抖动的点环，起止处轻微过冲（不画第二遍，避免杂乱）
+// 手绘椭圆：单条带半径抖动的点环（每个部位半径不同→不太圆），且粗细不均
 function roughEllipse(rng,cx,cy,rx,ry,rough){
   rx=Math.abs(rx); ry=Math.abs(ry);
-  const jit=Math.min(0.03+rough/Math.max(rx,ry)*0.4, 0.08);
-  const n=12, start=rng()*Math.PI*2, end=start+Math.PI*2+0.18; // 轻微过冲收口
-  const pts=[];
-  for(let i=0;i<=n;i++){
-    const t=start+(end-start)*(i/n);
+  const jit=Math.min(0.03+rough/Math.max(rx,ry)*0.5, 0.09); // 半径抖动→不规则
+  const ctrlN=12, start=rng()*Math.PI*2, end=start+Math.PI*2+0.18; // 轻微过冲收口
+  // 先在 12 个控制角度上取带抖动的半径，再用 Catmull-Rom 细分成平滑点序列
+  const ctrl=[];
+  for(let i=0;i<=ctrlN;i++){
+    const t=start+(end-start)*(i/ctrlN);
     const j=1+(rng()*2-1)*jit;
-    pts.push([cx+Math.cos(t)*rx*j, cy+Math.sin(t)*ry*j]);
+    ctrl.push([cx+Math.cos(t)*rx*j, cy+Math.sin(t)*ry*j]);
   }
-  ctx.beginPath(); ctx.moveTo(pts[0][0],pts[0][1]);
-  for(let i=1;i<pts.length-1;i++){
-    const xc=(pts[i][0]+pts[i+1][0])/2, yc=(pts[i][1]+pts[i+1][1])/2;
-    ctx.quadraticCurveTo(pts[i][0],pts[i][1],xc,yc);
+  const pts=[];
+  for(let i=0;i<ctrl.length-1;i++){
+    const p0=ctrl[Math.max(0,i-1)], p1=ctrl[i], p2=ctrl[i+1], p3=ctrl[Math.min(ctrl.length-1,i+2)];
+    for(let s=0;s<3;s++){
+      const t=s/3, t2=t*t, t3=t2*t;
+      const x=0.5*((2*p1[0])+(-p0[0]+p2[0])*t+(2*p0[0]-5*p1[0]+4*p2[0]-p3[0])*t2+(-p0[0]+3*p1[0]-3*p2[0]+p3[0])*t3);
+      const y=0.5*((2*p1[1])+(-p0[1]+p2[1])*t+(2*p0[1]-5*p1[1]+4*p2[1]-p3[1])*t2+(-p0[1]+3*p1[1]-3*p2[1]+p3[1])*t3);
+      pts.push([x,y]);
+    }
   }
-  ctx.quadraticCurveTo(pts[n-1][0],pts[n-1][1], pts[n][0],pts[n][1]);
-  ctx.stroke();
+  pts.push(ctrl[ctrl.length-1]);
+  strokeVarWidth(rng, pts, strokeBase);
 }
 function roughArrow(rng,x1,y1,x2,y2,w,rough){
   roughLine(rng,x1,y1,x2,y2,rough);
@@ -408,6 +443,7 @@ function drawObject(o){
   ctx.fillStyle = o.color;
   ctx.lineWidth = o.width || 4;
   const rough = Math.max(1.5, (o.width||4)*0.9); // 扰动幅度随线宽
+  strokeBase = o.width || 4;                      // 手绘描边的基准线宽（逐段在此上下浮动）
   if(o.type === 'pen'){
     if(o.points.length < 2){
       const p = o.points[0]; ctx.beginPath(); ctx.arc(p.x,p.y,(o.width||4)/2,0,7); ctx.fill(); return;
