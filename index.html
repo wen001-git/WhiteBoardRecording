@@ -28,27 +28,43 @@
   .tool[disabled]{opacity:.35;cursor:not-allowed;}
 
   /* ---------- 左侧属性面板 ---------- */
-  .props{position:fixed;top:80px;left:14px;z-index:25;width:200px;background:var(--panel);
-    border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px;}
-  .props h4{margin:0 0 8px;font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.3px;}
-  .props .group + .group{margin-top:14px;}
+  .props{position:fixed;top:80px;left:14px;z-index:25;width:220px;max-height:calc(100vh - 160px);overflow:auto;background:var(--panel);
+    border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;}
+  .props h4{margin:0 0 10px;font-size:13px;color:var(--ink);font-weight:600;letter-spacing:0;}
+  .props .group + .group{margin-top:18px;}
   .swatches{display:flex;gap:8px;flex-wrap:wrap;}
-  .swatch{width:26px;height:26px;border-radius:7px;cursor:pointer;border:2px solid rgba(0,0,0,.08);transition:.1s;}
+  .swatch{width:30px;height:30px;border-radius:8px;cursor:pointer;border:2px solid rgba(0,0,0,.08);transition:.1s;}
   .swatch.active{outline:2px solid var(--accent);outline-offset:2px;}
-  .widths{display:flex;gap:8px;}
-  .wbtn{flex:1;height:36px;border:1px solid var(--line);background:#fff;border-radius:9px;cursor:pointer;
+  .swatch.none{background:repeating-conic-gradient(#ddd 0 25%,#fff 0 50%) 0 0/12px 12px;}
+  .style-row,.widths{display:flex;gap:8px;}
+  .style-btn,.wbtn{width:42px;height:38px;border:1px solid transparent;background:#f3f2f7;border-radius:10px;cursor:pointer;
     display:flex;align-items:center;justify-content:center;}
-  .wbtn.active{border-color:var(--accent);background:var(--accent-soft);}
-  .wbtn .dot{background:var(--ink);border-radius:50%;}
+  .style-btn:hover,.wbtn:hover{background:#eceaf3;}
+  .style-btn.active,.wbtn.active{color:#1f1b8f;background:#dedcff;border-color:#d5d2ff;}
+  .wbtn .dot{background:var(--ink);border-radius:999px;}
+  .style-sample{display:block;width:18px;height:0;border-top:2px solid currentColor;}
+  .style-sample.dashed{border-top-style:dashed;}
+  .style-sample.dotted{border-top-style:dotted;}
+  .rough-sample{font-size:18px;line-height:1;font-weight:700;}
+  .corner-icon{width:18px;height:18px;border:2px dashed currentColor;}
+  .corner-icon.round{border-radius:6px;}
   .row{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);}
   .row input[type=range]{flex:1;accent-color:var(--accent);}
+  .range-labels{display:flex;justify-content:space-between;margin-top:6px;font-size:12px;color:var(--muted);}
 
   /* ---------- 摄像头小窗 ---------- */
   #camWrap{position:fixed;right:20px;bottom:96px;z-index:28;width:160px;height:160px;border-radius:50%;
-    overflow:hidden;box-shadow:var(--shadow);border:3px solid #fff;cursor:grab;background:#222;display:none;}
+    overflow:visible;box-shadow:var(--shadow);border:3px solid #fff;cursor:grab;background:#222;display:none;}
   #camWrap.dragging{cursor:grabbing;}
-  #camVideo{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);}
+  #camWrap.resizing{cursor:nwse-resize;}
+  #camVideo{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);border-radius:50%;display:block;overflow:hidden;}
   #camHint{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;text-align:center;padding:8px;}
+  .cam-resize{position:absolute;right:-8px;bottom:-8px;z-index:3;width:26px;height:26px;border-radius:50%;
+    background:#fff;border:2px solid rgba(0,0,0,.2);box-shadow:0 3px 10px rgba(0,0,0,.24);
+    cursor:nwse-resize;touch-action:none;}
+  .cam-resize:hover{transform:scale(1.08);}
+  .cam-resize::before,.cam-resize::after{content:"";position:absolute;right:6px;bottom:7px;width:10px;height:2px;background:rgba(0,0,0,.5);transform:rotate(-45deg);border-radius:2px;}
+  .cam-resize::after{right:5px;bottom:12px;width:6px;}
 
   /* ---------- 录制条 ---------- */
   .recbar{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:30;display:flex;gap:10px;align-items:center;
@@ -97,6 +113,7 @@
   .feat .emoji{font-size:18px;}
   .btn-primary{width:100%;margin-top:18px;background:var(--ink);color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:600;cursor:pointer;}
   .btn-primary:hover{filter:brightness(1.15);}
+  .btn-primary[disabled]{opacity:.45;cursor:not-allowed;filter:none;}
   .btn-line{width:100%;margin-top:10px;background:#fff;color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:12px;font-size:14px;cursor:pointer;}
   .modal video{width:100%;border-radius:12px;background:#000;margin:10px 0;max-height:50vh;}
   .selrow{display:flex;flex-direction:column;gap:6px;margin-top:12px;}
@@ -126,27 +143,60 @@
   #recFrame .rf-badge i{width:8px;height:8px;border-radius:50%;background:#fff;animation:blink 1s steps(2) infinite;}
 
   /* ---------- 录制设置弹窗 ---------- */
-  .modal-wide{max-width:880px;}
+  .modal-wide{max-width:1000px;max-height:88vh;overflow:hidden;}
   .modal-head{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:18px;}
   .modal-head h2{margin:0;}
   .x-btn{width:34px;height:34px;border:none;background:#f0eff5;border-radius:50%;cursor:pointer;font-size:14px;}
   .x-btn:hover{background:#e7e6ee;}
-  .settings-body{display:flex;gap:24px;}
-  .settings-left{flex:0 0 280px;display:flex;flex-direction:column;}
-  .settings-right{flex:1;min-width:0;}
+  .settings-body{display:flex;gap:26px;min-height:0;}
+  .settings-left{flex:0 0 310px;display:flex;flex-direction:column;align-items:stretch;}
+  .settings-right{flex:1;min-width:0;max-height:70vh;overflow:auto;padding-right:8px;}
   .set-label{font-size:13px;color:var(--muted);font-weight:600;margin-bottom:10px;}
   .set-preview{flex:1;background:#f3f2ef;border-radius:12px;display:flex;align-items:center;justify-content:center;min-height:300px;padding:24px;}
-  .set-card{background:#fff;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.18);width:70%;aspect-ratio:16/9;transition:.2s;}
+  .set-card{background:#fff;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.18);width:70%;aspect-ratio:16/9;transition:.2s;position:relative;overflow:hidden;}
+  .preview-lines{position:absolute;left:18%;top:52%;width:42%;}
+  .preview-lines i{display:block;height:4px;background:#dedbd7;border-radius:999px;margin:8px 0;}
+  .preview-lines i:nth-child(2){width:75%;}.preview-lines i:nth-child(3){width:58%;}.preview-lines i:nth-child(4){width:88%;}
+  .preview-camera{position:absolute;right:6%;bottom:6%;width:36px;height:36px;border-radius:50%;background:#cfcac5;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.18);}
+  .preview-cursor{position:absolute;left:56%;top:50%;width:24px;height:24px;border-radius:50%;background:rgba(255,77,79,.55);transform:translate(-50%,-50%);}
   .ratio-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
   .ratio-btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:14px 8px;cursor:pointer;text-align:center;transition:.12s;}
   .ratio-btn:hover{border-color:var(--accent);}
   .ratio-btn.active{background:var(--ink);color:#fff;border-color:var(--ink);}
   .ratio-btn .r-main{font-size:17px;font-weight:700;}
   .ratio-btn .r-sub{font-size:11px;opacity:.7;margin-top:2px;}
-  .bg-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;}
-  .bg-swatch{aspect-ratio:1;border-radius:10px;cursor:pointer;border:2px solid transparent;position:relative;}
+  .setting-section{margin-top:18px;}
+  .setting-section:first-child{margin-top:0;}
+  .custom-ratio{display:none;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin-top:10px;}
+  .custom-ratio.show{display:grid;}
+  .custom-ratio input,.mic-select{width:100%;border:1px solid var(--line);border-radius:10px;background:#fff;padding:10px 12px;font-size:14px;color:var(--ink);}
+  .category-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+  .pill-btn{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 12px;cursor:pointer;color:var(--muted);font-weight:600;font-size:12px;}
+  .pill-btn.active{background:var(--ink);border-color:var(--ink);color:#fff;}
+  .pill-btn.random{width:100%;border-radius:10px;color:var(--ink);padding:10px;margin-top:2px;}
+  .bg-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;}
+  .bg-swatch{aspect-ratio:1;border-radius:10px;cursor:pointer;border:2px solid transparent;position:relative;overflow:hidden;}
   .bg-swatch.active{border-color:var(--accent);outline:2px solid var(--accent);outline-offset:1px;}
   .bg-swatch.none{background:repeating-conic-gradient(#ddd 0 25%,#fff 0 50%) 0 0/14px 14px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#888;}
+  .setting-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:14px 0;}
+  .setting-title{font-size:15px;color:var(--ink);font-weight:600;}
+  .range-wrap{margin:10px 0 14px;}
+  .range-head{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted);font-weight:600;margin-bottom:8px;}
+  .range-wrap input[type=range]{width:100%;accent-color:var(--accent);}
+  .range-ends{display:flex;justify-content:space-between;color:var(--muted);font-size:12px;margin-top:4px;}
+  .switch{position:relative;width:46px;height:26px;flex:0 0 46px;}
+  .switch input{opacity:0;width:0;height:0;}
+  .switch span{position:absolute;inset:0;background:#ddd;border-radius:999px;cursor:pointer;transition:.15s;}
+  .switch span:before{content:"";position:absolute;width:20px;height:20px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.15s;box-shadow:0 1px 4px rgba(0,0,0,.2);}
+  .switch input:checked + span{background:var(--ink);}
+  .switch input:checked + span:before{transform:translateX(20px);}
+  .seg-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .seg-btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:12px;cursor:pointer;font-weight:700;color:var(--muted);}
+  .seg-btn.active{background:var(--ink);border-color:var(--ink);color:#fff;}
+  .cursor-colors{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+  .cursor-dot{width:30px;height:30px;border-radius:50%;border:2px solid transparent;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.12);}
+  .cursor-dot.active{outline:3px solid var(--ink);outline-offset:3px;}
+  .settings-done{position:sticky;bottom:0;margin-top:20px;}
 </style>
 </head>
 <body>
@@ -175,13 +225,45 @@
 
 <!-- 左侧属性面板 -->
 <div class="props" id="props">
-  <div class="group">
-    <h4>描边颜色</h4>
+  <div class="group" id="strokeGroup">
+    <h4>描边</h4>
     <div class="swatches" id="swatches"></div>
   </div>
-  <div class="group">
-    <h4>粗细</h4>
+  <div class="group" id="fillGroup">
+    <h4>背景</h4>
+    <div class="swatches" id="fillSwatches"></div>
+  </div>
+  <div class="group" id="widthGroup">
+    <h4>描边宽度</h4>
     <div class="widths" id="widths"></div>
+  </div>
+  <div class="group" id="strokeStyleGroup">
+    <h4>边框样式</h4>
+    <div class="style-row">
+      <button class="style-btn active" data-stroke-style="solid" title="实线"><span class="style-sample"></span></button>
+      <button class="style-btn" data-stroke-style="dashed" title="虚线"><span class="style-sample dashed"></span></button>
+      <button class="style-btn" data-stroke-style="dotted" title="点线"><span class="style-sample dotted"></span></button>
+    </div>
+  </div>
+  <div class="group" id="roughnessGroup">
+    <h4>线条风格</h4>
+    <div class="style-row">
+      <button class="style-btn" data-roughness="clean" title="规整"><span class="rough-sample">⌁</span></button>
+      <button class="style-btn active" data-roughness="sketch" title="手绘"><span class="rough-sample">〰</span></button>
+      <button class="style-btn" data-roughness="rough" title="粗糙"><span class="rough-sample">≋</span></button>
+    </div>
+  </div>
+  <div class="group" id="cornerGroup">
+    <h4>边角</h4>
+    <div class="style-row">
+      <button class="style-btn" data-corner-style="sharp" title="直角"><span class="corner-icon"></span></button>
+      <button class="style-btn active" data-corner-style="round" title="圆角"><span class="corner-icon round"></span></button>
+    </div>
+  </div>
+  <div class="group" id="opacityGroup">
+    <h4>透明度</h4>
+    <div class="row"><input type="range" id="opacity" min="10" max="100" value="100"><span id="opacityVal">100</span></div>
+    <div class="range-labels"><span>10</span><span>100</span></div>
   </div>
   <div class="group" id="fontGroup" style="display:none;">
     <h4>字号</h4>
@@ -192,6 +274,7 @@
 <!-- 摄像头小窗 -->
 <div id="camWrap">
   <video id="camVideo" autoplay playsinline muted></video>
+  <div class="cam-resize" title="拖拽调整头像大小"></div>
 </div>
 
 <!-- 提词器 -->
@@ -241,7 +324,7 @@
 <div class="overlay" id="welcome">
   <div class="modal">
     <h2>欢迎使用 白板录制工具</h2>
-    <p>录制精美的白板视频，你的面部画面会出现在角落。非常适合教程、讲解和异步沟通。</p>
+    <p id="welcomeIntro">录制精美的白板视频，你的面部画面会出现在角落。非常适合教程、讲解和异步沟通。</p>
     <div class="feat"><span class="emoji">🎨</span> 在无限白板上自由绘画</div>
     <div class="feat"><span class="emoji">📹</span> 你的摄像头会出现在角落</div>
     <div class="feat"><span class="emoji">📜</span> 内置提词器，方便看稿</div>
@@ -281,14 +364,78 @@
     <div class="settings-body">
       <div class="settings-left">
         <div class="set-label">预览</div>
-        <div class="set-preview" id="setPreview"><div class="set-card"></div></div>
+        <div class="set-preview" id="setPreview">
+          <div class="set-card">
+            <div class="preview-lines"><i></i><i></i><i></i><i></i></div>
+            <div class="preview-cursor"></div>
+            <div class="preview-camera"></div>
+          </div>
+        </div>
       </div>
       <div class="settings-right">
-        <div class="set-label">画面比例</div>
-        <div class="ratio-grid" id="ratioGrid"></div>
-        <div class="set-label" style="margin-top:18px;">背景</div>
-        <div class="bg-grid" id="bgGrid"></div>
-        <button class="btn-primary" id="settingsDone">完成，选择录制区域</button>
+        <div class="setting-section">
+          <div class="set-label">画面比例</div>
+          <div class="ratio-grid" id="ratioGrid"></div>
+          <div class="custom-ratio" id="customRatioBox">
+            <input id="customW" type="number" min="240" max="3840" step="10" aria-label="自定义宽度">
+            <span>×</span>
+            <input id="customH" type="number" min="240" max="3840" step="10" aria-label="自定义高度">
+          </div>
+        </div>
+
+        <div class="setting-section">
+          <div class="set-label">背景</div>
+          <div class="category-row" id="bgCategories"></div>
+          <button class="pill-btn random" id="randomBg" type="button">✨ 随机选择壁纸</button>
+          <div class="bg-grid" id="bgGrid" style="margin-top:10px;"></div>
+        </div>
+
+        <div class="setting-section">
+          <div class="range-wrap">
+            <div class="range-head"><span>圆角半径</span><span id="cardRadiusVal">24PX</span></div>
+            <input id="cardRadius" type="range" min="0" max="80" value="24">
+            <div class="range-ends"><span>直角</span><span>圆角</span></div>
+          </div>
+          <div class="range-wrap">
+            <div class="range-head"><span>画布边距</span><span id="canvasPaddingVal">55PX</span></div>
+            <input id="canvasPadding" type="range" min="0" max="120" value="55">
+            <div class="range-ends"><span>无</span><span>大</span></div>
+          </div>
+        </div>
+
+        <div class="setting-section">
+          <div class="set-label">摄像头</div>
+          <div class="setting-row">
+            <div class="setting-title">录制时显示摄像头画面</div>
+            <label class="switch"><input id="showCamera" type="checkbox" checked><span></span></label>
+          </div>
+          <div class="range-wrap">
+            <div class="range-head"><span>大小</span><span id="cameraSizeVal">160PX</span></div>
+            <input id="cameraSize" type="range" min="96" max="320" value="160">
+            <div class="range-ends"><span>小</span><span>大</span></div>
+          </div>
+          <div class="set-label">形状</div>
+          <div class="seg-row" id="cameraShapeBtns">
+            <button class="seg-btn active" data-camera-shape="circle" type="button">○ 圆形</button>
+            <button class="seg-btn" data-camera-shape="square" type="button">□ 方形</button>
+          </div>
+        </div>
+
+        <div class="setting-section">
+          <div class="set-label">麦克风</div>
+          <select class="mic-select" id="micSelect"></select>
+        </div>
+
+        <div class="setting-section">
+          <div class="set-label">鼠标光标效果</div>
+          <div class="setting-row">
+            <div class="setting-title">录制时显示光标高亮</div>
+            <label class="switch"><input id="cursorHighlight" type="checkbox" checked><span></span></label>
+          </div>
+          <div class="cursor-colors" id="cursorColors"></div>
+        </div>
+
+        <button class="btn-primary settings-done" id="settingsDone">完成，选择录制区域</button>
       </div>
     </div>
   </div>
@@ -303,12 +450,18 @@
 
 /* ----------------------------- STATE ----------------------------------- */
 const COLORS = ['#1e1e1e','#e03131','#2f9e44','#1971c2','#f08c00','#ffffff'];
-const WIDTHS = [2, 5, 10];
+const FILL_COLORS = ['transparent','#ffc9c9','#b2f2bb','#a5d8ff','#ffec99'];
+const WIDTHS = [1.5, 2.5, 5];
 
 const state = {
   tool: 'pen',
   color: '#1e1e1e',
-  width: 5,
+  fillColor: 'transparent',
+  width: 2.5,
+  strokeStyle: 'solid',
+  roughness: 'sketch',
+  opacity: 1,
+  cornerStyle: 'round',
   fontSize: 28,
   scene: [],            // 已提交的绘图对象（世界坐标）
   undoStack: [],
@@ -401,39 +554,122 @@ function sketchStroke(rng,x1,y1,x2,y2,rough){
 function roughLine(rng,x1,y1,x2,y2,rough){
   sketchStroke(rng,x1,y1,x2,y2,rough);
 }
-// 手绘矩形：四边各画一条手绘线（带轻微角点过冲）
-function roughRect(rng,x,y,w,h,rough){
+// 手绘矩形：圆角路径 + 平滑双描边，接近 Excalidraw/Excalicord 的形状风格
+function roughRect(rng,x,y,w,h,rough,cornerStyle='round',roughness='sketch'){
   if(w<0){x+=w;w=-w;} if(h<0){y+=h;h=-h;}
-  const o=()=>(rng()*2-1)*rough*0.8; // 角点过冲
-  roughLine(rng,x+o(),y, x+w+o(),y, rough);
-  roughLine(rng,x+w,y+o(), x+w,y+h+o(), rough);
-  roughLine(rng,x+w+o(),y+h, x+o(),y+h, rough);
-  roughLine(rng,x,y+h+o(), x,y+o(), rough);
+  const pts = cornerStyle==='sharp' ? rectPoints(x,y,w,h) : roundedRectPoints(x,y,w,h,Math.min(w,h,Math.max(10,Math.min(w,h)*0.18)));
+  strokeSketchPath(rng, pts, true, rough, roughness);
 }
-// 手绘椭圆：单条带半径抖动的点环（每个部位半径不同→不太圆），且粗细不均
-function roughEllipse(rng,cx,cy,rx,ry,rough){
-  rx=Math.abs(rx); ry=Math.abs(ry);
-  const jit=Math.min(0.03+rough/Math.max(rx,ry)*0.5, 0.09); // 半径抖动→不规则
-  const ctrlN=12, start=rng()*Math.PI*2, end=start+Math.PI*2+0.18; // 轻微过冲收口
-  // 先在 12 个控制角度上取带抖动的半径，再用 Catmull-Rom 细分成平滑点序列
-  const ctrl=[];
-  for(let i=0;i<=ctrlN;i++){
-    const t=start+(end-start)*(i/ctrlN);
-    const j=1+(rng()*2-1)*jit;
-    ctrl.push([cx+Math.cos(t)*rx*j, cy+Math.sin(t)*ry*j]);
+// Excalidraw/Excalicord 风格：平滑双描边，轻微错位，不做粗糙锯齿变形
+function strokeSketchPath(rng,pts,closed,rough,roughness='sketch'){
+  if(pts.length<2) return;
+  const jitterScale = roughness==='rough' ? 1.85 : 1;
+  const jitter=Math.min(Math.max(rough*0.18*jitterScale,0.35), roughness==='rough' ? 3.2 : 1.6);
+  const base=Math.max(0.75,strokeBase*0.72);
+  for(let pass=0;pass<2;pass++){
+    const jpts=pts.map((p,i)=>{
+      const edge = closed ? 1 : Math.sin(Math.PI*i/(pts.length-1));
+      return [
+        p[0]+(rng()*2-1)*jitter*edge,
+        p[1]+(rng()*2-1)*jitter*edge
+      ];
+    });
+    ctx.save();
+    ctx.globalAlpha*=pass?0.34:0.95;
+    ctx.lineWidth=base*(pass?0.72:1);
+    drawSmoothPolyline(jpts,closed);
+    ctx.stroke();
+    ctx.restore();
   }
+  const scratchCount = roughness==='rough' ? 3 : 2;
+  for(let k=0;k<scratchCount;k++){
+    const start=Math.floor(rng()*pts.length);
+    const len=Math.max(4,Math.floor(pts.length*(roughness==='rough'?0.12:0.07)));
+    const seg=[];
+    for(let i=0;i<len;i++){
+      const p=closed ? pts[(start+i)%pts.length] : pts[Math.min(pts.length-1,start+i)];
+      seg.push([p[0]+(rng()*2-1)*jitter*0.9,p[1]+(rng()*2-1)*jitter*0.9]);
+    }
+    ctx.save();
+    ctx.globalAlpha*=roughness==='rough'?0.55:0.42;
+    ctx.lineWidth=base*(roughness==='rough'?0.72:0.56);
+    drawSmoothPolyline(seg,false);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+function drawSmoothPolyline(pts,closed){
+  ctx.beginPath();
+  if(closed){
+    const last=pts[pts.length-1], first=pts[0];
+    ctx.moveTo((last[0]+first[0])/2,(last[1]+first[1])/2);
+    for(let i=0;i<pts.length;i++){
+      const p=pts[i], n=pts[(i+1)%pts.length];
+      ctx.quadraticCurveTo(p[0],p[1],(p[0]+n[0])/2,(p[1]+n[1])/2);
+    }
+    ctx.closePath();
+  }else{
+    ctx.moveTo(pts[0][0],pts[0][1]);
+    for(let i=1;i<pts.length-1;i++){
+      const p=pts[i], n=pts[i+1];
+      ctx.quadraticCurveTo(p[0],p[1],(p[0]+n[0])/2,(p[1]+n[1])/2);
+    }
+    const last=pts[pts.length-1];
+    ctx.lineTo(last[0],last[1]);
+  }
+}
+function rectPoints(x,y,w,h){ return [[x,y],[x+w,y],[x+w,y+h],[x,y+h]]; }
+function roundedRectPoints(x,y,w,h,r){
+  const pts=[], steps=8;
+  const arcs=[
+    [x+w-r,y+r,-Math.PI/2,0],
+    [x+w-r,y+h-r,0,Math.PI/2],
+    [x+r,y+h-r,Math.PI/2,Math.PI],
+    [x+r,y+r,Math.PI,Math.PI*1.5],
+  ];
+  pts.push([x+r,y]);
+  pts.push([x+w-r,y]);
+  for(const [cx,cy,a0,a1] of arcs){
+    for(let i=1;i<=steps;i++){
+      const t=a0+(a1-a0)*i/steps;
+      pts.push([cx+Math.cos(t)*r,cy+Math.sin(t)*r]);
+    }
+    if(a1===0) pts.push([x+w,y+h-r]);
+    if(a1===Math.PI/2) pts.push([x+r,y+h]);
+    if(a1===Math.PI) pts.push([x,y+r]);
+  }
+  return pts;
+}
+function smoothClosedPoints(ctrl,stepsPerSeg){
   const pts=[];
-  for(let i=0;i<ctrl.length-1;i++){
-    const p0=ctrl[Math.max(0,i-1)], p1=ctrl[i], p2=ctrl[i+1], p3=ctrl[Math.min(ctrl.length-1,i+2)];
-    for(let s=0;s<3;s++){
-      const t=s/3, t2=t*t, t3=t2*t;
+  for(let i=0;i<ctrl.length;i++){
+    const p0=ctrl[(i-1+ctrl.length)%ctrl.length], p1=ctrl[i], p2=ctrl[(i+1)%ctrl.length], p3=ctrl[(i+2)%ctrl.length];
+    for(let s=0;s<stepsPerSeg;s++){
+      const t=s/stepsPerSeg, t2=t*t, t3=t2*t;
       const x=0.5*((2*p1[0])+(-p0[0]+p2[0])*t+(2*p0[0]-5*p1[0]+4*p2[0]-p3[0])*t2+(-p0[0]+3*p1[0]-3*p2[0]+p3[0])*t3);
       const y=0.5*((2*p1[1])+(-p0[1]+p2[1])*t+(2*p0[1]-5*p1[1]+4*p2[1]-p3[1])*t2+(-p0[1]+3*p1[1]-3*p2[1]+p3[1])*t3);
       pts.push([x,y]);
     }
   }
-  pts.push(ctrl[ctrl.length-1]);
-  strokeVarWidth(rng, pts, strokeBase);
+  return pts;
+}
+// 手绘椭圆：低频自然变形 + 局部重描，避免机械双线感
+function roughEllipse(rng,cx,cy,rx,ry,rough,roughness='sketch'){
+  rx=Math.abs(rx); ry=Math.abs(ry);
+  const ctrl=[], ctrlN=roughness==='rough'?12:11;
+  const jitterScale = roughness==='rough' ? 1.8 : 1;
+  const jit=Math.min((0.012+rough/Math.max(rx,ry)*0.08)*jitterScale, roughness==='rough' ? 0.055 : 0.026);
+  const start=rng()*Math.PI*2;
+  let drift=1;
+  for(let i=0;i<ctrlN;i++){
+    const t=start+Math.PI*2*i/ctrlN;
+    drift+=(rng()*2-1)*jit*0.8;
+    drift=Math.max(1-jit*1.4,Math.min(1+jit*1.4,drift));
+    const j=drift+(rng()*2-1)*jit*0.45;
+    ctrl.push([cx+Math.cos(t)*rx*j, cy+Math.sin(t)*ry*j]);
+  }
+  const pts=smoothClosedPoints(ctrl,6);
+  strokeSketchPath(rng,pts,true,rough,roughness);
 }
 function roughArrow(rng,x1,y1,x2,y2,w,rough){
   roughLine(rng,x1,y1,x2,y2,rough);
@@ -448,25 +684,88 @@ const HAND_FONT = '"Comic Sans MS","Segoe Print","Bradley Hand","Chalkboard SE",
   '"Hannotate SC","HanziPen SC","Xingkai SC","STXingkai","Kaiti SC","STKaiti","KaiTi","楷体",' +
   '"PingFang SC","Microsoft YaHei",sans-serif';
 
+function isFillVisible(fill){ return fill && fill !== 'transparent'; }
+function setStrokePattern(style,width){
+  if(style==='dashed') ctx.setLineDash([width*4,width*3]);
+  else if(style==='dotted') ctx.setLineDash([Math.max(1,width*.2),width*2.4]);
+  else ctx.setLineDash([]);
+}
+function normalizedBox(o){
+  const x=Math.min(o.x,o.x+o.w), y=Math.min(o.y,o.y+o.h);
+  return {x,y,w:Math.abs(o.w),h:Math.abs(o.h)};
+}
+function beginRectPath(x,y,w,h,cornerStyle='round'){
+  ctx.beginPath();
+  if(cornerStyle==='sharp'){
+    ctx.rect(x,y,w,h);
+  }else{
+    roundRect(x,y,w,h,Math.min(w,h,Math.max(10,Math.min(w,h)*0.18)));
+    ctx.closePath();
+  }
+}
+function beginEllipsePath(cx,cy,rx,ry){
+  ctx.beginPath();
+  ctx.ellipse(cx,cy,Math.abs(rx),Math.abs(ry),0,0,Math.PI*2);
+}
+function fillShape(o){
+  if(!isFillVisible(o.fillColor)) return;
+  ctx.save();
+  ctx.setLineDash([]);
+  ctx.fillStyle=o.fillColor;
+  if(o.type==='rect'){
+    const b=normalizedBox(o); beginRectPath(b.x,b.y,b.w,b.h,o.cornerStyle||'round'); ctx.fill();
+  }else if(o.type==='ellipse'){
+    beginEllipsePath(o.x+o.w/2,o.y+o.h/2,o.w/2,o.h/2); ctx.fill();
+  }
+  ctx.restore();
+}
+function strokeCleanObject(o){
+  if(o.type==='pen'){
+    if(o.points.length<2){
+      const p=o.points[0]; ctx.beginPath(); ctx.arc(p.x,p.y,(o.width||4)/2,0,Math.PI*2); ctx.fill(); return;
+    }
+    ctx.beginPath(); ctx.moveTo(o.points[0].x,o.points[0].y);
+    for(let i=1;i<o.points.length;i++) ctx.lineTo(o.points[i].x,o.points[i].y);
+    ctx.stroke();
+  }else if(o.type==='rect'){
+    const b=normalizedBox(o); beginRectPath(b.x,b.y,b.w,b.h,o.cornerStyle||'round'); ctx.stroke();
+  }else if(o.type==='ellipse'){
+    beginEllipsePath(o.x+o.w/2,o.y+o.h/2,o.w/2,o.h/2); ctx.stroke();
+  }else if(o.type==='arrow'){
+    drawArrow(o.x1,o.y1,o.x2,o.y2,o.width||4);
+  }
+}
+
 function drawObject(o){
+  ctx.save();
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
   ctx.strokeStyle = o.color;
   ctx.fillStyle = o.color;
   ctx.lineWidth = o.width || 4;
-  const rough = Math.max(1.5, (o.width||4)*0.9); // 扰动幅度随线宽
+  ctx.globalAlpha = o.opacity ?? 1;
+  setStrokePattern(o.strokeStyle || 'solid', o.width || 4);
+  const roughness = o.roughness || 'sketch';
+  const roughScale = roughness==='rough' ? 1.7 : 1;
+  const rough = Math.max(1.5, (o.width||4)*0.9*roughScale); // 扰动幅度随线宽
   strokeBase = o.width || 4;                      // 手绘描边的基准线宽（逐段在此上下浮动）
-  if(o.type === 'pen'){
+  if(roughness === 'clean' && (o.type==='pen'||o.type==='rect'||o.type==='ellipse'||o.type==='arrow')){
+    fillShape(o);
+    strokeCleanObject(o);
+  } else if(o.type === 'pen'){
     if(o.points.length < 2){
-      const p = o.points[0]; ctx.beginPath(); ctx.arc(p.x,p.y,(o.width||4)/2,0,7); ctx.fill(); return;
+      const p = o.points[0]; ctx.beginPath(); ctx.arc(p.x,p.y,(o.width||4)/2,0,7); ctx.fill();
+    }else{
+      ctx.beginPath(); ctx.moveTo(o.points[0].x, o.points[0].y);
+      for(let i=1;i<o.points.length;i++) ctx.lineTo(o.points[i].x, o.points[i].y);
+      ctx.stroke();
     }
-    ctx.beginPath(); ctx.moveTo(o.points[0].x, o.points[0].y);
-    for(let i=1;i<o.points.length;i++) ctx.lineTo(o.points[i].x, o.points[i].y);
-    ctx.stroke();
   } else if(o.type === 'rect'){
-    roughRect(mulberry32(o.seed||1), o.x,o.y,o.w,o.h, rough);
+    fillShape(o);
+    roughRect(mulberry32(o.seed||1), o.x,o.y,o.w,o.h, rough, o.cornerStyle||'round', roughness);
   } else if(o.type === 'ellipse'){
-    roughEllipse(mulberry32(o.seed||1), o.x+o.w/2, o.y+o.h/2, o.w/2, o.h/2, rough);
+    fillShape(o);
+    roughEllipse(mulberry32(o.seed||1), o.x+o.w/2, o.y+o.h/2, o.w/2, o.h/2, rough, roughness);
   } else if(o.type === 'arrow'){
     roughArrow(mulberry32(o.seed||1), o.x1,o.y1,o.x2,o.y2, o.width||4, rough);
   } else if(o.type === 'text'){
@@ -474,6 +773,7 @@ function drawObject(o){
     ctx.textBaseline = 'top';
     o.text.split('\n').forEach((line,i)=> ctx.fillText(line, o.x, o.y + i*(o.fontSize||28)*1.2));
   }
+  ctx.restore();
 }
 
 function roundRect(x,y,w,h,r){
@@ -536,6 +836,17 @@ let start = null;   // 世界坐标起点
 let panStart = null;
 let spaceDown = false;
 let erasedThisStroke = false;
+function currentDrawStyle(){
+  return {
+    color: state.color,
+    fillColor: state.fillColor,
+    width: state.width,
+    strokeStyle: state.strokeStyle,
+    roughness: state.roughness,
+    opacity: state.opacity,
+    cornerStyle: state.cornerStyle
+  };
+}
 
 board.addEventListener('pointerdown', (e)=>{
   if(e.button === 1) return;
@@ -553,14 +864,15 @@ board.addEventListener('pointerdown', (e)=>{
 
   action='draw'; start=w;
   const seed=(Math.random()*1e9)|0;
+  const style=currentDrawStyle();
   if(state.tool === 'pen'){
-    draft = { type:'pen', color:state.color, width:state.width, points:[w] };
+    draft = { type:'pen', ...style, points:[w] };
   } else if(state.tool === 'rect'){
-    draft = { type:'rect', color:state.color, width:state.width, x:w.x, y:w.y, w:0, h:0, seed };
+    draft = { type:'rect', ...style, x:w.x, y:w.y, w:0, h:0, seed };
   } else if(state.tool === 'ellipse'){
-    draft = { type:'ellipse', color:state.color, width:state.width, x:w.x, y:w.y, w:0, h:0, seed };
+    draft = { type:'ellipse', ...style, x:w.x, y:w.y, w:0, h:0, seed };
   } else if(state.tool === 'arrow'){
-    draft = { type:'arrow', color:state.color, width:state.width, x1:w.x, y1:w.y, x2:w.x, y2:w.y, seed };
+    draft = { type:'arrow', ...style, x1:w.x, y1:w.y, x2:w.x, y2:w.y, seed };
   }
   render();
 });
@@ -687,6 +999,7 @@ let mediaStream = null;     // 含 video + audio
 let camActive = false;
 
 async function startCamera(){
+  if(!canUseMediaDevices()) throw new Error('当前打开方式不支持摄像头/麦克风权限');
   mediaStream = await navigator.mediaDevices.getUserMedia({
     video:{ facingMode:'user', width:{ideal:1280}, height:{ideal:720} },
     audio:true
@@ -694,29 +1007,69 @@ async function startCamera(){
   camVideo.srcObject = mediaStream;
   camWrap.style.display='block';
   camActive=true;
+  applyCameraSettings();
   await populateDevices();
 }
 async function startMicOnly(){
+  if(!canUseMediaDevices()) return;
   try{
     mediaStream = await navigator.mediaDevices.getUserMedia({audio:true});
   }catch(e){ mediaStream=null; }
 }
 
-// 摄像头小窗拖动
+// 摄像头小窗拖动 / 缩放
 (function(){
-  let drag=null;
+  const MIN_SIZE=96, MAX_SIZE=320, EDGE=8;
+  let camAction=null;
+  function clamp(v,min,max){ return Math.max(min,Math.min(max,v)); }
+  function pinToLeftTop(){
+    const r=camWrap.getBoundingClientRect();
+    camWrap.style.left=r.left+'px';
+    camWrap.style.top=r.top+'px';
+    camWrap.style.right='auto';
+    camWrap.style.bottom='auto';
+    return r;
+  }
+  function clampPosition(x,y,size){
+    return {
+      x: clamp(x,EDGE,window.innerWidth-size-EDGE),
+      y: clamp(y,EDGE,window.innerHeight-size-EDGE)
+    };
+  }
   camWrap.addEventListener('pointerdown',(e)=>{
-    drag={dx:e.clientX-camWrap.offsetLeft, dy:e.clientY-camWrap.offsetTop};
-    camWrap.classList.add('dragging'); camWrap.setPointerCapture(e.pointerId);
+    const r=pinToLeftTop();
+    if(e.target.closest('.cam-resize')){
+      camAction={type:'resize',mx:e.clientX,my:e.clientY,x:r.left,y:r.top,size:r.width};
+      camWrap.classList.add('resizing');
+    }else{
+      camAction={type:'move',dx:e.clientX-r.left,dy:e.clientY-r.top,size:r.width};
+      camWrap.classList.add('dragging');
+    }
+    camWrap.setPointerCapture(e.pointerId);
+    e.stopPropagation();
   });
   camWrap.addEventListener('pointermove',(e)=>{
-    if(!drag) return;
-    let nl=e.clientX-drag.dx, nt=e.clientY-drag.dy;
-    nl=Math.max(8,Math.min(window.innerWidth-camWrap.offsetWidth-8,nl));
-    nt=Math.max(8,Math.min(window.innerHeight-camWrap.offsetHeight-8,nt));
-    camWrap.style.left=nl+'px'; camWrap.style.top=nt+'px'; camWrap.style.right='auto'; camWrap.style.bottom='auto';
+    if(!camAction) return;
+    if(camAction.type==='resize'){
+      const delta=Math.max(e.clientX-camAction.mx,e.clientY-camAction.my);
+      const maxByViewport=Math.max(MIN_SIZE,Math.min(MAX_SIZE,window.innerWidth-camAction.x-EDGE,window.innerHeight-camAction.y-EDGE));
+      const size=clamp(camAction.size+delta,MIN_SIZE,maxByViewport);
+      camWrap.style.width=size+'px';
+      camWrap.style.height=size+'px';
+      syncCameraSizeSetting(size);
+    }else{
+      const nl=e.clientX-camAction.dx, nt=e.clientY-camAction.dy;
+      const p=clampPosition(nl,nt,camAction.size);
+      camWrap.style.left=p.x+'px';
+      camWrap.style.top=p.y+'px';
+    }
   });
-  camWrap.addEventListener('pointerup',()=>{ drag=null; camWrap.classList.remove('dragging'); });
+  function endCamAction(){
+    camAction=null;
+    camWrap.classList.remove('dragging','resizing');
+  }
+  camWrap.addEventListener('pointerup',endCamAction);
+  camWrap.addEventListener('pointercancel',endCamAction);
 })();
 
 /* -------------------------- TELEPROMPTER -------------------------------- */
@@ -757,6 +1110,9 @@ let recCanvas=document.createElement('canvas');
 let recCtx=recCanvas.getContext('2d');
 let recLoop=null, recorder=null, recChunks=[], recMime='', recState='idle'; // idle|setup|recording|paused
 let recStartTime=0, recElapsed=0, timerInt=null;
+let recAudioStream=null;
+let recPointer={x:window.innerWidth/2,y:window.innerHeight/2};
+window.addEventListener('pointermove', (e)=>{ recPointer={x:e.clientX,y:e.clientY}; });
 
 // 画面比例预设（输出像素 + 平台标签）
 const RATIOS = {
@@ -765,36 +1121,129 @@ const RATIOS = {
   '3:4' :{w:810, h:1080,main:'3:4',  sub:'小红书'},
   '9:16':{w:720, h:1280,main:'9:16', sub:'抖音'},
   '1:1' :{w:1000,h:1000,main:'1:1',  sub:'正方形'},
+  'custom':{w:1080,h:1920,main:'Custom',sub:'自定义'},
 };
-// 背景壁纸（渐变 / 纯色 / 无）
-const GRADIENTS = [
-  {name:'霞光', type:'grad', stops:['#fbc2eb','#a6c1ee'], angle:135},
-  {name:'薄荷', type:'grad', stops:['#d4fc79','#96e6a1'], angle:135},
-  {name:'青碧', type:'grad', stops:['#84fab0','#8fd3f4'], angle:135},
-  {name:'蜜桃', type:'grad', stops:['#ff9a9e','#fecfef'], angle:135},
-  {name:'暮云', type:'grad', stops:['#a18cd1','#fbc2eb'], angle:135},
-  {name:'晚霞', type:'grad', stops:['#f6d365','#fda085'], angle:135},
-  {name:'深空', type:'grad', stops:['#243949','#517fa4'], angle:135},
-  {name:'纯白', type:'solid', color:'#ffffff'},
-  {name:'浅灰', type:'solid', color:'#f0eef0'},
-  {name:'深灰', type:'solid', color:'#1e1e22'},
-  {name:'无',   type:'none'},
+const BG_CATEGORIES = [
+  {id:'all', label:'全部'},
+  {id:'vivid', label:'鲜艳'},
+  {id:'soft', label:'柔和'},
+  {id:'dark', label:'深色'},
+  {id:'natural', label:'自然'},
 ];
-const recConfig = { ratio:'16:9', bgIndex:0, frame:null };
+// 背景壁纸（离线 CSS/canvas 程序纹理，无网络依赖）
+const BACKGROUNDS = [
+  {name:'霞光', cat:'soft', type:'grad', stops:['#fbc2eb','#a6c1ee'], angle:135},
+  {name:'青柠', cat:'vivid', type:'grad', stops:['#d4fc79','#96e6a1'], angle:135},
+  {name:'青碧', cat:'vivid', type:'grad', stops:['#84fab0','#8fd3f4'], angle:135},
+  {name:'蜜桃', cat:'soft', type:'grad', stops:['#ff9a9e','#fecfef'], angle:135},
+  {name:'暮云', cat:'soft', type:'grad', stops:['#a18cd1','#fbc2eb'], angle:135},
+  {name:'晚霞', cat:'vivid', type:'grad', stops:['#f6d365','#fda085'], angle:135},
+  {name:'深空', cat:'dark', type:'grad', stops:['#243949','#517fa4'], angle:135},
+  {name:'纸张', cat:'natural', type:'paper', base:'#f7f3ea', line:'#e7dfd0'},
+  {name:'砖墙', cat:'natural', type:'brick', base:'#b96047', line:'#f0b293'},
+  {name:'亚麻', cat:'natural', type:'linen', base:'#d9d0bd', line:'#b8ad98'},
+  {name:'网格', cat:'soft', type:'grid', base:'#f8fbff', line:'#d7e8f6'},
+  {name:'圆点', cat:'soft', type:'dots', base:'#fbf7ff', line:'#d9cdf8'},
+  {name:'几何', cat:'vivid', type:'geo', base:'#f6d6f0', line:'#22a9dc'},
+  {name:'编织', cat:'natural', type:'weave', base:'#8aa35c', line:'#627a3f'},
+  {name:'纯白', cat:'soft', type:'solid', color:'#ffffff'},
+  {name:'浅灰', cat:'soft', type:'solid', color:'#f0eef0'},
+  {name:'深灰', cat:'dark', type:'solid', color:'#1e1e22'},
+  {name:'无',   cat:'all', type:'none'},
+];
+const GRADIENTS = BACKGROUNDS;
+const recConfig = {
+  ratio:'16:9',
+  customW:1080,
+  customH:1920,
+  bgIndex:0,
+  bgCategory:'all',
+  frame:null,
+  cardRadius:24,
+  canvasPadding:55,
+  showCamera:true,
+  cameraSize:160,
+  cameraShape:'circle',
+  micDeviceId:'',
+  cursorHighlight:true,
+  cursorColor:'#ff4d4f'
+};
 
-function ratioVal(){ const r=RATIOS[recConfig.ratio]; return r.w/r.h; }
+function getRatioConfig(){
+  if(recConfig.ratio==='custom'){
+    return {
+      w:Math.max(240,Math.min(3840,recConfig.customW||1080)),
+      h:Math.max(240,Math.min(3840,recConfig.customH||1920)),
+      main:'Custom',
+      sub:'自定义'
+    };
+  }
+  return RATIOS[recConfig.ratio] || RATIOS['16:9'];
+}
+function ratioVal(){ const r=getRatioConfig(); return r.w/r.h; }
 function bgCss(bg){
   if(bg.type==='none') return 'repeating-conic-gradient(#ddd 0 25%,#fff 0 50%) 0 0/14px 14px';
   if(bg.type==='solid') return bg.color;
-  return `linear-gradient(${bg.angle||135}deg, ${bg.stops[0]}, ${bg.stops[1]})`;
+  if(bg.type==='grad') return `linear-gradient(${bg.angle||135}deg, ${bg.stops[0]}, ${bg.stops[1]})`;
+  if(bg.type==='paper') return `linear-gradient(${bg.base},${bg.base}), radial-gradient(${bg.line} 1px, transparent 1px) 0 0/18px 18px`;
+  if(bg.type==='brick') return `linear-gradient(90deg, ${bg.line} 2px, transparent 2px) 0 0/42px 22px, linear-gradient(${bg.line} 2px, transparent 2px) 0 0/42px 22px, ${bg.base}`;
+  if(bg.type==='linen') return `repeating-linear-gradient(0deg, rgba(255,255,255,.18) 0 1px, transparent 1px 6px), repeating-linear-gradient(90deg, rgba(0,0,0,.1) 0 1px, transparent 1px 7px), ${bg.base}`;
+  if(bg.type==='grid') return `linear-gradient(${bg.line} 1px, transparent 1px), linear-gradient(90deg, ${bg.line} 1px, transparent 1px), ${bg.base}`;
+  if(bg.type==='dots') return `radial-gradient(${bg.line} 2px, transparent 2px) 0 0/18px 18px, ${bg.base}`;
+  if(bg.type==='geo') return `linear-gradient(135deg, transparent 25%, ${bg.line} 25% 28%, transparent 28% 72%, ${bg.line} 72% 75%, transparent 75%), ${bg.base}`;
+  if(bg.type==='weave') return `repeating-linear-gradient(45deg, rgba(255,255,255,.18) 0 8px, transparent 8px 16px), repeating-linear-gradient(-45deg, rgba(0,0,0,.16) 0 8px, transparent 8px 16px), ${bg.base}`;
+  return '#f3f2ef';
+}
+function makePatternCanvas(bg){
+  const p=document.createElement('canvas'), pc=p.getContext('2d');
+  p.width=48; p.height=48;
+  pc.fillStyle=bg.base||'#f3f2ef'; pc.fillRect(0,0,p.width,p.height);
+  pc.strokeStyle=bg.line||'rgba(0,0,0,.12)'; pc.lineWidth=1;
+  if(bg.type==='paper'){
+    pc.globalAlpha=.45;
+    for(let i=0;i<80;i++){
+      const x=(i*17+11)%48, y=(i*29+7)%48;
+      pc.fillStyle=i%2?'rgba(255,255,255,.5)':'rgba(0,0,0,.05)';
+      pc.fillRect(x,y,1,1);
+    }
+  }else if(bg.type==='brick'){
+    pc.lineWidth=2;
+    for(let y=0;y<=48;y+=16){ pc.beginPath(); pc.moveTo(0,y); pc.lineTo(48,y); pc.stroke(); }
+    for(let y=0;y<48;y+=16){ for(let x=(y/16)%2?0:24;x<=48;x+=48){ pc.beginPath(); pc.moveTo(x,y); pc.lineTo(x,y+16); pc.stroke(); } }
+  }else if(bg.type==='linen'){
+    pc.globalAlpha=.45;
+    for(let x=0;x<48;x+=5){ pc.beginPath(); pc.moveTo(x,0); pc.lineTo(x,48); pc.stroke(); }
+    for(let y=0;y<48;y+=6){ pc.beginPath(); pc.moveTo(0,y); pc.lineTo(48,y); pc.stroke(); }
+  }else if(bg.type==='grid'){
+    for(let x=0;x<=48;x+=12){ pc.beginPath(); pc.moveTo(x,0); pc.lineTo(x,48); pc.stroke(); }
+    for(let y=0;y<=48;y+=12){ pc.beginPath(); pc.moveTo(0,y); pc.lineTo(48,y); pc.stroke(); }
+  }else if(bg.type==='dots'){
+    pc.fillStyle=bg.line;
+    for(let x=6;x<48;x+=12) for(let y=6;y<48;y+=12){ pc.beginPath(); pc.arc(x,y,1.8,0,7); pc.fill(); }
+  }else if(bg.type==='geo'){
+    pc.lineWidth=2;
+    for(let x=-48;x<96;x+=24){ pc.beginPath(); pc.moveTo(x,48); pc.lineTo(x+48,0); pc.stroke(); }
+    for(let x=-24;x<96;x+=24){ pc.beginPath(); pc.moveTo(x,0); pc.lineTo(x+48,48); pc.stroke(); }
+  }else if(bg.type==='weave'){
+    pc.globalAlpha=.42; pc.lineWidth=7;
+    for(let x=-48;x<96;x+=16){ pc.beginPath(); pc.moveTo(x,48); pc.lineTo(x+48,0); pc.stroke(); }
+    pc.strokeStyle='rgba(255,255,255,.24)';
+    for(let x=-24;x<96;x+=16){ pc.beginPath(); pc.moveTo(x,0); pc.lineTo(x+48,48); pc.stroke(); }
+  }
+  return p;
 }
 function paintBackground(c,W,H,bg){
   if(bg.type==='none'){ c.clearRect(0,0,W,H); return; }
   if(bg.type==='solid'){ c.fillStyle=bg.color; c.fillRect(0,0,W,H); return; }
-  const a=(bg.angle||135)*Math.PI/180, dx=Math.cos(a)*W/2, dy=Math.sin(a)*H/2;
-  const g=c.createLinearGradient(W/2-dx,H/2-dy, W/2+dx,H/2+dy);
-  g.addColorStop(0,bg.stops[0]); g.addColorStop(1,bg.stops[1]);
-  c.fillStyle=g; c.fillRect(0,0,W,H);
+  if(bg.type==='grad'){
+    const a=(bg.angle||135)*Math.PI/180, dx=Math.cos(a)*W/2, dy=Math.sin(a)*H/2;
+    const g=c.createLinearGradient(W/2-dx,H/2-dy, W/2+dx,H/2+dy);
+    g.addColorStop(0,bg.stops[0]); g.addColorStop(1,bg.stops[1]);
+    c.fillStyle=g; c.fillRect(0,0,W,H); return;
+  }
+  c.fillStyle=bg.base||'#f3f2ef'; c.fillRect(0,0,W,H);
+  c.fillStyle=c.createPattern(makePatternCanvas(bg),'repeat');
+  c.fillRect(0,0,W,H);
 }
 function roundRectPath(c,x,y,w,h,r){
   r=Math.min(r,w/2,h/2);
@@ -866,14 +1315,14 @@ function pickMime(){
 function drawRecFrame(){
   recCtx.setTransform(1,0,0,1,0,0);
   const W=recCanvas.width, H=recCanvas.height;
-  const bg=GRADIENTS[recConfig.bgIndex];
+  const bg=BACKGROUNDS[recConfig.bgIndex] || BACKGROUNDS[0];
   const hasDecor = bg.type!=='none';
   // 1) 背景壁纸
   paintBackground(recCtx,W,H,bg);
   // 2) 居中白卡片（留白 + 圆角 + 阴影）
-  const pad = hasDecor ? Math.round(Math.min(W,H)*0.055) : 0;
+  const pad = hasDecor ? Math.round(Math.min(W,H)*(recConfig.canvasPadding/1000)) : 0;
   const cardX=pad, cardY=pad, cardW=W-2*pad, cardH=H-2*pad;
-  const radius = hasDecor ? Math.round(Math.min(cardW,cardH)*0.03) : 0;
+  const radius = hasDecor ? Math.min(recConfig.cardRadius, Math.min(cardW,cardH)/3) : 0;
   if(hasDecor){
     recCtx.save();
     recCtx.shadowColor='rgba(0,0,0,.28)'; recCtx.shadowBlur=Math.round(W*0.022); recCtx.shadowOffsetY=Math.round(H*0.012);
@@ -891,8 +1340,8 @@ function drawRecFrame(){
     recCtx.drawImage(board, 0,0,board.width,board.height, cardX,cardY,cardW,cardH);
   }
   recCtx.restore();
-  // 4) 摄像头：把屏幕上小窗的相对位置映射进卡片（镜像、圆形）
-  if(camActive && camVideo.videoWidth && f){
+  // 4) 摄像头：把屏幕上小窗的相对位置映射进卡片（镜像、可选圆/方）
+  if(recConfig.showCamera && camActive && camVideo.videoWidth && f){
     const cr=camWrap.getBoundingClientRect();
     const scale=cardW/f.w;            // css px → 卡片像素
     const d=cr.width*scale;
@@ -901,7 +1350,12 @@ function drawRecFrame(){
     const r=d/2;
     recCtx.save();
     roundRectPath(recCtx,cardX,cardY,cardW,cardH,radius); recCtx.clip(); // 不超出卡片
-    recCtx.beginPath(); recCtx.arc(cx+r,cy+r,r,0,7); recCtx.clip();
+    if(recConfig.cameraShape==='square'){
+      roundRectPath(recCtx,cx,cy,d,d,Math.max(8,d*.14));
+    }else{
+      recCtx.beginPath(); recCtx.arc(cx+r,cy+r,r,0,7);
+    }
+    recCtx.clip();
     recCtx.translate(cx+d,cy); recCtx.scale(-1,1);
     const vw=camVideo.videoWidth, vh=camVideo.videoHeight, vr=vw/vh;
     let sw=vw,sh=vh,sx=0,sy=0;
@@ -909,8 +1363,27 @@ function drawRecFrame(){
     recCtx.drawImage(camVideo, sx,sy,sw,sh, 0,0,d,d);
     recCtx.restore();
     recCtx.save(); roundRectPath(recCtx,cardX,cardY,cardW,cardH,radius); recCtx.clip();
-    recCtx.beginPath(); recCtx.arc(cx+r,cy+r,r,0,7); recCtx.lineWidth=Math.max(2,d*0.03); recCtx.strokeStyle='#fff'; recCtx.stroke();
+    if(recConfig.cameraShape==='square'){
+      roundRectPath(recCtx,cx,cy,d,d,Math.max(8,d*.14));
+    }else{
+      recCtx.beginPath(); recCtx.arc(cx+r,cy+r,r,0,7);
+    }
+    recCtx.lineWidth=Math.max(2,d*0.03); recCtx.strokeStyle='#fff'; recCtx.stroke();
     recCtx.restore();
+  }
+  // 5) 鼠标高亮：只录制取景框里的光标位置，不捕获提词器 DOM。
+  if(recConfig.cursorHighlight && f){
+    const px=recPointer.x, py=recPointer.y;
+    if(px>=f.x && px<=f.x+f.w && py>=f.y && py<=f.y+f.h){
+      const hx=cardX+(px-f.x)/f.w*cardW, hy=cardY+(py-f.y)/f.h*cardH;
+      const rr=Math.max(12,Math.min(W,H)*0.018);
+      recCtx.save(); roundRectPath(recCtx,cardX,cardY,cardW,cardH,radius); recCtx.clip();
+      recCtx.globalAlpha=.42; recCtx.fillStyle=recConfig.cursorColor;
+      recCtx.beginPath(); recCtx.arc(hx,hy,rr,0,7); recCtx.fill();
+      recCtx.globalAlpha=.9; recCtx.lineWidth=Math.max(2,rr*.12); recCtx.strokeStyle=recConfig.cursorColor;
+      recCtx.beginPath(); recCtx.arc(hx,hy,rr,0,7); recCtx.stroke();
+      recCtx.restore();
+    }
   }
 }
 
@@ -921,7 +1394,7 @@ async function startRecording(){
   recMime = pickMime();
   if(!recMime){ alert('当前浏览器不支持录制（MediaRecorder）。请用最新版 Chrome / Edge / Safari。'); return; }
   if(!recConfig.frame) recConfig.frame=defaultFrame();
-  const R=RATIOS[recConfig.ratio];
+  const R=getRatioConfig();
   recCanvas.width=R.w; recCanvas.height=R.h;
   applyFrameStyle(); recFrameEl.classList.add('recording'); recFrameEl.style.display='block'; // 录制中保留边框提示
   // 用 setInterval 而非 rAF 驱动合成：页面切到后台时 rAF 会被暂停导致录制黑屏。
@@ -929,7 +1402,8 @@ async function startRecording(){
   recLoop=setInterval(drawRecFrame, 1000/30);
 
   const vStream = recCanvas.captureStream(30);
-  if(mediaStream){ mediaStream.getAudioTracks().forEach(t=> vStream.addTrack(t)); }
+  const audioTracks = await getRecordingAudioTracks();
+  audioTracks.forEach(t=> vStream.addTrack(t));
   recChunks=[];
   recorder = new MediaRecorder(vStream, { mimeType:recMime, videoBitsPerSecond: 6_000_000 });
   recorder.ondataavailable = e=>{ if(e.data && e.data.size) recChunks.push(e.data); };
@@ -953,8 +1427,24 @@ function stopRecording(){
 }
 
 function onRecStop(){
+  if(recAudioStream){ recAudioStream.getTracks().forEach(t=>t.stop()); recAudioStream=null; }
   const blob = new Blob(recChunks, { type: recMime.split(';')[0] });
   showExport(blob, recMime.startsWith('video/mp4'));
+}
+
+async function getRecordingAudioTracks(){
+  if(recAudioStream){ recAudioStream.getTracks().forEach(t=>t.stop()); recAudioStream=null; }
+  if(recConfig.micDeviceId && canUseMediaDevices()){
+    try{
+      recAudioStream = await navigator.mediaDevices.getUserMedia({
+        audio:{ deviceId:{ exact:recConfig.micDeviceId } }
+      });
+      return recAudioStream.getAudioTracks();
+    }catch(e){
+      console.warn('选择的麦克风不可用，改用当前默认音轨', e);
+    }
+  }
+  return mediaStream ? mediaStream.getAudioTracks() : [];
 }
 
 /* 计时 */
@@ -988,19 +1478,41 @@ function updateRecUI(){
 }
 
 /* ---- 录制设置弹窗 ---- */
+const CURSOR_COLORS = ['#ff4d4f','#fa7a18','#f2b705','#22c55e','#3b82f6','#a855f7','#ec4899'];
+let settingsBound=false;
+
 function buildRatioGrid(){
   const g=document.getElementById('ratioGrid'); g.innerHTML='';
   for(const k of Object.keys(RATIOS)){
     const r=RATIOS[k], b=document.createElement('button');
     b.className='ratio-btn'+(k===recConfig.ratio?' active':'');
     b.innerHTML=`<div class="r-main">${r.main}</div><div class="r-sub">${r.sub}</div>`;
-    b.onclick=()=>{ recConfig.ratio=k; buildRatioGrid(); updatePreview(); if(recState==='setup') showFrame(); };
+    b.onclick=()=>{
+      recConfig.ratio=k;
+      buildRatioGrid();
+      updatePreview();
+      if(recState==='setup') showFrame();
+    };
     g.appendChild(b);
   }
+  document.getElementById('customRatioBox').classList.toggle('show', recConfig.ratio==='custom');
+  document.getElementById('customW').value=recConfig.customW;
+  document.getElementById('customH').value=recConfig.customH;
+}
+function buildBgCategories(){
+  const row=document.getElementById('bgCategories'); row.innerHTML='';
+  BG_CATEGORIES.forEach(cat=>{
+    const b=document.createElement('button');
+    b.className='pill-btn'+(recConfig.bgCategory===cat.id?' active':'');
+    b.type='button'; b.textContent=cat.label;
+    b.onclick=()=>{ recConfig.bgCategory=cat.id; buildBgCategories(); buildBgGrid(); };
+    row.appendChild(b);
+  });
 }
 function buildBgGrid(){
   const g=document.getElementById('bgGrid'); g.innerHTML='';
-  GRADIENTS.forEach((bg,i)=>{
+  BACKGROUNDS.forEach((bg,i)=>{
+    if(recConfig.bgCategory!=='all' && bg.cat!==recConfig.bgCategory) return;
     const d=document.createElement('div');
     d.className='bg-swatch'+(i===recConfig.bgIndex?' active':'')+(bg.type==='none'?' none':'');
     if(bg.type!=='none') d.style.background=bgCss(bg);
@@ -1012,13 +1524,109 @@ function buildBgGrid(){
 }
 function updatePreview(){
   const prev=document.getElementById('setPreview'), card=prev.querySelector('.set-card');
-  const r=RATIOS[recConfig.ratio], bg=GRADIENTS[recConfig.bgIndex];
+  const r=getRatioConfig(), bg=BACKGROUNDS[recConfig.bgIndex] || BACKGROUNDS[0];
   card.style.aspectRatio=r.w+'/'+r.h;
   if(r.w>=r.h){ card.style.width='72%'; card.style.height='auto'; }
   else { card.style.width='auto'; card.style.height='80%'; }
   prev.style.background = bg.type==='none' ? '#f3f2ef' : bgCss(bg);
+  card.style.borderRadius=recConfig.cardRadius+'px';
+  card.style.margin=(recConfig.canvasPadding/5)+'px';
+  const cam=card.querySelector('.preview-camera');
+  cam.style.display=recConfig.showCamera?'block':'none';
+  const previewSize=Math.max(22, Math.min(58, recConfig.cameraSize/5));
+  cam.style.width=previewSize+'px'; cam.style.height=previewSize+'px';
+  cam.style.borderRadius=recConfig.cameraShape==='circle'?'50%':'8px';
+  const cursor=card.querySelector('.preview-cursor');
+  cursor.style.display=recConfig.cursorHighlight?'block':'none';
+  cursor.style.background=hexToRgba(recConfig.cursorColor,.5);
+  document.getElementById('cardRadiusVal').textContent=Math.round(recConfig.cardRadius)+'PX';
+  document.getElementById('canvasPaddingVal').textContent=Math.round(recConfig.canvasPadding)+'PX';
+  document.getElementById('cameraSizeVal').textContent=Math.round(recConfig.cameraSize)+'PX';
 }
-function openSettings(){ buildRatioGrid(); buildBgGrid(); updatePreview(); document.getElementById('settingsModal').classList.remove('hidden'); }
+function hexToRgba(hex,alpha){
+  const h=hex.replace('#','');
+  const n=parseInt(h.length===3 ? h.split('').map(c=>c+c).join('') : h,16);
+  return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${alpha})`;
+}
+function syncCameraSizeSetting(size){
+  recConfig.cameraSize=Math.max(96,Math.min(320,Math.round(size)));
+  const input=document.getElementById('cameraSize');
+  if(input){ input.value=recConfig.cameraSize; updatePreview(); }
+}
+function applyCameraSettings(){
+  camWrap.style.width=recConfig.cameraSize+'px';
+  camWrap.style.height=recConfig.cameraSize+'px';
+  camWrap.style.borderRadius=recConfig.cameraShape==='circle'?'50%':'18px';
+  camVideo.style.borderRadius=recConfig.cameraShape==='circle'?'50%':'16px';
+  const r=camWrap.getBoundingClientRect();
+  const x=Math.max(8,Math.min(r.left,window.innerWidth-recConfig.cameraSize-8));
+  const y=Math.max(8,Math.min(r.top,window.innerHeight-recConfig.cameraSize-8));
+  if(Number.isFinite(x) && Number.isFinite(y)){
+    camWrap.style.left=x+'px'; camWrap.style.top=y+'px';
+    camWrap.style.right='auto'; camWrap.style.bottom='auto';
+  }
+}
+function bindSettingsControls(){
+  if(settingsBound) return; settingsBound=true;
+  document.getElementById('customW').oninput=e=>{
+    recConfig.customW=+e.target.value||1080;
+    updatePreview(); if(recState==='setup') showFrame();
+  };
+  document.getElementById('customH').oninput=e=>{
+    recConfig.customH=+e.target.value||1920;
+    updatePreview(); if(recState==='setup') showFrame();
+  };
+  document.getElementById('randomBg').onclick=()=>{
+    const pool=BACKGROUNDS.map((bg,i)=>({bg,i})).filter(x=>x.bg.type!=='none' && (recConfig.bgCategory==='all' || x.bg.cat===recConfig.bgCategory));
+    if(pool.length){
+      const pick=pool[Math.floor(Math.random()*pool.length)];
+      recConfig.bgIndex=pick.i; buildBgGrid(); updatePreview();
+    }
+  };
+  document.getElementById('cardRadius').oninput=e=>{ recConfig.cardRadius=+e.target.value; updatePreview(); };
+  document.getElementById('canvasPadding').oninput=e=>{ recConfig.canvasPadding=+e.target.value; updatePreview(); };
+  document.getElementById('showCamera').onchange=e=>{ recConfig.showCamera=e.target.checked; updatePreview(); };
+  document.getElementById('cameraSize').oninput=e=>{ syncCameraSizeSetting(+e.target.value); applyCameraSettings(); };
+  document.querySelectorAll('[data-camera-shape]').forEach(btn=>{
+    btn.onclick=()=>{
+      recConfig.cameraShape=btn.dataset.cameraShape;
+      document.querySelectorAll('[data-camera-shape]').forEach(b=>b.classList.toggle('active',b===btn));
+      applyCameraSettings(); updatePreview();
+    };
+  });
+  document.getElementById('micSelect').onchange=e=>{ recConfig.micDeviceId=e.target.value; };
+  document.getElementById('cursorHighlight').onchange=e=>{ recConfig.cursorHighlight=e.target.checked; updatePreview(); };
+  const row=document.getElementById('cursorColors');
+  CURSOR_COLORS.forEach(color=>{
+    const d=document.createElement('button');
+    d.className='cursor-dot'+(color===recConfig.cursorColor?' active':'');
+    d.type='button'; d.style.background=color; d.title=color;
+    d.onclick=()=>{
+      recConfig.cursorColor=color;
+      row.querySelectorAll('.cursor-dot').forEach(x=>x.classList.toggle('active',x===d));
+      updatePreview();
+    };
+    row.appendChild(d);
+  });
+}
+function syncSettingsInputs(){
+  document.getElementById('cardRadius').value=recConfig.cardRadius;
+  document.getElementById('canvasPadding').value=recConfig.canvasPadding;
+  document.getElementById('showCamera').checked=recConfig.showCamera;
+  document.getElementById('cameraSize').value=recConfig.cameraSize;
+  document.getElementById('cursorHighlight').checked=recConfig.cursorHighlight;
+  document.querySelectorAll('[data-camera-shape]').forEach(b=>b.classList.toggle('active',b.dataset.cameraShape===recConfig.cameraShape));
+}
+async function openSettings(){
+  bindSettingsControls();
+  syncSettingsInputs();
+  buildRatioGrid();
+  buildBgCategories();
+  buildBgGrid();
+  updatePreview();
+  await populateDevices();
+  document.getElementById('settingsModal').classList.remove('hidden');
+}
 
 /* ------------------------- MP4 EXPORT ---------------------------------- */
 let lastBlob=null, lastIsMp4=false;
@@ -1034,9 +1642,12 @@ function showExport(blob, isMp4){
   link.href=url; link.download='whiteboard-'+Date.now()+'.'+ext;
   link.textContent='⬇ 下载 '+ext.toUpperCase();
   conv.classList.toggle('hidden', isMp4); // 已是 mp4 则隐藏转换按钮
+  const offlineHint = location.protocol==='file:'
+    ? '离线双击打开时，转 mp4 需要临时联网下载转码器；没有网络也可以直接下载 webm。'
+    : '';
   document.getElementById('exportStatus').textContent = isMp4
     ? '✓ 已用浏览器原生编码导出 mp4'
-    : '当前浏览器原生只能录 webm，可点下方按钮转成 mp4（首次需联网下载转码器）。';
+    : '当前浏览器原生只能录 webm，可点下方按钮转成 mp4（首次需联网下载转码器）。' + offlineHint;
   modal.classList.remove('hidden');
 }
 document.getElementById('closeExport').onclick = ()=> document.getElementById('exportModal').classList.add('hidden');
@@ -1076,26 +1687,64 @@ document.getElementById('convertMp4').onclick = async ()=>{
 };
 
 /* --------------------------- UI WIRING --------------------------------- */
-// 颜色
+// 样式面板
 const swatches=document.getElementById('swatches');
 COLORS.forEach(c=>{
   const d=document.createElement('div'); d.className='swatch'+(c===state.color?' active':'');
   d.style.background=c; if(c==='#ffffff') d.style.borderColor='#ccc';
-  d.onclick=()=>{ state.color=c; document.querySelectorAll('.swatch').forEach(s=>s.classList.remove('active')); d.classList.add('active');
+  d.onclick=()=>{ state.color=c; swatches.querySelectorAll('.swatch').forEach(s=>s.classList.remove('active')); d.classList.add('active');
     if(textInput.style.display==='block') textInput.style.color=c; };
   swatches.appendChild(d);
 });
-// 粗细
+const fillSwatches=document.getElementById('fillSwatches');
+FILL_COLORS.forEach(c=>{
+  const d=document.createElement('div');
+  d.className='swatch'+(c===state.fillColor?' active':'')+(c==='transparent'?' none':'');
+  if(c!=='transparent') d.style.background=c;
+  d.title=c==='transparent'?'透明':'背景色';
+  d.onclick=()=>{ state.fillColor=c; fillSwatches.querySelectorAll('.swatch').forEach(s=>s.classList.remove('active')); d.classList.add('active'); };
+  fillSwatches.appendChild(d);
+});
 const widthsEl=document.getElementById('widths');
 WIDTHS.forEach(w=>{
   const b=document.createElement('button'); b.className='wbtn'+(w===state.width?' active':'');
   const dot=document.createElement('span'); dot.className='dot';
-  const sz=Math.max(4,w+1); dot.style.width=sz+'px'; dot.style.height=sz+'px'; b.appendChild(dot);
+  dot.style.width='18px'; dot.style.height=Math.max(1.5,w)+'px'; b.appendChild(dot);
   b.onclick=()=>{ state.width=w; document.querySelectorAll('.wbtn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); };
   widthsEl.appendChild(b);
 });
+function bindOption(selector, attr, stateKey){
+  document.querySelectorAll(selector).forEach(btn=>{
+    btn.onclick=()=>{
+      state[stateKey]=btn.dataset[attr];
+      document.querySelectorAll(selector).forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+    };
+  });
+}
+bindOption('[data-stroke-style]', 'strokeStyle', 'strokeStyle');
+bindOption('[data-roughness]', 'roughness', 'roughness');
+bindOption('[data-corner-style]', 'cornerStyle', 'cornerStyle');
 // 字号
 document.getElementById('fontSize').oninput=(e)=>{ state.fontSize=+e.target.value; document.getElementById('fontVal').textContent=e.target.value; };
+document.getElementById('opacity').oninput=(e)=>{ state.opacity=+e.target.value/100; document.getElementById('opacityVal').textContent=e.target.value; };
+
+function updateStylePanel(){
+  const tool=state.tool;
+  const props=document.getElementById('props');
+  const isDraw=['pen','rect','ellipse','arrow'].includes(tool);
+  const isShape=['rect','ellipse'].includes(tool);
+  const isText=tool==='text';
+  props.classList.toggle('hidden', !(isDraw||isText));
+  document.getElementById('strokeGroup').style.display = (isDraw||isText)?'block':'none';
+  document.getElementById('fillGroup').style.display = isShape?'block':'none';
+  document.getElementById('widthGroup').style.display = isDraw?'block':'none';
+  document.getElementById('strokeStyleGroup').style.display = isDraw?'block':'none';
+  document.getElementById('roughnessGroup').style.display = isDraw?'block':'none';
+  document.getElementById('cornerGroup').style.display = tool==='rect'?'block':'none';
+  document.getElementById('opacityGroup').style.display = isDraw?'block':'none';
+  document.getElementById('fontGroup').style.display = isText?'block':'none';
+}
 
 // 工具切换
 document.querySelectorAll('.tool[data-tool]').forEach(btn=>{
@@ -1103,7 +1752,7 @@ document.querySelectorAll('.tool[data-tool]').forEach(btn=>{
     state.tool=btn.dataset.tool;
     document.querySelectorAll('.tool[data-tool]').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
-    document.getElementById('fontGroup').style.display = state.tool==='text'?'block':'none';
+    updateStylePanel();
     board.style.cursor = state.tool==='hand'?'grab':(state.tool==='text'?'text':'crosshair');
   };
 });
@@ -1127,10 +1776,49 @@ document.getElementById('closeSettings').onclick=()=>document.getElementById('se
 document.getElementById('settingsDone').onclick=()=>{ document.getElementById('settingsModal').classList.add('hidden'); enterSetup(); };
 
 // 设备选择（注入到欢迎弹窗 / 也可后续扩展）
+function canUseMediaDevices(){
+  return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+}
+function setupLaunchMode(){
+  const intro=document.getElementById('welcomeIntro');
+  const enable=document.getElementById('enableCam');
+  const skip=document.getElementById('skipCam');
+  const status=document.getElementById('welcomeStatus');
+  if(location.protocol==='file:'){
+    intro.textContent='你正在双击本地 HTML 打开：如果当前浏览器允许本地文件访问摄像头/麦克风，点击下方按钮后会弹出授权提示。';
+    skip.textContent='先不用摄像头，仅画板';
+    status.textContent='若浏览器拒绝本地文件授权，可改用 localhost 或 https 打开。';
+  }else if(!canUseMediaDevices()){
+    intro.textContent='当前浏览器不支持摄像头/麦克风授权，但白板、提词器和无摄像头录制仍可使用。';
+    enable.disabled=true;
+    enable.textContent='当前浏览器不可用摄像头/麦克风';
+    skip.textContent='仅使用白板';
+    status.textContent='建议使用最新版 Chrome / Edge / Safari。';
+  }
+}
+
 async function populateDevices(){
   try{
+    if(!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return [];
     const devices=await navigator.mediaDevices.enumerateDevices();
-    // 预留：如需切换设备可在此构建下拉，当前用默认设备。
+    const micSelect=document.getElementById('micSelect');
+    if(micSelect){
+      const prev=recConfig.micDeviceId;
+      const mics=devices.filter(d=>d.kind==='audioinput');
+      micSelect.innerHTML='<option value="">默认麦克风</option>';
+      mics.forEach((d,i)=>{
+        const opt=document.createElement('option');
+        opt.value=d.deviceId;
+        opt.textContent=d.label || `麦克风 ${i+1}`;
+        micSelect.appendChild(opt);
+      });
+      if(prev && mics.some(d=>d.deviceId===prev)){
+        micSelect.value=prev;
+      }else{
+        recConfig.micDeviceId='';
+        micSelect.value='';
+      }
+    }
     return devices;
   }catch(e){ return []; }
 }
@@ -1155,12 +1843,15 @@ document.getElementById('fmtPill').textContent = (pickMime().startsWith('video/m
 // 欢迎弹窗
 document.getElementById('enableCam').onclick=async ()=>{
   const s=document.getElementById('welcomeStatus');
+  if(!canUseMediaDevices()){ s.textContent='当前浏览器没有提供摄像头/麦克风接口，可点「先不用摄像头」。'; return; }
   try{ s.textContent='正在请求摄像头/麦克风…'; await startCamera(); document.getElementById('welcome').classList.add('hidden'); }
   catch(err){ console.error(err); s.textContent='未能获取摄像头/麦克风：'+(err.message||err.name)+'。可点「先不用摄像头」。'; }
 };
 document.getElementById('skipCam').onclick=async ()=>{ await startMicOnly(); document.getElementById('welcome').classList.add('hidden'); };
 
 // 初始化
+setupLaunchMode();
+updateStylePanel();
 resize();
 updateHistoryButtons();
 updateZoomLabel();
