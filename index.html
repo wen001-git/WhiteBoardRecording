@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+<title>白板录制工具 · Whiteboard Recorder</title>
+<style>
+  :root{
+    --bg:#f7f6f3; --panel:#ffffff; --line:#e7e5e0; --ink:#1e1e1e;
+    --muted:#8a8780; --accent:#5b57d6; --accent-soft:#ecebfb;
+    --danger:#e03131; --danger-soft:#fde7e7; --shadow:0 6px 24px rgba(0,0,0,.10);
+    --radius:14px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;color:var(--ink);background:var(--bg);}
+  #board{position:fixed;inset:0;width:100%;height:100%;display:block;background:#ffffff;touch-action:none;cursor:crosshair;}
+
+  /* ---------- 顶部工具栏 ---------- */
+  .toolbar{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:30;
+    display:flex;gap:4px;align-items:center;background:var(--panel);
+    border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:6px;}
+  .tool{width:40px;height:40px;border:none;background:transparent;border-radius:10px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;color:var(--ink);font-size:18px;transition:.12s;position:relative;}
+  .tool:hover{background:#f0eff5;}
+  .tool.active{background:var(--accent-soft);color:var(--accent);}
+  .tool svg{width:20px;height:20px;}
+  .sep{width:1px;height:26px;background:var(--line);margin:0 4px;}
+  .tool[disabled]{opacity:.35;cursor:not-allowed;}
+
+  /* ---------- 左侧属性面板 ---------- */
+  .props{position:fixed;top:80px;left:14px;z-index:25;width:200px;background:var(--panel);
+    border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px;}
+  .props h4{margin:0 0 8px;font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.3px;}
+  .props .group + .group{margin-top:14px;}
+  .swatches{display:flex;gap:8px;flex-wrap:wrap;}
+  .swatch{width:26px;height:26px;border-radius:7px;cursor:pointer;border:2px solid rgba(0,0,0,.08);transition:.1s;}
+  .swatch.active{outline:2px solid var(--accent);outline-offset:2px;}
+  .widths{display:flex;gap:8px;}
+  .wbtn{flex:1;height:36px;border:1px solid var(--line);background:#fff;border-radius:9px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;}
+  .wbtn.active{border-color:var(--accent);background:var(--accent-soft);}
+  .wbtn .dot{background:var(--ink);border-radius:50%;}
+  .row{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);}
+  .row input[type=range]{flex:1;accent-color:var(--accent);}
+
+  /* ---------- 摄像头小窗 ---------- */
+  #camWrap{position:fixed;right:20px;bottom:96px;z-index:28;width:160px;height:160px;border-radius:50%;
+    overflow:hidden;box-shadow:var(--shadow);border:3px solid #fff;cursor:grab;background:#222;display:none;}
+  #camWrap.dragging{cursor:grabbing;}
+  #camVideo{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);}
+  #camHint{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;text-align:center;padding:8px;}
+
+  /* ---------- 录制条 ---------- */
+  .recbar{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:30;display:flex;gap:10px;align-items:center;
+    background:var(--panel);border:1px solid var(--line);border-radius:999px;box-shadow:var(--shadow);padding:8px 10px;}
+  .recbtn{display:flex;align-items:center;gap:8px;border:none;border-radius:999px;cursor:pointer;font-weight:600;font-size:14px;padding:9px 16px;}
+  .recbtn.start{background:var(--danger);color:#fff;}
+  .recbtn.start:hover{filter:brightness(.95);}
+  .recbtn.ghost{background:#f0eff5;color:var(--ink);}
+  .recbtn.ghost:hover{background:#e7e6ee;}
+  .rec-dot{width:10px;height:10px;border-radius:50%;background:#fff;}
+  .timer{font-variant-numeric:tabular-nums;font-weight:600;font-size:14px;min-width:54px;text-align:center;color:var(--ink);display:none;}
+  .timer.live::before{content:"●";color:var(--danger);margin-right:6px;animation:blink 1s steps(2) infinite;}
+  @keyframes blink{50%{opacity:.2;}}
+  .pill{font-size:11px;color:var(--muted);padding:2px 8px;border:1px solid var(--line);border-radius:999px;}
+
+  /* ---------- 缩放指示 ---------- */
+  .zoombar{position:fixed;bottom:18px;left:14px;z-index:25;display:flex;gap:2px;align-items:center;
+    background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);padding:4px;}
+  .zoombar button{width:30px;height:30px;border:none;background:transparent;border-radius:7px;cursor:pointer;font-size:16px;color:var(--ink);}
+  .zoombar button:hover{background:#f0eff5;}
+  .zoombar .zval{min-width:48px;text-align:center;font-size:13px;color:var(--muted);}
+
+  /* ---------- 提词器 ---------- */
+  #tele{position:fixed;top:80px;right:14px;z-index:26;width:320px;max-height:60vh;display:none;flex-direction:column;
+    background:rgba(20,20,22,.86);backdrop-filter:blur(6px);color:#fff;border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+  #tele header{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:rgba(255,255,255,.07);font-size:13px;font-weight:600;}
+  #tele header .x{cursor:pointer;opacity:.7;}
+  #tele .teleControls{display:flex;gap:6px;align-items:center;padding:8px 12px;flex-wrap:wrap;border-bottom:1px solid rgba(255,255,255,.1);}
+  #tele .teleControls button{background:rgba(255,255,255,.14);color:#fff;border:none;border-radius:7px;padding:5px 10px;cursor:pointer;font-size:12px;}
+  #tele .teleControls button:hover{background:rgba(255,255,255,.24);}
+  #tele .teleControls label{font-size:11px;opacity:.8;display:flex;align-items:center;gap:4px;}
+  #teleScroll{overflow-y:auto;padding:14px 16px;line-height:1.7;white-space:pre-wrap;font-size:22px;flex:1;}
+  #teleText{width:100%;min-height:120px;background:rgba(0,0,0,.25);color:#fff;border:1px solid rgba(255,255,255,.18);border-radius:8px;padding:10px;font-size:14px;resize:vertical;margin:10px;width:calc(100% - 20px);}
+  .privacy{font-size:11px;opacity:.6;padding:0 12px 10px;}
+
+  /* ---------- 文字输入浮层 ---------- */
+  #textInput{position:fixed;z-index:40;display:none;background:transparent;border:1px dashed var(--accent);
+    outline:none;color:var(--ink);font-family:inherit;padding:2px 4px;resize:none;overflow:hidden;line-height:1.2;min-width:40px;}
+
+  /* ---------- 通用浮窗/弹窗 ---------- */
+  .overlay{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:20px;}
+  .modal{background:var(--panel);border-radius:18px;box-shadow:var(--shadow);max-width:520px;width:100%;padding:26px;}
+  .modal h2{margin:0 0 6px;font-size:22px;}
+  .modal p{color:var(--muted);font-size:14px;line-height:1.6;margin:6px 0;}
+  .feat{display:flex;align-items:center;gap:10px;margin:10px 0;font-size:14px;}
+  .feat .emoji{font-size:18px;}
+  .btn-primary{width:100%;margin-top:18px;background:var(--ink);color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:600;cursor:pointer;}
+  .btn-primary:hover{filter:brightness(1.15);}
+  .btn-line{width:100%;margin-top:10px;background:#fff;color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:12px;font-size:14px;cursor:pointer;}
+  .modal video{width:100%;border-radius:12px;background:#000;margin:10px 0;max-height:50vh;}
+  .selrow{display:flex;flex-direction:column;gap:6px;margin-top:12px;}
+  .selrow label{font-size:12px;color:var(--muted);}
+  .selrow select{padding:8px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:#fff;}
+  .status{font-size:13px;color:var(--accent);margin-top:10px;min-height:18px;}
+  .hidden{display:none !important;}
+  .topright{position:fixed;top:14px;right:14px;z-index:30;display:flex;gap:6px;}
+  .iconbtn{width:42px;height:42px;border:1px solid var(--line);background:var(--panel);border-radius:12px;box-shadow:var(--shadow);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;}
+  .iconbtn:hover{background:#f0eff5;}
+  .iconbtn.active{background:var(--accent-soft);color:var(--accent);border-color:var(--accent);}
+
+  /* ---------- 录制取景框 ---------- */
+  #recFrame{position:fixed;z-index:27;display:none;border:3px solid #18a558;border-radius:4px;box-shadow:0 0 0 99999px rgba(0,0,0,.18);cursor:move;}
+  #recFrame .rf-handle{position:absolute;width:16px;height:16px;background:#18a558;border:2px solid #fff;border-radius:3px;}
+  #recFrame .rf-handle.tl{left:-9px;top:-9px;cursor:nwse-resize;}
+  #recFrame .rf-handle.tr{right:-9px;top:-9px;cursor:nesw-resize;}
+  #recFrame .rf-handle.bl{left:-9px;bottom:-9px;cursor:nesw-resize;}
+  #recFrame .rf-handle.br{right:-9px;bottom:-9px;cursor:nwse-resize;}
+  #recFrame .rf-hint{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(20,20,22,.8);color:#fff;font-size:12px;padding:6px 12px;border-radius:8px;white-space:nowrap;pointer-events:none;}
+
+  /* ---------- 录制设置弹窗 ---------- */
+  .modal-wide{max-width:880px;}
+  .modal-head{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:18px;}
+  .modal-head h2{margin:0;}
+  .x-btn{width:34px;height:34px;border:none;background:#f0eff5;border-radius:50%;cursor:pointer;font-size:14px;}
+  .x-btn:hover{background:#e7e6ee;}
+  .settings-body{display:flex;gap:24px;}
+  .settings-left{flex:0 0 280px;display:flex;flex-direction:column;}
+  .settings-right{flex:1;min-width:0;}
+  .set-label{font-size:13px;color:var(--muted);font-weight:600;margin-bottom:10px;}
+  .set-preview{flex:1;background:#f3f2ef;border-radius:12px;display:flex;align-items:center;justify-content:center;min-height:300px;padding:24px;}
+  .set-card{background:#fff;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.18);width:70%;aspect-ratio:16/9;transition:.2s;}
+  .ratio-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+  .ratio-btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:14px 8px;cursor:pointer;text-align:center;transition:.12s;}
+  .ratio-btn:hover{border-color:var(--accent);}
+  .ratio-btn.active{background:var(--ink);color:#fff;border-color:var(--ink);}
+  .ratio-btn .r-main{font-size:17px;font-weight:700;}
+  .ratio-btn .r-sub{font-size:11px;opacity:.7;margin-top:2px;}
+  .bg-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;}
+  .bg-swatch{aspect-ratio:1;border-radius:10px;cursor:pointer;border:2px solid transparent;position:relative;}
+  .bg-swatch.active{border-color:var(--accent);outline:2px solid var(--accent);outline-offset:1px;}
+  .bg-swatch.none{background:repeating-conic-gradient(#ddd 0 25%,#fff 0 50%) 0 0/14px 14px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#888;}
+</style>
+</head>
+<body>
+
+<canvas id="board"></canvas>
+
+<!-- 顶部工具栏 -->
+<div class="toolbar" id="toolbar">
+  <button class="tool" data-tool="hand" title="移动/平移 (H)">✋</button>
+  <button class="tool active" data-tool="pen" title="画笔 (P)">✏️</button>
+  <button class="tool" data-tool="rect" title="矩形 (R)">▭</button>
+  <button class="tool" data-tool="ellipse" title="圆 (O)">◯</button>
+  <button class="tool" data-tool="arrow" title="箭头 (A)">↗</button>
+  <button class="tool" data-tool="text" title="文字 (T)">T</button>
+  <button class="tool" data-tool="eraser" title="橡皮擦 (E)">🩹</button>
+  <span class="sep"></span>
+  <button class="tool" id="undoBtn" title="撤销 (Ctrl/Cmd+Z)">↶</button>
+  <button class="tool" id="redoBtn" title="重做 (Ctrl/Cmd+Shift+Z)">↷</button>
+  <button class="tool" id="clearBtn" title="清空画布">🗑️</button>
+</div>
+
+<!-- 右上角：提词器开关 -->
+<div class="topright">
+  <button class="iconbtn" id="teleToggle" title="提词器">📜</button>
+</div>
+
+<!-- 左侧属性面板 -->
+<div class="props" id="props">
+  <div class="group">
+    <h4>描边颜色</h4>
+    <div class="swatches" id="swatches"></div>
+  </div>
+  <div class="group">
+    <h4>粗细</h4>
+    <div class="widths" id="widths"></div>
+  </div>
+  <div class="group" id="fontGroup" style="display:none;">
+    <h4>字号</h4>
+    <div class="row"><input type="range" id="fontSize" min="14" max="72" value="28"><span id="fontVal">28</span></div>
+  </div>
+</div>
+
+<!-- 摄像头小窗 -->
+<div id="camWrap">
+  <video id="camVideo" autoplay playsinline muted></video>
+</div>
+
+<!-- 提词器 -->
+<div id="tele">
+  <header><span>📜 提词器</span><span class="x" id="teleClose">✕</span></header>
+  <div class="teleControls">
+    <button id="telePlay">▶ 播放</button>
+    <button id="teleReset">🔼 回顶</button>
+    <button id="teleEdit">✎ 编辑</button>
+    <label>速度<input type="range" id="teleSpeed" min="10" max="120" value="40" style="width:70px"></label>
+    <label>字号<input type="range" id="teleFont" min="16" max="44" value="22" style="width:60px"></label>
+  </div>
+  <textarea id="teleText" placeholder="在此粘贴/输入你的讲稿，然后点「播放」自动滚动。提词器只有你能看到，不会被录进视频。">欢迎使用白板录制工具！
+
+把你的讲稿粘贴到这里，点击上方「播放」即可自动滚动。
+你可以一边看稿、一边在白板上画画讲解。
+
+提词器只显示给你看，不会出现在录制的视频里。</textarea>
+  <div id="teleScroll" style="display:none;"></div>
+  <div class="privacy">🔒 提词器仅你可见，不会录进视频</div>
+</div>
+
+<!-- 录制条 -->
+<div class="recbar">
+  <button class="recbtn ghost" id="recSettings" title="录制设置">⚙️</button>
+  <span class="pill" id="fmtPill">mp4</span>
+  <span class="timer" id="timer">00:00</span>
+  <button class="recbtn start" id="recStart"><span class="rec-dot"></span> 录制</button>
+  <button class="recbtn ghost hidden" id="recCancel">✕ 取消</button>
+  <button class="recbtn start hidden" id="recGo"><span class="rec-dot"></span> 开始录制</button>
+  <button class="recbtn ghost hidden" id="recPause">⏸ 暂停</button>
+  <button class="recbtn ghost hidden" id="recStop">⏹ 停止</button>
+</div>
+
+<!-- 缩放条 -->
+<div class="zoombar">
+  <button id="zoomOut">−</button>
+  <span class="zval" id="zoomVal">100%</span>
+  <button id="zoomIn">+</button>
+  <button id="zoomReset" title="重置视图">⌂</button>
+</div>
+
+<!-- 文字输入浮层 -->
+<textarea id="textInput" rows="1"></textarea>
+
+<!-- 欢迎/授权弹窗 -->
+<div class="overlay" id="welcome">
+  <div class="modal">
+    <h2>欢迎使用 白板录制工具</h2>
+    <p>录制精美的白板视频，你的面部画面会出现在角落。非常适合教程、讲解和异步沟通。</p>
+    <div class="feat"><span class="emoji">🎨</span> 在无限白板上自由绘画</div>
+    <div class="feat"><span class="emoji">📹</span> 你的摄像头会出现在角落</div>
+    <div class="feat"><span class="emoji">📜</span> 内置提词器，方便看稿</div>
+    <div class="feat"><span class="emoji">⏺️</span> 准备好就点击录制</div>
+    <button class="btn-primary" id="enableCam">允许摄像头与麦克风，开始</button>
+    <button class="btn-line" id="skipCam">先不用摄像头，仅画板</button>
+    <div class="status" id="welcomeStatus"></div>
+  </div>
+</div>
+
+<!-- 导出预览弹窗 -->
+<div class="overlay hidden" id="exportModal">
+  <div class="modal">
+    <h2>录制完成 🎬</h2>
+    <video id="previewVideo" controls></video>
+    <a id="downloadLink" class="btn-primary" style="display:block;text-align:center;text-decoration:none;">⬇ 下载视频</a>
+    <button class="btn-line hidden" id="convertMp4">转换为 mp4（在浏览器内转码）</button>
+    <button class="btn-line" id="closeExport">关闭</button>
+    <div class="status" id="exportStatus"></div>
+  </div>
+</div>
+
+<!-- 录制取景框（setup 状态显示） -->
+<div id="recFrame">
+  <div class="rf-hint" id="rfHint">可拖拽移动 · 拖拽角落缩放</div>
+  <div class="rf-handle tl" data-h="tl"></div>
+  <div class="rf-handle tr" data-h="tr"></div>
+  <div class="rf-handle bl" data-h="bl"></div>
+  <div class="rf-handle br" data-h="br"></div>
+</div>
+
+<!-- 录制设置弹窗 -->
+<div class="overlay hidden" id="settingsModal">
+  <div class="modal modal-wide">
+    <div class="modal-head"><h2>录制设置</h2><button class="x-btn" id="closeSettings">✕</button></div>
+    <div class="settings-body">
+      <div class="settings-left">
+        <div class="set-label">预览</div>
+        <div class="set-preview" id="setPreview"><div class="set-card"></div></div>
+      </div>
+      <div class="settings-right">
+        <div class="set-label">画面比例</div>
+        <div class="ratio-grid" id="ratioGrid"></div>
+        <div class="set-label" style="margin-top:18px;">背景</div>
+        <div class="bg-grid" id="bgGrid"></div>
+        <button class="btn-primary" id="settingsDone">完成，选择录制区域</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================================================================
+ * 白板录制工具 — 单文件实现
+ * 分区：STATE / VIEW+RENDER / TOOLS(pointer) / HISTORY / CAMERA /
+ *       TELEPROMPTER / RECORDER / MP4 EXPORT / UI WIRING
+ * ========================================================================= */
+
+/* ----------------------------- STATE ----------------------------------- */
+const COLORS = ['#1e1e1e','#e03131','#2f9e44','#1971c2','#f08c00','#ffffff'];
+const WIDTHS = [2, 5, 10];
+
+const state = {
+  tool: 'pen',
+  color: '#1e1e1e',
+  width: 5,
+  fontSize: 28,
+  scene: [],            // 已提交的绘图对象（世界坐标）
+  undoStack: [],
+  redoStack: [],
+  view: { x: 0, y: 0, scale: 1 },
+};
+
+const board = document.getElementById('board');
+const ctx = board.getContext('2d');
+let dpr = Math.max(1, window.devicePixelRatio || 1);
+
+/* ---------------------- VIEW + RENDER ---------------------------------- */
+function resize(){
+  dpr = Math.max(1, window.devicePixelRatio || 1);
+  board.width = Math.floor(board.clientWidth * dpr);
+  board.height = Math.floor(board.clientHeight * dpr);
+  render();
+}
+window.addEventListener('resize', resize);
+
+// 屏幕(css)坐标 -> 世界坐标
+function toWorld(sx, sy){
+  return { x: (sx - state.view.x) / state.view.scale, y: (sy - state.view.y) / state.view.scale };
+}
+
+function applyTransform(){
+  ctx.setTransform(dpr * state.view.scale, 0, 0, dpr * state.view.scale,
+                   dpr * state.view.x, dpr * state.view.y);
+}
+
+function clearBg(){
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0,0,board.width,board.height);
+}
+
+/* ---------------------- 手绘风格渲染（自写，零依赖） ----------------------
+ * 每个形状对象带一个稳定的 seed，用 mulberry32 生成确定性的随机扰动，
+ * 因此每帧重绘结果一致（不闪），但不同对象/不同 seed 的线条各不相同。 */
+function mulberry32(a){
+  return function(){
+    a|=0; a=a+0x6D2B79F5|0;
+    let t=Math.imul(a^a>>>15,1|a);
+    t=t+Math.imul(t^t>>>7,61|t)^t;
+    return ((t^t>>>14)>>>0)/4294967296;
+  };
+}
+// 一条带随机扰动、略带弓形的手绘笔画（用 cubic bezier 画出）
+function sketchStroke(rng,x1,y1,x2,y2,rough){
+  const len=Math.hypot(x2-x1,y2-y1);
+  const off=Math.min(rough*(1+len/200), rough*2.2);
+  const r=()=>(rng()*2-1)*off;
+  const m1x=x1+(x2-x1)/3+r(), m1y=y1+(y2-y1)/3+r();
+  const m2x=x1+2*(x2-x1)/3+r(), m2y=y1+2*(y2-y1)/3+r();
+  ctx.beginPath();
+  ctx.moveTo(x1+r()*0.5, y1+r()*0.5);
+  ctx.bezierCurveTo(m1x,m1y,m2x,m2y, x2+r()*0.5, y2+r()*0.5);
+  ctx.stroke();
+}
+// 手绘直线：两条略不同的笔画叠加
+function roughLine(rng,x1,y1,x2,y2,rough){
+  sketchStroke(rng,x1,y1,x2,y2,rough);
+  sketchStroke(rng,x1,y1,x2,y2,rough);
+}
+// 手绘矩形：四边各画一条手绘线（带轻微角点过冲）
+function roughRect(rng,x,y,w,h,rough){
+  if(w<0){x+=w;w=-w;} if(h<0){y+=h;h=-h;}
+  const o=()=>(rng()*2-1)*rough*0.8; // 角点过冲
+  roughLine(rng,x+o(),y, x+w+o(),y, rough);
+  roughLine(rng,x+w,y+o(), x+w,y+h+o(), rough);
+  roughLine(rng,x+w+o(),y+h, x+o(),y+h, rough);
+  roughLine(rng,x,y+h+o(), x,y+o(), rough);
+}
+// 手绘椭圆：带半径抖动的点环，画两遍且起止略微开口/过冲
+function roughEllipse(rng,cx,cy,rx,ry,rough){
+  rx=Math.abs(rx); ry=Math.abs(ry);
+  const drawLoop=(jit,extra)=>{
+    const n=11, start=rng()*Math.PI*2, end=start+Math.PI*2+extra;
+    const pts=[];
+    for(let i=0;i<=n;i++){
+      const t=start+(end-start)*(i/n);
+      const j=1+(rng()*2-1)*jit;
+      pts.push([cx+Math.cos(t)*rx*j, cy+Math.sin(t)*ry*j]);
+    }
+    ctx.beginPath(); ctx.moveTo(pts[0][0],pts[0][1]);
+    for(let i=1;i<pts.length-1;i++){
+      const xc=(pts[i][0]+pts[i+1][0])/2, yc=(pts[i][1]+pts[i+1][1])/2;
+      ctx.quadraticCurveTo(pts[i][0],pts[i][1],xc,yc);
+    }
+    ctx.stroke();
+  };
+  const jit=Math.min(0.04+rough/Math.max(rx,ry)*0.6, 0.12);
+  drawLoop(jit, 0.4);
+  drawLoop(jit, 0.2);
+}
+function roughArrow(rng,x1,y1,x2,y2,w,rough){
+  roughLine(rng,x1,y1,x2,y2,rough);
+  const ang=Math.atan2(y2-y1,x2-x1), head=Math.max(14,w*3.2);
+  roughLine(rng,x2,y2, x2-head*Math.cos(ang-0.45), y2-head*Math.sin(ang-0.45), rough);
+  roughLine(rng,x2,y2, x2-head*Math.cos(ang+0.45), y2-head*Math.sin(ang+0.45), rough);
+}
+// 手绘画布文字字体栈（Latin 用手写体，中文回退系统字）
+const HAND_FONT = '"Comic Sans MS","Segoe Print","Bradley Hand","Chalkboard SE","PingFang SC","Microsoft YaHei",sans-serif';
+
+function drawObject(o){
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = o.color;
+  ctx.fillStyle = o.color;
+  ctx.lineWidth = o.width || 4;
+  const rough = Math.max(1.5, (o.width||4)*0.9); // 扰动幅度随线宽
+  if(o.type === 'pen'){
+    if(o.points.length < 2){
+      const p = o.points[0]; ctx.beginPath(); ctx.arc(p.x,p.y,(o.width||4)/2,0,7); ctx.fill(); return;
+    }
+    ctx.beginPath(); ctx.moveTo(o.points[0].x, o.points[0].y);
+    for(let i=1;i<o.points.length;i++) ctx.lineTo(o.points[i].x, o.points[i].y);
+    ctx.stroke();
+  } else if(o.type === 'rect'){
+    roughRect(mulberry32(o.seed||1), o.x,o.y,o.w,o.h, rough);
+  } else if(o.type === 'ellipse'){
+    roughEllipse(mulberry32(o.seed||1), o.x+o.w/2, o.y+o.h/2, o.w/2, o.h/2, rough);
+  } else if(o.type === 'arrow'){
+    roughArrow(mulberry32(o.seed||1), o.x1,o.y1,o.x2,o.y2, o.width||4, rough);
+  } else if(o.type === 'text'){
+    ctx.font = (o.fontSize||28) + 'px ' + HAND_FONT;
+    ctx.textBaseline = 'top';
+    o.text.split('\n').forEach((line,i)=> ctx.fillText(line, o.x, o.y + i*(o.fontSize||28)*1.2));
+  }
+}
+
+function roundRect(x,y,w,h,r){
+  if(w<0){x+=w;w=-w;} if(h<0){y+=h;h=-h;}
+  r=Math.min(r,w/2,h/2);
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r);
+}
+
+function drawArrow(x1,y1,x2,y2,w){
+  const ang = Math.atan2(y2-y1, x2-x1);
+  const head = Math.max(12, w*3);
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x2,y2);
+  ctx.lineTo(x2-head*Math.cos(ang-0.4), y2-head*Math.sin(ang-0.4));
+  ctx.moveTo(x2,y2);
+  ctx.lineTo(x2-head*Math.cos(ang+0.4), y2-head*Math.sin(ang+0.4));
+  ctx.stroke();
+}
+
+let draft = null; // 正在拖拽中的临时对象
+
+function render(){
+  clearBg();
+  applyTransform();
+  for(const o of state.scene) drawObject(o);
+  if(draft) drawObject(draft);
+}
+
+/* --------------------------- HISTORY ----------------------------------- */
+function snapshot(){ return JSON.parse(JSON.stringify(state.scene)); }
+function pushHistory(){
+  state.undoStack.push(snapshot());
+  if(state.undoStack.length > 100) state.undoStack.shift();
+  state.redoStack = [];
+  updateHistoryButtons();
+}
+function undo(){
+  if(!state.undoStack.length) return;
+  state.redoStack.push(snapshot());
+  state.scene = state.undoStack.pop();
+  render(); updateHistoryButtons();
+}
+function redo(){
+  if(!state.redoStack.length) return;
+  state.undoStack.push(snapshot());
+  state.scene = state.redoStack.pop();
+  render(); updateHistoryButtons();
+}
+function updateHistoryButtons(){
+  document.getElementById('undoBtn').disabled = !state.undoStack.length;
+  document.getElementById('redoBtn').disabled = !state.redoStack.length;
+}
+
+/* ------------------------ TOOLS (pointer) ------------------------------ */
+let action = null;  // 'draw' | 'pan' | 'erase'
+let start = null;   // 世界坐标起点
+let panStart = null;
+let spaceDown = false;
+let erasedThisStroke = false;
+
+board.addEventListener('pointerdown', (e)=>{
+  if(e.button === 1) return;
+  board.setPointerCapture(e.pointerId);
+  const w = toWorld(e.clientX, e.clientY);
+
+  const wantPan = state.tool === 'hand' || spaceDown || e.button === 2;
+  if(wantPan){ action='pan'; panStart={mx:e.clientX,my:e.clientY,vx:state.view.x,vy:state.view.y}; return; }
+
+  if(state.tool === 'text'){ openTextInput(e.clientX, e.clientY, w); return; }
+
+  if(state.tool === 'eraser'){
+    action='erase'; erasedThisStroke=false; eraseAt(w); return;
+  }
+
+  action='draw'; start=w;
+  const seed=(Math.random()*1e9)|0;
+  if(state.tool === 'pen'){
+    draft = { type:'pen', color:state.color, width:state.width, points:[w] };
+  } else if(state.tool === 'rect'){
+    draft = { type:'rect', color:state.color, width:state.width, x:w.x, y:w.y, w:0, h:0, seed };
+  } else if(state.tool === 'ellipse'){
+    draft = { type:'ellipse', color:state.color, width:state.width, x:w.x, y:w.y, w:0, h:0, seed };
+  } else if(state.tool === 'arrow'){
+    draft = { type:'arrow', color:state.color, width:state.width, x1:w.x, y1:w.y, x2:w.x, y2:w.y, seed };
+  }
+  render();
+});
+
+board.addEventListener('pointermove', (e)=>{
+  const w = toWorld(e.clientX, e.clientY);
+  if(action === 'pan'){
+    state.view.x = panStart.vx + (e.clientX - panStart.mx);
+    state.view.y = panStart.vy + (e.clientY - panStart.my);
+    render(); return;
+  }
+  if(action === 'erase'){ eraseAt(w); return; }
+  if(action !== 'draw' || !draft) return;
+  if(draft.type === 'pen'){ draft.points.push(w); }
+  else if(draft.type === 'arrow'){ draft.x2=w.x; draft.y2=w.y; }
+  else { draft.w = w.x - start.x; draft.h = w.y - start.y; }
+  render();
+});
+
+function endAction(){
+  if(action === 'draw' && draft){
+    const valid = draft.type==='pen' ? draft.points.length>0
+      : draft.type==='arrow' ? (Math.hypot(draft.x2-draft.x1,draft.y2-draft.y1)>2)
+      : (Math.abs(draft.w)>2 && Math.abs(draft.h)>2);
+    if(valid){ pushHistory(); state.scene.push(draft); }
+    draft=null; render();
+  }
+  action=null; start=null; panStart=null;
+}
+board.addEventListener('pointerup', endAction);
+board.addEventListener('pointercancel', endAction);
+board.addEventListener('contextmenu', e=>e.preventDefault());
+
+// 滚轮缩放（以光标为中心）
+board.addEventListener('wheel', (e)=>{
+  e.preventDefault();
+  const factor = e.deltaY < 0 ? 1.1 : 1/1.1;
+  zoomAt(e.clientX, e.clientY, factor);
+}, {passive:false});
+
+function zoomAt(cx, cy, factor){
+  const ns = Math.min(8, Math.max(0.1, state.view.scale * factor));
+  const k = ns / state.view.scale;
+  state.view.x = cx - (cx - state.view.x) * k;
+  state.view.y = cy - (cy - state.view.y) * k;
+  state.view.scale = ns;
+  render(); updateZoomLabel();
+}
+function updateZoomLabel(){ document.getElementById('zoomVal').textContent = Math.round(state.view.scale*100)+'%'; }
+
+/* 橡皮擦：命中删除对象 */
+function eraseAt(w){
+  const tol = 10 / state.view.scale;
+  let hit = -1;
+  for(let i=state.scene.length-1;i>=0;i--){ if(hitTest(state.scene[i], w, tol)){ hit=i; break; } }
+  if(hit>=0){
+    if(!erasedThisStroke){ pushHistory(); erasedThisStroke=true; }
+    state.scene.splice(hit,1); render();
+  }
+}
+function hitTest(o, p, tol){
+  if(o.type==='pen'){
+    for(let i=1;i<o.points.length;i++) if(distSeg(p,o.points[i-1],o.points[i])<tol+(o.width||4)/2) return true;
+    if(o.points.length===1) return Math.hypot(p.x-o.points[0].x,p.y-o.points[0].y)<tol+(o.width||4);
+    return false;
+  }
+  if(o.type==='arrow') return distSeg(p,{x:o.x1,y:o.y1},{x:o.x2,y:o.y2})<tol+(o.width||4)/2;
+  if(o.type==='rect'||o.type==='ellipse'){
+    const x=Math.min(o.x,o.x+o.w), y=Math.min(o.y,o.y+o.h), w=Math.abs(o.w), h=Math.abs(o.h);
+    return p.x>=x-tol && p.x<=x+w+tol && p.y>=y-tol && p.y<=y+h+tol;
+  }
+  if(o.type==='text'){
+    const lines=o.text.split('\n'); const h=lines.length*(o.fontSize||28)*1.2;
+    const w=Math.max(...lines.map(l=>l.length))*(o.fontSize||28)*0.6;
+    return p.x>=o.x-tol && p.x<=o.x+w+tol && p.y>=o.y-tol && p.y<=o.y+h+tol;
+  }
+  return false;
+}
+function distSeg(p,a,b){
+  const dx=b.x-a.x, dy=b.y-a.y; const l2=dx*dx+dy*dy;
+  if(l2===0) return Math.hypot(p.x-a.x,p.y-a.y);
+  let t=((p.x-a.x)*dx+(p.y-a.y)*dy)/l2; t=Math.max(0,Math.min(1,t));
+  return Math.hypot(p.x-(a.x+t*dx), p.y-(a.y+t*dy));
+}
+
+/* 文字输入 */
+const textInput = document.getElementById('textInput');
+let textWorld = null;
+let textColor = '#1e1e1e', textFontSize = 28;
+function openTextInput(sx, sy, w){
+  commitText();           // 先保存上一段未提交的文字（textInput 是复用元素，重开不会触发 blur）
+  textWorld = w;
+  textColor = state.color; textFontSize = state.fontSize;  // 捕获打开时的样式，后续改色/字号不影响这段
+  textInput.value='';
+  textInput.style.display='block';
+  textInput.style.left = sx+'px';
+  textInput.style.top = sy+'px';
+  textInput.style.color = textColor;
+  textInput.style.fontSize = (textFontSize*state.view.scale)+'px';
+  setTimeout(()=>textInput.focus(),0);
+}
+function commitText(){
+  if(textInput.style.display==='none') return;
+  const val = textInput.value.replace(/\s+$/,'');
+  textInput.style.display='none';
+  if(val && textWorld){
+    pushHistory();
+    state.scene.push({ type:'text', color:textColor, x:textWorld.x, y:textWorld.y, text:val, fontSize:textFontSize });
+    render();
+  }
+  textWorld=null;
+}
+textInput.addEventListener('blur', commitText);
+textInput.addEventListener('keydown', (e)=>{
+  if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); commitText(); }
+  if(e.key==='Escape'){ textInput.value=''; commitText(); }
+});
+textInput.addEventListener('input', ()=>{ textInput.style.height='auto'; textInput.style.height=textInput.scrollHeight+'px'; });
+
+/* --------------------------- CAMERA ------------------------------------ */
+const camWrap = document.getElementById('camWrap');
+const camVideo = document.getElementById('camVideo');
+let mediaStream = null;     // 含 video + audio
+let camActive = false;
+
+async function startCamera(){
+  mediaStream = await navigator.mediaDevices.getUserMedia({
+    video:{ facingMode:'user', width:{ideal:1280}, height:{ideal:720} },
+    audio:true
+  });
+  camVideo.srcObject = mediaStream;
+  camWrap.style.display='block';
+  camActive=true;
+  await populateDevices();
+}
+async function startMicOnly(){
+  try{
+    mediaStream = await navigator.mediaDevices.getUserMedia({audio:true});
+  }catch(e){ mediaStream=null; }
+}
+
+// 摄像头小窗拖动
+(function(){
+  let drag=null;
+  camWrap.addEventListener('pointerdown',(e)=>{
+    drag={dx:e.clientX-camWrap.offsetLeft, dy:e.clientY-camWrap.offsetTop};
+    camWrap.classList.add('dragging'); camWrap.setPointerCapture(e.pointerId);
+  });
+  camWrap.addEventListener('pointermove',(e)=>{
+    if(!drag) return;
+    let nl=e.clientX-drag.dx, nt=e.clientY-drag.dy;
+    nl=Math.max(8,Math.min(window.innerWidth-camWrap.offsetWidth-8,nl));
+    nt=Math.max(8,Math.min(window.innerHeight-camWrap.offsetHeight-8,nt));
+    camWrap.style.left=nl+'px'; camWrap.style.top=nt+'px'; camWrap.style.right='auto'; camWrap.style.bottom='auto';
+  });
+  camWrap.addEventListener('pointerup',()=>{ drag=null; camWrap.classList.remove('dragging'); });
+})();
+
+/* -------------------------- TELEPROMPTER -------------------------------- */
+const tele = document.getElementById('tele');
+const teleText = document.getElementById('teleText');
+const teleScroll = document.getElementById('teleScroll');
+let telePlaying=false, teleRAF=null, teleSpeed=40;
+
+document.getElementById('teleToggle').onclick = ()=>{
+  const show = tele.style.display!=='flex';
+  tele.style.display = show?'flex':'none';
+  document.getElementById('teleToggle').classList.toggle('active', show);
+};
+document.getElementById('teleClose').onclick = ()=>{ tele.style.display='none'; document.getElementById('teleToggle').classList.remove('active'); };
+document.getElementById('teleEdit').onclick = ()=>{ stopTele(); teleScroll.style.display='none'; teleText.style.display='block'; };
+document.getElementById('teleReset').onclick = ()=>{ teleScroll.scrollTop=0; };
+document.getElementById('teleSpeed').oninput = (e)=>{ teleSpeed=+e.target.value; };
+document.getElementById('teleFont').oninput = (e)=>{ teleScroll.style.fontSize=e.target.value+'px'; };
+document.getElementById('telePlay').onclick = ()=>{ telePlaying? stopTele() : playTele(); };
+
+function playTele(){
+  teleScroll.textContent = teleText.value;
+  teleText.style.display='none'; teleScroll.style.display='block';
+  telePlaying=true; document.getElementById('telePlay').textContent='⏸ 暂停';
+  let last=performance.now();
+  const step=(t)=>{
+    if(!telePlaying) return;
+    const dt=(t-last)/1000; last=t;
+    teleScroll.scrollTop += teleSpeed*dt;
+    teleRAF=requestAnimationFrame(step);
+  };
+  teleRAF=requestAnimationFrame(step);
+}
+function stopTele(){ telePlaying=false; cancelAnimationFrame(teleRAF); document.getElementById('telePlay').textContent='▶ 播放'; }
+
+/* --------------------------- RECORDER ---------------------------------- */
+let recCanvas=document.createElement('canvas');
+let recCtx=recCanvas.getContext('2d');
+let recLoop=null, recorder=null, recChunks=[], recMime='', recState='idle'; // idle|setup|recording|paused
+let recStartTime=0, recElapsed=0, timerInt=null;
+
+// 画面比例预设（输出像素 + 平台标签）
+const RATIOS = {
+  '16:9':{w:1280,h:720, main:'16:9', sub:'YouTube'},
+  '4:3' :{w:1024,h:768, main:'4:3',  sub:'经典'},
+  '3:4' :{w:810, h:1080,main:'3:4',  sub:'小红书'},
+  '9:16':{w:720, h:1280,main:'9:16', sub:'抖音'},
+  '1:1' :{w:1000,h:1000,main:'1:1',  sub:'正方形'},
+};
+// 背景壁纸（渐变 / 纯色 / 无）
+const GRADIENTS = [
+  {name:'霞光', type:'grad', stops:['#fbc2eb','#a6c1ee'], angle:135},
+  {name:'薄荷', type:'grad', stops:['#d4fc79','#96e6a1'], angle:135},
+  {name:'青碧', type:'grad', stops:['#84fab0','#8fd3f4'], angle:135},
+  {name:'蜜桃', type:'grad', stops:['#ff9a9e','#fecfef'], angle:135},
+  {name:'暮云', type:'grad', stops:['#a18cd1','#fbc2eb'], angle:135},
+  {name:'晚霞', type:'grad', stops:['#f6d365','#fda085'], angle:135},
+  {name:'深空', type:'grad', stops:['#243949','#517fa4'], angle:135},
+  {name:'纯白', type:'solid', color:'#ffffff'},
+  {name:'浅灰', type:'solid', color:'#f0eef0'},
+  {name:'深灰', type:'solid', color:'#1e1e22'},
+  {name:'无',   type:'none'},
+];
+const recConfig = { ratio:'16:9', bgIndex:0, frame:null };
+
+function ratioVal(){ const r=RATIOS[recConfig.ratio]; return r.w/r.h; }
+function bgCss(bg){
+  if(bg.type==='none') return 'repeating-conic-gradient(#ddd 0 25%,#fff 0 50%) 0 0/14px 14px';
+  if(bg.type==='solid') return bg.color;
+  return `linear-gradient(${bg.angle||135}deg, ${bg.stops[0]}, ${bg.stops[1]})`;
+}
+function paintBackground(c,W,H,bg){
+  if(bg.type==='none'){ c.clearRect(0,0,W,H); return; }
+  if(bg.type==='solid'){ c.fillStyle=bg.color; c.fillRect(0,0,W,H); return; }
+  const a=(bg.angle||135)*Math.PI/180, dx=Math.cos(a)*W/2, dy=Math.sin(a)*H/2;
+  const g=c.createLinearGradient(W/2-dx,H/2-dy, W/2+dx,H/2+dy);
+  g.addColorStop(0,bg.stops[0]); g.addColorStop(1,bg.stops[1]);
+  c.fillStyle=g; c.fillRect(0,0,W,H);
+}
+function roundRectPath(c,x,y,w,h,r){
+  r=Math.min(r,w/2,h/2);
+  c.beginPath(); c.moveTo(x+r,y);
+  c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r);
+  c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath();
+}
+
+/* ---- 取景框（setup 状态） ---- */
+const recFrameEl=document.getElementById('recFrame');
+function defaultFrame(){
+  const ar=ratioVal();
+  let h=Math.min(window.innerHeight*0.7, 680), w=h*ar;
+  if(w>window.innerWidth*0.7){ w=window.innerWidth*0.7; h=w/ar; }
+  return { x:(window.innerWidth-w)/2, y:(window.innerHeight-h)/2, w, h };
+}
+function applyFrameStyle(){
+  const f=recConfig.frame; if(!f) return;
+  recFrameEl.style.left=f.x+'px'; recFrameEl.style.top=f.y+'px';
+  recFrameEl.style.width=f.w+'px'; recFrameEl.style.height=f.h+'px';
+}
+function showFrame(){
+  if(!recConfig.frame){ recConfig.frame=defaultFrame(); }
+  else { // 比例变了，按当前比例以中心重适配
+    const f=recConfig.frame, ar=ratioVal(), cx=f.x+f.w/2, cy=f.y+f.h/2;
+    f.h=Math.min(f.h, window.innerHeight*0.85); f.w=f.h*ar; f.x=cx-f.w/2; f.y=cy-f.h/2;
+  }
+  applyFrameStyle(); recFrameEl.style.display='block';
+}
+function hideFrame(){ recFrameEl.style.display='none'; }
+(function(){
+  let mode=null, sx=0, sy=0, orig=null;
+  recFrameEl.addEventListener('pointerdown',(e)=>{
+    if(recState!=='setup') return;
+    mode=(e.target.dataset && e.target.dataset.h) || 'move';
+    sx=e.clientX; sy=e.clientY; orig={...recConfig.frame};
+    recFrameEl.setPointerCapture(e.pointerId); e.stopPropagation();
+  });
+  recFrameEl.addEventListener('pointermove',(e)=>{
+    if(!mode) return;
+    const dx=e.clientX-sx, dy=e.clientY-sy, ar=ratioVal(), f=recConfig.frame;
+    if(mode==='move'){ f.x=orig.x+dx; f.y=orig.y+dy; }
+    else {
+      let nw = (mode==='br'||mode==='tr') ? orig.w+dx : orig.w-dx;
+      nw=Math.max(140, nw); const nh=nw/ar;
+      if(mode==='br'){ f.x=orig.x; f.y=orig.y; }
+      else if(mode==='tr'){ f.x=orig.x; f.y=orig.y+orig.h-nh; }
+      else if(mode==='bl'){ f.x=orig.x+orig.w-nw; f.y=orig.y; }
+      else { f.x=orig.x+orig.w-nw; f.y=orig.y+orig.h-nh; } // tl
+      f.w=nw; f.h=nh;
+    }
+    applyFrameStyle();
+  });
+  recFrameEl.addEventListener('pointerup',()=>{ mode=null; });
+})();
+
+function pickMime(){
+  const cands=[
+    'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
+    'video/mp4',
+    'video/webm;codecs=vp9,opus',
+    'video/webm;codecs=vp8,opus',
+    'video/webm'
+  ];
+  for(const c of cands) if(window.MediaRecorder && MediaRecorder.isTypeSupported(c)) return c;
+  return '';
+}
+
+function drawRecFrame(){
+  recCtx.setTransform(1,0,0,1,0,0);
+  const W=recCanvas.width, H=recCanvas.height;
+  const bg=GRADIENTS[recConfig.bgIndex];
+  const hasDecor = bg.type!=='none';
+  // 1) 背景壁纸
+  paintBackground(recCtx,W,H,bg);
+  // 2) 居中白卡片（留白 + 圆角 + 阴影）
+  const pad = hasDecor ? Math.round(Math.min(W,H)*0.055) : 0;
+  const cardX=pad, cardY=pad, cardW=W-2*pad, cardH=H-2*pad;
+  const radius = hasDecor ? Math.round(Math.min(cardW,cardH)*0.03) : 0;
+  if(hasDecor){
+    recCtx.save();
+    recCtx.shadowColor='rgba(0,0,0,.28)'; recCtx.shadowBlur=Math.round(W*0.022); recCtx.shadowOffsetY=Math.round(H*0.012);
+    roundRectPath(recCtx,cardX,cardY,cardW,cardH,radius); recCtx.fillStyle='#ffffff'; recCtx.fill();
+    recCtx.restore();
+  }
+  // 3) 取景框内的白板内容 → 卡片
+  recCtx.save();
+  roundRectPath(recCtx,cardX,cardY,cardW,cardH,radius); recCtx.clip();
+  if(!hasDecor){ recCtx.fillStyle='#ffffff'; recCtx.fillRect(cardX,cardY,cardW,cardH); }
+  const f=recConfig.frame;
+  if(f){
+    recCtx.drawImage(board, f.x*dpr,f.y*dpr,f.w*dpr,f.h*dpr, cardX,cardY,cardW,cardH);
+  }else{
+    recCtx.drawImage(board, 0,0,board.width,board.height, cardX,cardY,cardW,cardH);
+  }
+  recCtx.restore();
+  // 4) 摄像头：把屏幕上小窗的相对位置映射进卡片（镜像、圆形）
+  if(camActive && camVideo.videoWidth && f){
+    const cr=camWrap.getBoundingClientRect();
+    const scale=cardW/f.w;            // css px → 卡片像素
+    const d=cr.width*scale;
+    const cx=cardX + ((cr.left+cr.width/2)-f.x)/f.w*cardW - d/2;
+    const cy=cardY + ((cr.top +cr.height/2)-f.y)/f.h*cardH - d/2;
+    const r=d/2;
+    recCtx.save();
+    roundRectPath(recCtx,cardX,cardY,cardW,cardH,radius); recCtx.clip(); // 不超出卡片
+    recCtx.beginPath(); recCtx.arc(cx+r,cy+r,r,0,7); recCtx.clip();
+    recCtx.translate(cx+d,cy); recCtx.scale(-1,1);
+    const vw=camVideo.videoWidth, vh=camVideo.videoHeight, vr=vw/vh;
+    let sw=vw,sh=vh,sx=0,sy=0;
+    if(vr>1){ sw=vh; sx=(vw-sw)/2; } else { sh=vw; sy=(vh-sh)/2; }
+    recCtx.drawImage(camVideo, sx,sy,sw,sh, 0,0,d,d);
+    recCtx.restore();
+    recCtx.save(); roundRectPath(recCtx,cardX,cardY,cardW,cardH,radius); recCtx.clip();
+    recCtx.beginPath(); recCtx.arc(cx+r,cy+r,r,0,7); recCtx.lineWidth=Math.max(2,d*0.03); recCtx.strokeStyle='#fff'; recCtx.stroke();
+    recCtx.restore();
+  }
+}
+
+function enterSetup(){ recState='setup'; showFrame(); updateRecUI(); }
+function cancelSetup(){ recState='idle'; hideFrame(); updateRecUI(); }
+
+async function startRecording(){
+  recMime = pickMime();
+  if(!recMime){ alert('当前浏览器不支持录制（MediaRecorder）。请用最新版 Chrome / Edge / Safari。'); return; }
+  if(!recConfig.frame) recConfig.frame=defaultFrame();
+  const R=RATIOS[recConfig.ratio];
+  recCanvas.width=R.w; recCanvas.height=R.h;
+  hideFrame();
+  // 用 setInterval 而非 rAF 驱动合成：页面切到后台时 rAF 会被暂停导致录制黑屏。
+  drawRecFrame();
+  recLoop=setInterval(drawRecFrame, 1000/30);
+
+  const vStream = recCanvas.captureStream(30);
+  if(mediaStream){ mediaStream.getAudioTracks().forEach(t=> vStream.addTrack(t)); }
+  recChunks=[];
+  recorder = new MediaRecorder(vStream, { mimeType:recMime, videoBitsPerSecond: 6_000_000 });
+  recorder.ondataavailable = e=>{ if(e.data && e.data.size) recChunks.push(e.data); };
+  recorder.onstop = onRecStop;
+  recorder.start(200);
+  recState='recording'; recElapsed=0; recStartTime=performance.now();
+  startTimer(); updateRecUI();
+}
+
+function pauseRecording(){
+  if(recState==='recording'){ recorder.pause(); recState='paused'; recElapsed+=performance.now()-recStartTime; stopTimer(); }
+  else if(recState==='paused'){ recorder.resume(); recState='recording'; recStartTime=performance.now(); startTimer(); }
+  updateRecUI();
+}
+function stopRecording(){
+  if(recState==='idle') return;
+  recorder.stop(); recState='idle';
+  clearInterval(recLoop); stopTimer();
+  updateRecUI();
+}
+
+function onRecStop(){
+  const blob = new Blob(recChunks, { type: recMime.split(';')[0] });
+  showExport(blob, recMime.startsWith('video/mp4'));
+}
+
+/* 计时 */
+function startTimer(){ timerInt=setInterval(updateTimer,250); updateTimer(); }
+function stopTimer(){ clearInterval(timerInt); }
+function curElapsed(){ return recElapsed + (recState==='recording'? performance.now()-recStartTime : 0); }
+function updateTimer(){
+  const s=Math.floor(curElapsed()/1000);
+  document.getElementById('timer').textContent =
+    String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+}
+
+function updateRecUI(){
+  const gear=document.getElementById('recSettings'), pill=document.getElementById('fmtPill'),
+        start=document.getElementById('recStart'), cancel=document.getElementById('recCancel'),
+        go=document.getElementById('recGo'), pause=document.getElementById('recPause'),
+        stop=document.getElementById('recStop'), timer=document.getElementById('timer');
+  [start,cancel,go,pause,stop].forEach(b=>b.classList.add('hidden'));
+  timer.style.display='none'; timer.classList.remove('live');
+  if(recState==='idle'){
+    gear.classList.remove('hidden'); pill.classList.remove('hidden'); start.classList.remove('hidden');
+  } else if(recState==='setup'){
+    gear.classList.remove('hidden'); pill.classList.add('hidden');
+    cancel.classList.remove('hidden'); go.classList.remove('hidden');
+  } else { // recording | paused
+    gear.classList.add('hidden'); pill.classList.add('hidden');
+    pause.classList.remove('hidden'); stop.classList.remove('hidden');
+    timer.style.display='inline'; timer.classList.toggle('live', recState==='recording');
+    pause.textContent = recState==='paused' ? '▶ 继续' : '⏸ 暂停';
+  }
+}
+
+/* ---- 录制设置弹窗 ---- */
+function buildRatioGrid(){
+  const g=document.getElementById('ratioGrid'); g.innerHTML='';
+  for(const k of Object.keys(RATIOS)){
+    const r=RATIOS[k], b=document.createElement('button');
+    b.className='ratio-btn'+(k===recConfig.ratio?' active':'');
+    b.innerHTML=`<div class="r-main">${r.main}</div><div class="r-sub">${r.sub}</div>`;
+    b.onclick=()=>{ recConfig.ratio=k; buildRatioGrid(); updatePreview(); if(recState==='setup') showFrame(); };
+    g.appendChild(b);
+  }
+}
+function buildBgGrid(){
+  const g=document.getElementById('bgGrid'); g.innerHTML='';
+  GRADIENTS.forEach((bg,i)=>{
+    const d=document.createElement('div');
+    d.className='bg-swatch'+(i===recConfig.bgIndex?' active':'')+(bg.type==='none'?' none':'');
+    if(bg.type!=='none') d.style.background=bgCss(bg);
+    if(bg.type==='none') d.textContent='无';
+    d.title=bg.name;
+    d.onclick=()=>{ recConfig.bgIndex=i; buildBgGrid(); updatePreview(); };
+    g.appendChild(d);
+  });
+}
+function updatePreview(){
+  const prev=document.getElementById('setPreview'), card=prev.querySelector('.set-card');
+  const r=RATIOS[recConfig.ratio], bg=GRADIENTS[recConfig.bgIndex];
+  card.style.aspectRatio=r.w+'/'+r.h;
+  if(r.w>=r.h){ card.style.width='72%'; card.style.height='auto'; }
+  else { card.style.width='auto'; card.style.height='80%'; }
+  prev.style.background = bg.type==='none' ? '#f3f2ef' : bgCss(bg);
+}
+function openSettings(){ buildRatioGrid(); buildBgGrid(); updatePreview(); document.getElementById('settingsModal').classList.remove('hidden'); }
+
+/* ------------------------- MP4 EXPORT ---------------------------------- */
+let lastBlob=null, lastIsMp4=false;
+function showExport(blob, isMp4){
+  lastBlob=blob; lastIsMp4=isMp4;
+  const modal=document.getElementById('exportModal');
+  const video=document.getElementById('previewVideo');
+  const link=document.getElementById('downloadLink');
+  const conv=document.getElementById('convertMp4');
+  const url=URL.createObjectURL(blob);
+  video.src=url;
+  const ext = isMp4 ? 'mp4' : 'webm';
+  link.href=url; link.download='whiteboard-'+Date.now()+'.'+ext;
+  link.textContent='⬇ 下载 '+ext.toUpperCase();
+  conv.classList.toggle('hidden', isMp4); // 已是 mp4 则隐藏转换按钮
+  document.getElementById('exportStatus').textContent = isMp4
+    ? '✓ 已用浏览器原生编码导出 mp4'
+    : '当前浏览器原生只能录 webm，可点下方按钮转成 mp4（首次需联网下载转码器）。';
+  modal.classList.remove('hidden');
+}
+document.getElementById('closeExport').onclick = ()=> document.getElementById('exportModal').classList.add('hidden');
+
+document.getElementById('convertMp4').onclick = async ()=>{
+  const status=document.getElementById('exportStatus');
+  const btn=document.getElementById('convertMp4');
+  btn.disabled=true;
+  try{
+    status.textContent='正在加载转码器（ffmpeg.wasm）…';
+    const { FFmpeg } = await import('https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js');
+    const { toBlobURL, fetchFile } = await import('https://unpkg.com/@ffmpeg/util@0.12.1/dist/esm/index.js');
+    const baseURL='https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+    const ff=new FFmpeg();
+    ff.on('progress', ({progress})=>{ status.textContent='转码中… '+Math.round((progress||0)*100)+'%'; });
+    await ff.load({
+      coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`,'text/javascript'),
+      wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`,'application/wasm'),
+    });
+    status.textContent='写入文件…';
+    await ff.writeFile('in.webm', await fetchFile(lastBlob));
+    status.textContent='转码中…';
+    await ff.exec(['-i','in.webm','-c:v','libx264','-preset','veryfast','-pix_fmt','yuv420p','-c:a','aac','out.mp4']);
+    const data=await ff.readFile('out.mp4');
+    const mp4=new Blob([data.buffer],{type:'video/mp4'});
+    const url=URL.createObjectURL(mp4);
+    const link=document.getElementById('downloadLink');
+    link.href=url; link.download='whiteboard-'+Date.now()+'.mp4'; link.textContent='⬇ 下载 MP4';
+    document.getElementById('previewVideo').src=url;
+    btn.classList.add('hidden');
+    status.textContent='✓ 已转换为 mp4，可下载。';
+  }catch(err){
+    console.error(err);
+    status.textContent='转码失败（可能是网络问题）。你仍可下载 webm，多数播放器都能播。';
+    btn.disabled=false;
+  }
+};
+
+/* --------------------------- UI WIRING --------------------------------- */
+// 颜色
+const swatches=document.getElementById('swatches');
+COLORS.forEach(c=>{
+  const d=document.createElement('div'); d.className='swatch'+(c===state.color?' active':'');
+  d.style.background=c; if(c==='#ffffff') d.style.borderColor='#ccc';
+  d.onclick=()=>{ state.color=c; document.querySelectorAll('.swatch').forEach(s=>s.classList.remove('active')); d.classList.add('active');
+    if(textInput.style.display==='block') textInput.style.color=c; };
+  swatches.appendChild(d);
+});
+// 粗细
+const widthsEl=document.getElementById('widths');
+WIDTHS.forEach(w=>{
+  const b=document.createElement('button'); b.className='wbtn'+(w===state.width?' active':'');
+  const dot=document.createElement('span'); dot.className='dot';
+  const sz=Math.max(4,w+1); dot.style.width=sz+'px'; dot.style.height=sz+'px'; b.appendChild(dot);
+  b.onclick=()=>{ state.width=w; document.querySelectorAll('.wbtn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); };
+  widthsEl.appendChild(b);
+});
+// 字号
+document.getElementById('fontSize').oninput=(e)=>{ state.fontSize=+e.target.value; document.getElementById('fontVal').textContent=e.target.value; };
+
+// 工具切换
+document.querySelectorAll('.tool[data-tool]').forEach(btn=>{
+  btn.onclick=()=>{
+    state.tool=btn.dataset.tool;
+    document.querySelectorAll('.tool[data-tool]').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('fontGroup').style.display = state.tool==='text'?'block':'none';
+    board.style.cursor = state.tool==='hand'?'grab':(state.tool==='text'?'text':'crosshair');
+  };
+});
+document.getElementById('undoBtn').onclick=undo;
+document.getElementById('redoBtn').onclick=redo;
+document.getElementById('clearBtn').onclick=()=>{ if(state.scene.length && confirm('清空整个画布？')){ pushHistory(); state.scene=[]; render(); } };
+
+// 缩放条
+document.getElementById('zoomIn').onclick=()=>zoomAt(innerWidth/2,innerHeight/2,1.2);
+document.getElementById('zoomOut').onclick=()=>zoomAt(innerWidth/2,innerHeight/2,1/1.2);
+document.getElementById('zoomReset').onclick=()=>{ state.view={x:0,y:0,scale:1}; render(); updateZoomLabel(); };
+
+// 录制按钮
+document.getElementById('recSettings').onclick=openSettings;
+document.getElementById('recStart').onclick=enterSetup;     // 「录制」→ 进入取景设置
+document.getElementById('recCancel').onclick=cancelSetup;
+document.getElementById('recGo').onclick=startRecording;     // 「开始录制」
+document.getElementById('recPause').onclick=pauseRecording;
+document.getElementById('recStop').onclick=stopRecording;
+document.getElementById('closeSettings').onclick=()=>document.getElementById('settingsModal').classList.add('hidden');
+document.getElementById('settingsDone').onclick=()=>{ document.getElementById('settingsModal').classList.add('hidden'); enterSetup(); };
+
+// 设备选择（注入到欢迎弹窗 / 也可后续扩展）
+async function populateDevices(){
+  try{
+    const devices=await navigator.mediaDevices.enumerateDevices();
+    // 预留：如需切换设备可在此构建下拉，当前用默认设备。
+    return devices;
+  }catch(e){ return []; }
+}
+
+// 键盘快捷键
+window.addEventListener('keydown',(e)=>{
+  if(textInput.style.display==='block') return; // 文字输入时不抢键
+  if(e.code==='Space'){ spaceDown=true; if(state.tool!=='hand') board.style.cursor='grab'; }
+  const meta=e.metaKey||e.ctrlKey;
+  if(meta && e.key.toLowerCase()==='z'){ e.preventDefault(); e.shiftKey?redo():undo(); return; }
+  if(meta && e.key.toLowerCase()==='y'){ e.preventDefault(); redo(); return; }
+  if(meta) return;
+  const map={p:'pen',r:'rect',o:'ellipse',a:'arrow',t:'text',e:'eraser',h:'hand',v:'hand'};
+  const k=e.key.toLowerCase();
+  if(map[k]){ document.querySelector(`.tool[data-tool="${map[k]}"]`).click(); }
+});
+window.addEventListener('keyup',(e)=>{ if(e.code==='Space'){ spaceDown=false; board.style.cursor=state.tool==='hand'?'grab':(state.tool==='text'?'text':'crosshair'); } });
+
+// 格式提示
+document.getElementById('fmtPill').textContent = (pickMime().startsWith('video/mp4')) ? 'mp4 原生' : 'webm→mp4';
+
+// 欢迎弹窗
+document.getElementById('enableCam').onclick=async ()=>{
+  const s=document.getElementById('welcomeStatus');
+  try{ s.textContent='正在请求摄像头/麦克风…'; await startCamera(); document.getElementById('welcome').classList.add('hidden'); }
+  catch(err){ console.error(err); s.textContent='未能获取摄像头/麦克风：'+(err.message||err.name)+'。可点「先不用摄像头」。'; }
+};
+document.getElementById('skipCam').onclick=async ()=>{ await startMicOnly(); document.getElementById('welcome').classList.add('hidden'); };
+
+// 初始化
+resize();
+updateHistoryButtons();
+updateZoomLabel();
+updateRecUI();
+</script>
+</body>
+</html>
