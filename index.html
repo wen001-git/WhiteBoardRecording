@@ -117,6 +117,13 @@
   #recFrame .rf-handle.bl{left:-9px;bottom:-9px;cursor:nesw-resize;}
   #recFrame .rf-handle.br{right:-9px;bottom:-9px;cursor:nwse-resize;}
   #recFrame .rf-hint{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(20,20,22,.8);color:#fff;font-size:12px;padding:6px 12px;border-radius:8px;white-space:nowrap;pointer-events:none;}
+  /* 录制中：仅显示边框作为「正在录此区域」的提示，不挡操作、不变暗 */
+  #recFrame.recording{border-color:#e03131;border-style:dashed;box-shadow:none;pointer-events:none;}
+  #recFrame.recording .rf-handle{display:none;}
+  #recFrame.recording .rf-hint{display:none;}
+  #recFrame .rf-badge{position:absolute;left:8px;top:-30px;display:none;align-items:center;gap:6px;background:#e03131;color:#fff;font-size:12px;font-weight:600;padding:4px 10px;border-radius:8px;white-space:nowrap;}
+  #recFrame.recording .rf-badge{display:flex;}
+  #recFrame .rf-badge i{width:8px;height:8px;border-radius:50%;background:#fff;animation:blink 1s steps(2) infinite;}
 
   /* ---------- 录制设置弹窗 ---------- */
   .modal-wide{max-width:880px;}
@@ -259,6 +266,7 @@
 
 <!-- 录制取景框（setup 状态显示） -->
 <div id="recFrame">
+  <div class="rf-badge"><i></i> 正在录制此区域</div>
   <div class="rf-hint" id="rfHint">可拖拽移动 · 拖拽角落缩放</div>
   <div class="rf-handle tl" data-h="tl"></div>
   <div class="rf-handle tr" data-h="tr"></div>
@@ -814,9 +822,9 @@ function showFrame(){
     const f=recConfig.frame, ar=ratioVal(), cx=f.x+f.w/2, cy=f.y+f.h/2;
     f.h=Math.min(f.h, window.innerHeight*0.85); f.w=f.h*ar; f.x=cx-f.w/2; f.y=cy-f.h/2;
   }
-  applyFrameStyle(); recFrameEl.style.display='block';
+  applyFrameStyle(); recFrameEl.classList.remove('recording'); recFrameEl.style.display='block';
 }
-function hideFrame(){ recFrameEl.style.display='none'; }
+function hideFrame(){ recFrameEl.style.display='none'; recFrameEl.classList.remove('recording'); }
 (function(){
   let mode=null, sx=0, sy=0, orig=null;
   recFrameEl.addEventListener('pointerdown',(e)=>{
@@ -915,7 +923,7 @@ async function startRecording(){
   if(!recConfig.frame) recConfig.frame=defaultFrame();
   const R=RATIOS[recConfig.ratio];
   recCanvas.width=R.w; recCanvas.height=R.h;
-  hideFrame();
+  applyFrameStyle(); recFrameEl.classList.add('recording'); recFrameEl.style.display='block'; // 录制中保留边框提示
   // 用 setInterval 而非 rAF 驱动合成：页面切到后台时 rAF 会被暂停导致录制黑屏。
   drawRecFrame();
   recLoop=setInterval(drawRecFrame, 1000/30);
@@ -940,6 +948,7 @@ function stopRecording(){
   if(recState==='idle') return;
   recorder.stop(); recState='idle';
   clearInterval(recLoop); stopTimer();
+  hideFrame();
   updateRecUI();
 }
 
