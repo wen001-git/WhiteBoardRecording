@@ -360,9 +360,8 @@ function sketchStroke(rng,x1,y1,x2,y2,rough){
   ctx.bezierCurveTo(m1x,m1y,m2x,m2y, x2+r()*0.5, y2+r()*0.5);
   ctx.stroke();
 }
-// 手绘直线：两条略不同的笔画叠加
+// 手绘直线：单条笔画（保持手绘弓形，但不重叠两条以免显得杂乱）
 function roughLine(rng,x1,y1,x2,y2,rough){
-  sketchStroke(rng,x1,y1,x2,y2,rough);
   sketchStroke(rng,x1,y1,x2,y2,rough);
 }
 // 手绘矩形：四边各画一条手绘线（带轻微角点过冲）
@@ -374,27 +373,24 @@ function roughRect(rng,x,y,w,h,rough){
   roughLine(rng,x+w+o(),y+h, x+o(),y+h, rough);
   roughLine(rng,x,y+h+o(), x,y+o(), rough);
 }
-// 手绘椭圆：带半径抖动的点环，画两遍且起止略微开口/过冲
+// 手绘椭圆：单条带半径抖动的点环，起止处轻微过冲（不画第二遍，避免杂乱）
 function roughEllipse(rng,cx,cy,rx,ry,rough){
   rx=Math.abs(rx); ry=Math.abs(ry);
-  const drawLoop=(jit,extra)=>{
-    const n=11, start=rng()*Math.PI*2, end=start+Math.PI*2+extra;
-    const pts=[];
-    for(let i=0;i<=n;i++){
-      const t=start+(end-start)*(i/n);
-      const j=1+(rng()*2-1)*jit;
-      pts.push([cx+Math.cos(t)*rx*j, cy+Math.sin(t)*ry*j]);
-    }
-    ctx.beginPath(); ctx.moveTo(pts[0][0],pts[0][1]);
-    for(let i=1;i<pts.length-1;i++){
-      const xc=(pts[i][0]+pts[i+1][0])/2, yc=(pts[i][1]+pts[i+1][1])/2;
-      ctx.quadraticCurveTo(pts[i][0],pts[i][1],xc,yc);
-    }
-    ctx.stroke();
-  };
-  const jit=Math.min(0.04+rough/Math.max(rx,ry)*0.6, 0.12);
-  drawLoop(jit, 0.4);
-  drawLoop(jit, 0.2);
+  const jit=Math.min(0.03+rough/Math.max(rx,ry)*0.4, 0.08);
+  const n=12, start=rng()*Math.PI*2, end=start+Math.PI*2+0.18; // 轻微过冲收口
+  const pts=[];
+  for(let i=0;i<=n;i++){
+    const t=start+(end-start)*(i/n);
+    const j=1+(rng()*2-1)*jit;
+    pts.push([cx+Math.cos(t)*rx*j, cy+Math.sin(t)*ry*j]);
+  }
+  ctx.beginPath(); ctx.moveTo(pts[0][0],pts[0][1]);
+  for(let i=1;i<pts.length-1;i++){
+    const xc=(pts[i][0]+pts[i+1][0])/2, yc=(pts[i][1]+pts[i+1][1])/2;
+    ctx.quadraticCurveTo(pts[i][0],pts[i][1],xc,yc);
+  }
+  ctx.quadraticCurveTo(pts[n-1][0],pts[n-1][1], pts[n][0],pts[n][1]);
+  ctx.stroke();
 }
 function roughArrow(rng,x1,y1,x2,y2,w,rough){
   roughLine(rng,x1,y1,x2,y2,rough);
