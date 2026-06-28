@@ -434,7 +434,11 @@ function roughArrow(rng,x1,y1,x2,y2,w,rough){
   roughLine(rng,x2,y2, x2-head*Math.cos(ang+0.45), y2-head*Math.sin(ang+0.45), rough);
 }
 // 手绘画布文字字体栈（Latin 用手写体，中文回退系统字）
-const HAND_FONT = '"Comic Sans MS","Segoe Print","Bradley Hand","Chalkboard SE","PingFang SC","Microsoft YaHei",sans-serif';
+// 手写字体栈：拉丁先用手写体；中文逐字回退到系统手写/楷体（macOS: 手札/翩翩/楷体；Windows: 楷体；移动端: 楷体），
+// 都没有再退到常规中文字体。浏览器按「每个字形」逐个尝试，因此拉丁与中文各自命中各自的手写字体。
+const HAND_FONT = '"Comic Sans MS","Segoe Print","Bradley Hand","Chalkboard SE",' +
+  '"Hannotate SC","HanziPen SC","Xingkai SC","STXingkai","Kaiti SC","STKaiti","KaiTi","楷体",' +
+  '"PingFang SC","Microsoft YaHei",sans-serif';
 
 function drawObject(o){
   ctx.lineCap = 'round';
