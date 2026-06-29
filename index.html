@@ -312,7 +312,6 @@
 <!-- 录制条 -->
 <div class="recbar">
   <button class="recbtn ghost" id="recSettings" title="录制设置">⚙️</button>
-  <span class="pill" id="fmtPill">mp4</span>
   <span class="timer" id="timer">00:00</span>
   <button class="recbtn start" id="recStart"><span class="rec-dot"></span> 录制</button>
   <button class="recbtn ghost hidden" id="recCancel">✕ 取消</button>
@@ -1625,19 +1624,19 @@ function updateTimer(){
 }
 
 function updateRecUI(){
-  const gear=document.getElementById('recSettings'), pill=document.getElementById('fmtPill'),
+  const gear=document.getElementById('recSettings'),
         start=document.getElementById('recStart'), cancel=document.getElementById('recCancel'),
         go=document.getElementById('recGo'), pause=document.getElementById('recPause'),
         stop=document.getElementById('recStop'), timer=document.getElementById('timer');
   [start,cancel,go,pause,stop].forEach(b=>b.classList.add('hidden'));
   timer.style.display='none'; timer.classList.remove('live');
   if(recState==='idle'){
-    gear.classList.remove('hidden'); pill.classList.remove('hidden'); start.classList.remove('hidden');
+    gear.classList.remove('hidden'); start.classList.remove('hidden');
   } else if(recState==='setup'){
-    gear.classList.remove('hidden'); pill.classList.add('hidden');
+    gear.classList.remove('hidden');
     cancel.classList.remove('hidden'); go.classList.remove('hidden');
   } else { // recording | paused
-    gear.classList.add('hidden'); pill.classList.add('hidden');
+    gear.classList.add('hidden');
     pause.classList.remove('hidden'); stop.classList.remove('hidden');
     timer.style.display='inline'; timer.classList.toggle('live', recState==='recording');
     pause.textContent = recState==='paused' ? '▶ 继续' : '⏸ 暂停';
@@ -2041,7 +2040,6 @@ window.addEventListener('keydown',(e)=>{
 window.addEventListener('keyup',(e)=>{ if(e.code==='Space'){ spaceDown=false; board.style.cursor=state.tool==='hand'?'grab':(state.tool==='text'?'text':'crosshair'); } });
 
 // 格式提示
-document.getElementById('fmtPill').textContent = (pickMime().startsWith('video/mp4')) ? 'mp4 原生' : 'webm→mp4';
 
 // 欢迎弹窗
 document.getElementById('enableCam').onclick=async ()=>{
