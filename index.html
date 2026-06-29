@@ -1542,7 +1542,10 @@ async function startScreenRecording(){
   screenOut={ w:Math.max(2,ow), h:Math.max(2,oh) };
   recCanvas.width=screenOut.w; recCanvas.height=screenOut.h;
   hideFrame(); screenStage.classList.remove('show');
-  camWrap.style.visibility='hidden';   // 录屏期间隐藏页面上的摄像头气泡，避免整屏录到双重人脸（仍在解码，drawImage 可取帧）
+  // 头像始终合成进视频右下角；页面上的气泡：录「整屏」时隐藏(否则整屏会把气泡也拍进去=双重人脸)，
+  // 录「窗口/标签页」时保留(本页不在被录窗口里，可作自拍预览)。
+  const ds=(screenStream.getVideoTracks()[0].getSettings&&screenStream.getVideoTracks()[0].getSettings().displaySurface)||'';
+  camWrap.style.visibility = (ds==='monitor') ? 'hidden' : '';
   startScreenComposite();
   const vStream=recCanvas.captureStream(30);
   const audioTracks=await buildMixedAudioTracks();
