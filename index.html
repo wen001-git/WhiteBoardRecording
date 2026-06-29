@@ -1765,7 +1765,7 @@ function updateSourceUI(){
   const hint=document.getElementById('sourceHint');
   const done=document.getElementById('settingsDone');
   if(recConfig.source==='screen'){
-    if(hint) hint.textContent='点「完成」后在浏览器弹窗里选择要共享的屏幕/窗口/标签页（可勾选「系统/标签页音频」一起录）；再用取景框框选要录的区域。';
+    if(hint) hint.innerHTML='点「完成」后会弹出浏览器的「选择共享内容」窗口：<b>① 选「整个屏幕/窗口/标签页」 ② 先点一下那张画面缩略图（出现高亮边框），「分享」按钮才会变亮 ③ 点「分享」</b>（可勾「同时分享系统音频」一起录）。分享后再用取景框框选要录的区域。<br>提示：录屏需用 http://localhost 或 https 打开本页（file:// 双击打开无法录整屏）。';
     if(done) done.textContent='完成，选择屏幕区域';
   }else{
     if(hint) hint.textContent='';
