@@ -149,16 +149,18 @@
   .x-btn{width:34px;height:34px;border:none;background:#f0eff5;border-radius:50%;cursor:pointer;font-size:14px;}
   .x-btn:hover{background:#e7e6ee;}
   .settings-body{display:flex;gap:26px;min-height:0;}
-  .settings-left{flex:0 0 310px;display:flex;flex-direction:column;align-items:stretch;}
+  .settings-left{flex:0 0 360px;display:flex;flex-direction:column;align-items:stretch;}
   .settings-right{flex:1;min-width:0;max-height:70vh;overflow:auto;padding-right:8px;}
   .set-label{font-size:13px;color:var(--muted);font-weight:600;margin-bottom:10px;}
-  .set-preview{flex:1;background:#f3f2ef;border-radius:12px;display:flex;align-items:center;justify-content:center;min-height:300px;padding:24px;}
-  .set-card{background:#fff;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.18);width:70%;aspect-ratio:16/9;transition:.2s;position:relative;overflow:hidden;}
-  .preview-lines{position:absolute;left:18%;top:52%;width:42%;}
-  .preview-lines i{display:block;height:4px;background:#dedbd7;border-radius:999px;margin:8px 0;}
+  .set-preview{flex:1;background:#f3f2ef;border-radius:14px;display:flex;align-items:center;justify-content:center;min-height:320px;padding:24px;overflow:hidden;}
+  /* 预览 = 输出的等比缩小：画框(铺壁纸) 内含按边距内缩的白卡片 */
+  .set-frame{position:relative;max-width:100%;max-height:100%;aspect-ratio:16/9;border-radius:12px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,.14);}
+  .set-card{position:absolute;inset:14px;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 6px 18px rgba(0,0,0,.18);}
+  .preview-lines{position:absolute;left:14%;top:50%;width:46%;}
+  .preview-lines i{display:block;height:4px;background:#dedbd7;border-radius:999px;margin:9px 0;}
   .preview-lines i:nth-child(2){width:75%;}.preview-lines i:nth-child(3){width:58%;}.preview-lines i:nth-child(4){width:88%;}
   .preview-camera{position:absolute;right:6%;bottom:6%;width:36px;height:36px;border-radius:50%;background:#cfcac5;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.18);}
-  .preview-cursor{position:absolute;left:56%;top:50%;width:24px;height:24px;border-radius:50%;background:rgba(255,77,79,.55);transform:translate(-50%,-50%);}
+  .preview-cursor{position:absolute;left:54%;top:48%;width:24px;height:24px;border-radius:50%;background:rgba(255,77,79,.55);transform:translate(-50%,-50%);}
   .ratio-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
   .ratio-btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:14px 8px;cursor:pointer;text-align:center;transition:.12s;}
   .ratio-btn:hover{border-color:var(--accent);}
@@ -365,10 +367,12 @@
       <div class="settings-left">
         <div class="set-label">预览</div>
         <div class="set-preview" id="setPreview">
-          <div class="set-card">
-            <div class="preview-lines"><i></i><i></i><i></i><i></i></div>
-            <div class="preview-cursor"></div>
-            <div class="preview-camera"></div>
+          <div class="set-frame" id="setFrame">
+            <div class="set-card">
+              <div class="preview-lines"><i></i><i></i><i></i><i></i></div>
+              <div class="preview-cursor"></div>
+              <div class="preview-camera"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -1523,22 +1527,39 @@ function buildBgGrid(){
   });
 }
 function updatePreview(){
-  const prev=document.getElementById('setPreview'), card=prev.querySelector('.set-card');
+  const frame=document.getElementById('setFrame');
+  const card=frame.querySelector('.set-card');
   const r=getRatioConfig(), bg=BACKGROUNDS[recConfig.bgIndex] || BACKGROUNDS[0];
-  card.style.aspectRatio=r.w+'/'+r.h;
-  if(r.w>=r.h){ card.style.width='72%'; card.style.height='auto'; }
-  else { card.style.width='auto'; card.style.height='80%'; }
-  prev.style.background = bg.type==='none' ? '#f3f2ef' : bgCss(bg);
-  card.style.borderRadius=recConfig.cardRadius+'px';
-  card.style.margin=(recConfig.canvasPadding/5)+'px';
+  const hasDecor = bg.type!=='none';
+  const outputMin=Math.min(r.w,r.h);
+  // 画框按比例显式定尺寸以适配预览面板（aspect-ratio + max-* 单独会塌成 0）
+  const pane=document.getElementById('setPreview'), padPane=24;
+  const availW=Math.max(40,pane.clientWidth-2*padPane), availH=Math.max(40,pane.clientHeight-2*padPane);
+  const ar=r.w/r.h;
+  let fw=availW, fh=fw/ar;
+  if(fh>availH){ fh=availH; fw=fh*ar; }
+  frame.style.width=fw+'px'; frame.style.height=fh+'px';
+  frame.style.background = hasDecor ? bgCss(bg) : 'repeating-conic-gradient(#e3e0db 0 25%,#fff 0 50%) 0 0/16px 16px';
+  // 按与 drawRecFrame 完全一致的公式换算（修复「画布边距」预览不变的 bug）
+  const frameMin=Math.min(fw,fh);
+  const scale=frameMin/outputMin;                       // 预览像素 / 输出像素
+  const inset=hasDecor ? (recConfig.canvasPadding/1000)*frameMin : 0;  // = drawRecFrame 的 pad 等比
+  card.style.top=card.style.right=card.style.bottom=card.style.left=inset+'px';
+  card.style.borderRadius=(hasDecor ? recConfig.cardRadius*scale : 0)+'px';
+  card.style.boxShadow=hasDecor ? '0 6px 18px rgba(0,0,0,.18)' : 'none';
+  // 卡片可用宽（预览像素）
+  const cardW=Math.max(0, fw - 2*inset);
+  // 摄像头（按相对比例显示在右下角）
   const cam=card.querySelector('.preview-camera');
   cam.style.display=recConfig.showCamera?'block':'none';
-  const previewSize=Math.max(22, Math.min(58, recConfig.cameraSize/5));
-  cam.style.width=previewSize+'px'; cam.style.height=previewSize+'px';
-  cam.style.borderRadius=recConfig.cameraShape==='circle'?'50%':'8px';
+  const camD=Math.max(10, cardW*(recConfig.cameraSize/900));
+  cam.style.width=camD+'px'; cam.style.height=camD+'px';
+  cam.style.borderRadius=recConfig.cameraShape==='circle'?'50%':Math.max(4,camD*0.16)+'px';
+  // 光标高亮
   const cursor=card.querySelector('.preview-cursor');
   cursor.style.display=recConfig.cursorHighlight?'block':'none';
   cursor.style.background=hexToRgba(recConfig.cursorColor,.5);
+  // 数值标签
   document.getElementById('cardRadiusVal').textContent=Math.round(recConfig.cardRadius)+'PX';
   document.getElementById('canvasPaddingVal').textContent=Math.round(recConfig.canvasPadding)+'PX';
   document.getElementById('cameraSizeVal').textContent=Math.round(recConfig.cameraSize)+'PX';
@@ -1623,9 +1644,11 @@ async function openSettings(){
   buildRatioGrid();
   buildBgCategories();
   buildBgGrid();
-  updatePreview();
-  await populateDevices();
   document.getElementById('settingsModal').classList.remove('hidden');
+  // 弹窗可见后再量取画框尺寸（getBoundingClientRect 需要已布局），否则预览内缩算不准
+  updatePreview();
+  requestAnimationFrame(updatePreview);
+  await populateDevices();
 }
 
 /* ------------------------- MP4 EXPORT ---------------------------------- */

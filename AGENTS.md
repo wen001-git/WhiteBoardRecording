@@ -19,10 +19,12 @@ python3 -m http.server 8000
 - 提词器是独立 DOM 浮层，**不能进录像**。
 
 ## 当前状态
-- `index.html` 已实现 M0~M3 + 迭代二（手绘风格 + 录制比例/背景/取景框）（单文件）。
-- 已在无头预览(Chromium)验证：无报错；绘图/撤销重做/橡皮擦/缩放；native mp4(`video/mp4;avc1`)；**手绘形状确定性**(同 seed→同像素，不闪)；**录制设置**(5 比例+11 背景、setup 状态、取景框锁比例)；**合成输出**(1280×720、渐变背景、白卡片、白板内容入卡片)。
+- `index.html` 已实现 M0~M3 + 迭代二（手绘风格 + 录制比例/背景/取景框）+ 迭代三（录制设置页修复/对齐 excalicord）（单文件）。
+- 迭代三：**修复「画布边距」预览不生效的 bug**。原因:预览用 `card.style.margin=canvasPadding/5` 作用在固定宽 72%、flex 居中的卡片上,边距被吸收。改为 `setFrame`(按比例画框,显式 JS 定尺寸+铺壁纸) 内含 `.set-card`(`position:absolute`,四边 inset = `canvasPadding/1000×frameMin`,与 `drawRecFrame` 同公式;圆角/摄像头按 `scale=frameMin/outputMin` 等比)。预览=输出的等比缩小真实渲染。
+- 已无头验证:边距滑块卡片随之缩小(pad0=262/60=244/120=227px)、圆角随比例缩放、切比例画框 aspect 变(1.78/0.56/1.00)、背景渐变/纯色/无、摄像头圆/方;无报错。
 - 录制合成循环用 `setInterval(1000/30)`（非 rAF），避免页面切后台黑屏。
 - ⚠️ 未验证：摄像头画面、麦克风、真实录制产物、不同比例视觉效果——预览环境 `visibility:hidden` 且无法授权摄像头，**需真实可见浏览器+授权手测**。
+- 注意:`updatePreview` 需在弹窗可见后调用(用 `getBoundingClientRect`/`clientWidth` 量画框),`openSettings` 已先 `remove('hidden')` 再调。
 
 ## 下一步 TODO
 - [ ] 真机(Chrome/Safari)：授权摄像头 → 选不同比例/背景 → 调取景框 → 录制 → 预览 → 下载 mp4；确认输出为对应比例、含渐变背景+白卡片+人脸+声音、提词器不入录像
