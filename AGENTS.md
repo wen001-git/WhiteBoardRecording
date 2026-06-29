@@ -14,22 +14,24 @@ python3 -m http.server 8000
 ## 硬约束
 - **单个 HTML 文件**（`index.html`），HTML/CSS/JS 全内联，零构建、零依赖。
 - 现阶段**不引入后端、不引入框架**。
-- 录制走「方案1」：白板 + 角落摄像头合成进**一个**视频。
+- 录制有两种来源：① 录白板(合成白板+摄像头) ② 录屏幕(`getDisplayMedia` + 取景框裁剪 + 角落摄像头 + 麦克风/系统声音)。两者都合成进**一个**视频。
 - 导出 **mp4**：原生 `MediaRecorder` 支持则直接录 mp4；否则录 webm + 按需懒加载 ffmpeg.wasm 转 mp4（仅此一处可联网拉 CDN）。
 - 提词器是独立 DOM 浮层，**不能进录像**。
 
 ## 当前状态
-- `index.html` 已实现 M0~M3 + 迭代二（手绘风格 + 录制比例/背景/取景框）+ 迭代三（录制设置页修复/对齐 excalicord）（单文件）。
-- 迭代三：**修复「画布边距」预览不生效的 bug**。原因:预览用 `card.style.margin=canvasPadding/5` 作用在固定宽 72%、flex 居中的卡片上,边距被吸收。改为 `setFrame`(按比例画框,显式 JS 定尺寸+铺壁纸) 内含 `.set-card`(`position:absolute`,四边 inset = `canvasPadding/1000×frameMin`,与 `drawRecFrame` 同公式;圆角/摄像头按 `scale=frameMin/outputMin` 等比)。预览=输出的等比缩小真实渲染。
-- 已无头验证:边距滑块卡片随之缩小(pad0=262/60=244/120=227px)、圆角随比例缩放、切比例画框 aspect 变(1.78/0.56/1.00)、背景渐变/纯色/无、摄像头圆/方;无报错。
-- 录制合成循环用 `setInterval(1000/30)`（非 rAF），避免页面切后台黑屏。
-- ⚠️ 未验证：摄像头画面、麦克风、真实录制产物、不同比例视觉效果——预览环境 `visibility:hidden` 且无法授权摄像头，**需真实可见浏览器+授权手测**。
-- 注意:`updatePreview` 需在弹窗可见后调用(用 `getBoundingClientRect`/`clientWidth` 量画框),`openSettings` 已先 `remove('hidden')` 再调。
+- `index.html` 已实现 M0~M3 + 迭代二（手绘风格 + 录制比例/背景/取景框）+ 迭代三（绘图样式面板、摄像头可拖拽缩放、更细真实手绘线条、完整录制设置）（单文件）。
+- 迭代三录制设置已补齐并接入真实合成：比例含 `Custom` 自定义；背景含分类筛选、随机壁纸、离线程序纹理/渐变/纯色/无；白卡片支持圆角半径与画布边距；摄像头支持录制开关、大小、圆形/方形；麦克风下拉由 `populateDevices()` 填充；录制光标高亮支持开关和颜色。
+- `drawRecFrame()` 已读取上述 `recConfig` 字段，导出画面会同步设置面板中的背景、白卡片边距/圆角、摄像头形状/大小/开关、光标高亮；提词器仍不入录像。
+- 本轮验证：内联 JS 语法检查通过；本地 `http://localhost:8001/index.html` 打开后，录制设置弹窗可见且包含 6 个比例、5 个背景分类、18 个背景、圆角/边距/摄像头/麦克风/光标控件；浏览器控制台无 error。
+- 录制合成循环：白板模式用 `setInterval(1000/30)`；**录屏模式用屏幕轨 `MediaStreamTrackProcessor` 帧驱动**(Chrome/Edge),切到别的 App 后台仍满帧;无此 API 回退 `setInterval`(后台可能掉帧)。
+- **迭代四（录屏模式）**:`recConfig.source='board'|'screen'`;设置弹窗顶部「录制内容」分段控件,屏幕模式隐藏 `.board-only`(背景/圆角边距/光标);流程 `录制`→`enterScreenSetup`(getDisplayMedia→显示 `#screenStage` 实时画面+复用 `#recFrame` 取景框)→`开始录制`→`startScreenRecording`(取景框→`computeCrop` 源像素裁剪→`recCanvas`,`drawScreenFrame` 画裁剪+角落摄像头,`buildMixedAudioTracks` 麦克风+系统声音 WebAudio 混音)→复用 `onRecStop/showExport`。
+- 已无头验证:源切换显隐、能力检测(`MediaStreamTrackProcessor`/`getDisplayMedia` 在本机可用)、白板模式状态机回归、无 console error。
+- ⚠️ 未验证(需真机授权,无头无法授予屏幕/摄像头):录屏裁剪是否准、切 App 是否满帧不冻结、脸在角落、麦克风+系统声音、mp4 可播;以及白板模式真实录制产物。
 
 ## 下一步 TODO
-- [ ] 真机(Chrome/Safari)：授权摄像头 → 选不同比例/背景 → 调取景框 → 录制 → 预览 → 下载 mp4；确认输出为对应比例、含渐变背景+白卡片+人脸+声音、提词器不入录像
-- [ ] 视情况：Custom 自定义比例（当前 5 个固定预设，UI 已留位）
-- [ ] 视情况：摄像头/麦克风设备切换下拉（`populateDevices()` 已预留）
+- [ ] 真机(Chrome)：录屏 → 选屏幕/窗口(勾系统音频) → 拖取景框选区域 → 开始 → 切到别的 App → 停止；确认只录框内区域、切 App 满帧、脸在角落、有麦克风+系统声、mp4 可播
+- [ ] 真机(Safari)：确认录屏+麦克风可用,无 `MediaStreamTrackProcessor`/系统音时优雅降级
+- [ ] 真机(白板模式)：授权摄像头 → 录制 → 预览 → 下载 mp4；确认含白板+人脸+声音、提词器不入录像
 - [ ] 视情况：对象选择/移动工具（v1 仅 hand 平移）
 
 ## 文件地图
@@ -40,7 +42,13 @@ python3 -m http.server 8000
 ## 关键实现备忘
 - 绘图模型：`scene[]` 对象数组 + `view{x,y,scale}`，每帧重绘；`undoStack/redoStack`。
 - **手绘渲染**：`mulberry32(seed)` PRNG + `roughLine/roughRect/roughEllipse/roughArrow`；形状对象带 `seed`（创建时随机），重绘按 seed 确定性生成扰动→稳定不闪。pen 仍为自由手绘。
-- **录制设置**：`RATIOS`（5 预设，输出像素）/`GRADIENTS`（11 背景）/`recConfig{ratio,bgIndex,frame}`；状态机 idle→setup→recording→paused（见 `updateRecUI`）。
-- **合成录制**：`recCanvas` 尺寸=`RATIOS[ratio]`；`drawRecFrame`=填背景→画白卡片(留白+圆角+阴影)→裁剪卡片内 `drawImage(board, 取景框区域→卡片)`→摄像头按屏幕相对位置映射进卡片(镜像圆形)。`captureStream(30)`+麦克风音轨→`MediaRecorder`。
+- **录制设置**：`RATIOS`（含 `custom`，输出像素）/`BACKGROUNDS`（离线渐变、纯色、纹理、无）/`recConfig{ratio,customW,customH,bgIndex,bgCategory,frame,cardRadius,canvasPadding,showCamera,cameraSize,cameraShape,micDeviceId,cursorHighlight,cursorColor}`；状态机 idle→setup→recording→paused（见 `updateRecUI`）。
+- **合成录制**：`recCanvas` 尺寸=`getRatioConfig()`；`drawRecFrame`=填背景→画白卡片(边距+圆角+阴影)→裁剪卡片内 `drawImage(board, 取景框区域→卡片)`→按设置叠加摄像头(镜像圆/方)与光标高亮。`captureStream(30)`+所选麦克风音轨→`MediaRecorder`。
 - **取景框** `#recFrame`：setup 状态显示，可拖动+四角缩放并锁定 `ratioVal()`；其 `box-shadow 0 0 0 99999px` 实现外部变暗。
 - 坐标：世界坐标 = (屏幕坐标 - view.xy) / view.scale。
+
+## 变更日志
+
+| 日期 | 变更内容 |
+|------|---------|
+| 2026-06-29 | 同步迭代三录制设置实际实现与验证状态，移除已完成的 Custom/麦克风下拉待办，避免跨工具接手时误判 |

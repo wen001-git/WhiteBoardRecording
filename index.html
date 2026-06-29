@@ -141,6 +141,16 @@
   #recFrame .rf-badge{position:absolute;left:8px;top:-30px;display:none;align-items:center;gap:6px;background:#e03131;color:#fff;font-size:12px;font-weight:600;padding:4px 10px;border-radius:8px;white-space:nowrap;}
   #recFrame.recording .rf-badge{display:flex;}
   #recFrame .rf-badge i{width:8px;height:8px;border-radius:50%;background:#fff;animation:blink 1s steps(2) infinite;}
+  #recFrame{z-index:56;}
+
+  /* ---------- 屏幕取景舞台（录屏模式 setup） ---------- */
+  #screenStage{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;background:#0c0c0e;}
+  #screenStage.show{display:flex;}
+  #screenVideo{max-width:100%;max-height:100%;object-fit:contain;background:#000;}
+  #screenStage .stage-hint{position:fixed;top:18px;left:50%;transform:translateX(-50%);background:rgba(20,20,22,.85);color:#fff;font-size:13px;padding:8px 16px;border-radius:10px;white-space:nowrap;z-index:57;}
+  .recbar{z-index:62;}
+  /* 录制内容来源切换 + 屏幕模式隐藏白板专用项 */
+  body.src-screen .board-only{display:none;}
 
   /* ---------- 录制设置弹窗 ---------- */
   .modal-wide{max-width:1000px;max-height:88vh;overflow:hidden;}
@@ -359,6 +369,12 @@
   <div class="rf-handle br" data-h="br"></div>
 </div>
 
+<!-- 屏幕取景舞台（录屏模式：显示被捕获的屏幕实时画面 + 取景框选区） -->
+<div id="screenStage">
+  <video id="screenVideo" autoplay playsinline muted></video>
+  <div class="stage-hint">拖动绿色取景框选择要录制的屏幕区域，然后点「开始录制」</div>
+</div>
+
 <!-- 录制设置弹窗 -->
 <div class="overlay hidden" id="settingsModal">
   <div class="modal modal-wide">
@@ -378,6 +394,14 @@
       </div>
       <div class="settings-right">
         <div class="setting-section">
+          <div class="set-label">录制内容</div>
+          <div class="seg-row" id="sourceBtns">
+            <button class="seg-btn active" data-source="board" type="button">🎨 白板</button>
+            <button class="seg-btn" data-source="screen" type="button">🖥️ 屏幕</button>
+          </div>
+          <div class="set-hint" id="sourceHint" style="font-size:12px;color:var(--muted);margin-top:8px;"></div>
+        </div>
+        <div class="setting-section">
           <div class="set-label">画面比例</div>
           <div class="ratio-grid" id="ratioGrid"></div>
           <div class="custom-ratio" id="customRatioBox">
@@ -387,14 +411,14 @@
           </div>
         </div>
 
-        <div class="setting-section">
+        <div class="setting-section board-only">
           <div class="set-label">背景</div>
           <div class="category-row" id="bgCategories"></div>
           <button class="pill-btn random" id="randomBg" type="button">✨ 随机选择壁纸</button>
           <div class="bg-grid" id="bgGrid" style="margin-top:10px;"></div>
         </div>
 
-        <div class="setting-section">
+        <div class="setting-section board-only">
           <div class="range-wrap">
             <div class="range-head"><span>圆角半径</span><span id="cardRadiusVal">24PX</span></div>
             <input id="cardRadius" type="range" min="0" max="80" value="24">
@@ -430,7 +454,7 @@
           <select class="mic-select" id="micSelect"></select>
         </div>
 
-        <div class="setting-section">
+        <div class="setting-section board-only">
           <div class="set-label">鼠标光标效果</div>
           <div class="setting-row">
             <div class="setting-title">录制时显示光标高亮</div>
@@ -1157,6 +1181,7 @@ const BACKGROUNDS = [
 ];
 const GRADIENTS = BACKGROUNDS;
 const recConfig = {
+  source:'board',          // 'board' 录白板 | 'screen' 录屏幕
   ratio:'16:9',
   customW:1080,
   customH:1920,
@@ -1189,7 +1214,7 @@ function bgCss(bg){
   if(bg.type==='none') return 'repeating-conic-gradient(#ddd 0 25%,#fff 0 50%) 0 0/14px 14px';
   if(bg.type==='solid') return bg.color;
   if(bg.type==='grad') return `linear-gradient(${bg.angle||135}deg, ${bg.stops[0]}, ${bg.stops[1]})`;
-  if(bg.type==='paper') return `linear-gradient(${bg.base},${bg.base}), radial-gradient(${bg.line} 1px, transparent 1px) 0 0/18px 18px`;
+  if(bg.type==='paper') return `radial-gradient(${bg.line} 1px, transparent 1px) 0 0/18px 18px, ${bg.base}`;
   if(bg.type==='brick') return `linear-gradient(90deg, ${bg.line} 2px, transparent 2px) 0 0/42px 22px, linear-gradient(${bg.line} 2px, transparent 2px) 0 0/42px 22px, ${bg.base}`;
   if(bg.type==='linen') return `repeating-linear-gradient(0deg, rgba(255,255,255,.18) 0 1px, transparent 1px 6px), repeating-linear-gradient(90deg, rgba(0,0,0,.1) 0 1px, transparent 1px 7px), ${bg.base}`;
   if(bg.type==='grid') return `linear-gradient(${bg.line} 1px, transparent 1px), linear-gradient(90deg, ${bg.line} 1px, transparent 1px), ${bg.base}`;
@@ -1392,7 +1417,140 @@ function drawRecFrame(){
 }
 
 function enterSetup(){ recState='setup'; showFrame(); updateRecUI(); }
-function cancelSetup(){ recState='idle'; hideFrame(); updateRecUI(); }
+function cancelSetup(){
+  recState='idle'; hideFrame();
+  if(recConfig.source==='screen'){ screenStage.classList.remove('show'); stopScreenStream(); }
+  updateRecUI();
+}
+
+/* ===================== 录屏模式（屏幕 + 摄像头 + 系统/麦克风声音） ===================== */
+const screenVideo=document.getElementById('screenVideo');
+const screenStage=document.getElementById('screenStage');
+let screenStream=null, screenReader=null, audioCtx=null, cropRect=null, screenOut={w:0,h:0};
+
+// screenVideo 在舞台内的实际显示矩形（object-fit:contain 居中、letterbox）
+function screenVideoDisplayRect(){
+  const vw=screenVideo.videoWidth||16, vh=screenVideo.videoHeight||9;
+  const cw=screenStage.clientWidth||window.innerWidth, ch=screenStage.clientHeight||window.innerHeight;
+  const ar=vw/vh, car=cw/ch;
+  let w,h;
+  if(ar>car){ w=cw; h=cw/ar; } else { h=ch; w=ch*ar; }
+  return { left:(cw-w)/2, top:(ch-h)/2, w, h, vw, vh };
+}
+function stopScreenStream(){
+  if(screenStream){ screenStream.getTracks().forEach(t=>t.stop()); screenStream=null; }
+  screenVideo.srcObject=null;
+}
+async function enterScreenSetup(){
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia){
+    alert('当前浏览器不支持屏幕录制（getDisplayMedia）。请用最新版 Chrome / Edge。'); return;
+  }
+  try{
+    screenStream = await navigator.mediaDevices.getDisplayMedia({ video:{ frameRate:30 }, audio:true });
+  }catch(e){ console.warn('已取消/拒绝屏幕共享', e); recState='idle'; updateRecUI(); return; }
+  screenVideo.srcObject=screenStream;
+  try{ await screenVideo.play(); }catch(e){}
+  if(!screenVideo.videoWidth){ await new Promise(r=>{ screenVideo.onloadedmetadata=()=>r(); setTimeout(r,1000); }); }
+  const vtrack=screenStream.getVideoTracks()[0];
+  if(vtrack) vtrack.addEventListener('ended', ()=>{ (recState==='recording'||recState==='paused') ? stopRecording() : cancelSetup(); });
+  screenStage.classList.add('show');
+  recState='setup';
+  // 取景框默认置于画面显示区中央，锁所选比例
+  const dr=screenVideoDisplayRect(), ar=ratioVal();
+  let fw=dr.w*0.6, fh=fw/ar;
+  if(fh>dr.h*0.9){ fh=dr.h*0.9; fw=fh*ar; }
+  recConfig.frame={ x:dr.left+(dr.w-fw)/2, y:dr.top+(dr.h-fh)/2, w:fw, h:fh };
+  applyFrameStyle(); recFrameEl.classList.remove('recording'); recFrameEl.style.display='block';
+  updateRecUI();
+}
+// 取景框（视口坐标）→ 源视频像素 crop（坐标相对被捕获画面，切到别的 App 也固定）
+function computeCrop(){
+  const dr=screenVideoDisplayRect(), f=recConfig.frame;
+  const scale=dr.vw/dr.w;
+  let sx=(f.x-dr.left)*scale, sy=(f.y-dr.top)*scale, sw=f.w*scale, sh=f.h*scale;
+  sx=Math.max(0,Math.min(sx,dr.vw)); sy=Math.max(0,Math.min(sy,dr.vh));
+  sw=Math.max(2,Math.min(sw,dr.vw-sx)); sh=Math.max(2,Math.min(sh,dr.vh-sy));
+  return {sx,sy,sw,sh};
+}
+function drawScreenFrame(){
+  const W=screenOut.w, H=screenOut.h;
+  recCtx.setTransform(1,0,0,1,0,0);
+  recCtx.fillStyle='#000'; recCtx.fillRect(0,0,W,H);
+  if(screenVideo.videoWidth && cropRect){
+    recCtx.drawImage(screenVideo, cropRect.sx,cropRect.sy,cropRect.sw,cropRect.sh, 0,0,W,H);
+  }
+  if(recConfig.showCamera && camActive && camVideo.videoWidth){
+    const d=Math.max(60, Math.min(W,H)*(recConfig.cameraSize/700));
+    const m=Math.round(Math.min(W,H)*0.03), cx=W-d-m, cy=H-d-m, r=d/2;
+    const clip=()=>{ if(recConfig.cameraShape==='square'){ roundRectPath(recCtx,cx,cy,d,d,Math.max(8,d*.14)); } else { recCtx.beginPath(); recCtx.arc(cx+r,cy+r,r,0,7); } };
+    recCtx.save(); clip(); recCtx.clip();
+    recCtx.translate(cx+d,cy); recCtx.scale(-1,1);
+    const vw=camVideo.videoWidth, vh=camVideo.videoHeight, vr=vw/vh;
+    let sw=vw,sh=vh,sx=0,sy=0;
+    if(vr>1){ sw=vh; sx=(vw-sw)/2; } else { sh=vw; sy=(vh-sh)/2; }
+    recCtx.drawImage(camVideo, sx,sy,sw,sh, 0,0,d,d);
+    recCtx.restore();
+    recCtx.save(); clip(); recCtx.lineWidth=Math.max(2,d*0.03); recCtx.strokeStyle='#fff'; recCtx.stroke(); recCtx.restore();
+  }
+}
+function startScreenComposite(){
+  drawScreenFrame();
+  const vtrack=screenStream && screenStream.getVideoTracks()[0];
+  if(window.MediaStreamTrackProcessor && vtrack){
+    try{
+      const proc=new MediaStreamTrackProcessor({track:vtrack});
+      screenReader=proc.readable.getReader();
+      const pump=()=>{
+        screenReader.read().then(({done,value})=>{
+          if(done) return;
+          if(value) value.close();             // 仅用作「帧到达」节拍，画面从 screenVideo 取最新帧
+          drawScreenFrame();
+          if(recState==='recording'||recState==='paused') pump();
+        }).catch(()=>{});
+      };
+      pump();
+      return;
+    }catch(e){ console.warn('MediaStreamTrackProcessor 不可用，回退 setInterval（切后台可能掉帧）', e); }
+  }
+  recLoop=setInterval(drawScreenFrame, 1000/30);
+}
+async function buildMixedAudioTracks(){
+  const micTracks = await getRecordingAudioTracks();
+  const sysTracks = screenStream ? screenStream.getAudioTracks() : [];
+  if(sysTracks.length===0) return micTracks;
+  if(micTracks.length===0) return sysTracks;
+  try{
+    audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    const dest = audioCtx.createMediaStreamDestination();
+    audioCtx.createMediaStreamSource(new MediaStream(micTracks)).connect(dest);
+    audioCtx.createMediaStreamSource(new MediaStream(sysTracks)).connect(dest);
+    return dest.stream.getAudioTracks();
+  }catch(e){ console.warn('混音失败，仅用麦克风', e); return micTracks.length?micTracks:sysTracks; }
+}
+async function startScreenRecording(){
+  recMime = pickMime();
+  if(!recMime){ alert('当前浏览器不支持录制（MediaRecorder）。请用最新版 Chrome / Edge / Safari。'); return; }
+  if(!screenStream || !screenVideo.videoWidth){ alert('屏幕画面尚未就绪，请重试。'); return; }
+  cropRect=computeCrop();
+  let ow=Math.round(cropRect.sw), oh=Math.round(cropRect.sh);
+  const maxSide=1920, mx=Math.max(ow,oh);
+  if(mx>maxSide){ const k=maxSide/mx; ow=Math.round(ow*k); oh=Math.round(oh*k); }
+  ow-=ow%2; oh-=oh%2;
+  screenOut={ w:Math.max(2,ow), h:Math.max(2,oh) };
+  recCanvas.width=screenOut.w; recCanvas.height=screenOut.h;
+  hideFrame(); screenStage.classList.remove('show');   // 收起取景，露出桌面方便切 App
+  startScreenComposite();
+  const vStream=recCanvas.captureStream(30);
+  const audioTracks=await buildMixedAudioTracks();
+  audioTracks.forEach(t=>vStream.addTrack(t));
+  recChunks=[];
+  recorder=new MediaRecorder(vStream,{ mimeType:recMime, videoBitsPerSecond: 8_000_000 });
+  recorder.ondataavailable=e=>{ if(e.data&&e.data.size) recChunks.push(e.data); };
+  recorder.onstop=onRecStop;
+  recorder.start(200);
+  recState='recording'; recElapsed=0; recStartTime=performance.now();
+  startTimer(); updateRecUI();
+}
 
 async function startRecording(){
   recMime = pickMime();
@@ -1424,9 +1582,14 @@ function pauseRecording(){
 }
 function stopRecording(){
   if(recState==='idle') return;
-  recorder.stop(); recState='idle';
-  clearInterval(recLoop); stopTimer();
-  hideFrame();
+  try{ recorder.stop(); }catch(e){}
+  recState='idle';
+  clearInterval(recLoop);
+  if(screenReader){ try{ screenReader.cancel(); }catch(e){} screenReader=null; }
+  stopTimer();
+  hideFrame(); screenStage.classList.remove('show');
+  stopScreenStream();
+  if(audioCtx){ try{ audioCtx.close(); }catch(e){} audioCtx=null; }
   updateRecUI();
 }
 
@@ -1587,8 +1750,24 @@ function applyCameraSettings(){
     camWrap.style.right='auto'; camWrap.style.bottom='auto';
   }
 }
+function updateSourceUI(){
+  document.body.classList.toggle('src-screen', recConfig.source==='screen');
+  document.querySelectorAll('[data-source]').forEach(b=>b.classList.toggle('active', b.dataset.source===recConfig.source));
+  const hint=document.getElementById('sourceHint');
+  const done=document.getElementById('settingsDone');
+  if(recConfig.source==='screen'){
+    if(hint) hint.textContent='点「完成」后在浏览器弹窗里选择要共享的屏幕/窗口/标签页（可勾选「系统/标签页音频」一起录）；再用取景框框选要录的区域。';
+    if(done) done.textContent='完成，选择屏幕区域';
+  }else{
+    if(hint) hint.textContent='';
+    if(done) done.textContent='完成，选择录制区域';
+  }
+}
 function bindSettingsControls(){
   if(settingsBound) return; settingsBound=true;
+  document.querySelectorAll('[data-source]').forEach(btn=>{
+    btn.onclick=()=>{ recConfig.source=btn.dataset.source; updateSourceUI(); updatePreview(); };
+  });
   document.getElementById('customW').oninput=e=>{
     recConfig.customW=+e.target.value||1080;
     updatePreview(); if(recState==='setup') showFrame();
@@ -1641,6 +1820,7 @@ function syncSettingsInputs(){
 async function openSettings(){
   bindSettingsControls();
   syncSettingsInputs();
+  updateSourceUI();
   buildRatioGrid();
   buildBgCategories();
   buildBgGrid();
@@ -1790,13 +1970,13 @@ document.getElementById('zoomReset').onclick=()=>{ state.view={x:0,y:0,scale:1};
 
 // 录制按钮
 document.getElementById('recSettings').onclick=openSettings;
-document.getElementById('recStart').onclick=enterSetup;     // 「录制」→ 进入取景设置
+document.getElementById('recStart').onclick=()=> recConfig.source==='screen' ? enterScreenSetup() : enterSetup();  // 「录制」→ 进入取景设置
 document.getElementById('recCancel').onclick=cancelSetup;
-document.getElementById('recGo').onclick=startRecording;     // 「开始录制」
+document.getElementById('recGo').onclick=()=> recConfig.source==='screen' ? startScreenRecording() : startRecording(); // 「开始录制」
 document.getElementById('recPause').onclick=pauseRecording;
 document.getElementById('recStop').onclick=stopRecording;
 document.getElementById('closeSettings').onclick=()=>document.getElementById('settingsModal').classList.add('hidden');
-document.getElementById('settingsDone').onclick=()=>{ document.getElementById('settingsModal').classList.add('hidden'); enterSetup(); };
+document.getElementById('settingsDone').onclick=()=>{ document.getElementById('settingsModal').classList.add('hidden'); recConfig.source==='screen' ? enterScreenSetup() : enterSetup(); };
 
 // 设备选择（注入到欢迎弹窗 / 也可后续扩展）
 function canUseMediaDevices(){
