@@ -1432,6 +1432,7 @@ const screenStage=document.getElementById('screenStage');
 const screenSnap=document.getElementById('screenSnap');
 const snapCtx=screenSnap.getContext('2d');
 let screenStream=null, screenReader=null, audioCtx=null, cropRect=null, screenOut={w:0,h:0};
+let camReader=null, latestCamFrame=null;   // 摄像头帧驱动：后台也实时不冻结
 
 // 把当前屏幕一帧画到快照 canvas，并按 contain 在舞台内定尺寸/居中（返回显示矩形）
 function layoutScreenSnap(){
@@ -1482,21 +1483,45 @@ function drawScreenFrame(src){
   if(cropRect){
     try{ recCtx.drawImage(img, cropRect.sx,cropRect.sy,cropRect.sw,cropRect.sh, 0,0,W,H); }catch(e){}
   }
-  if(recConfig.showCamera && camActive && camVideo.videoWidth){
-    const d=Math.max(60, Math.min(W,H)*(recConfig.cameraSize/700));
-    const m=Math.round(Math.min(W,H)*0.03), cx=W-d-m, cy=H-d-m, r=d/2;
-    const clip=()=>{ if(recConfig.cameraShape==='square'){ roundRectPath(recCtx,cx,cy,d,d,Math.max(8,d*.14)); } else { recCtx.beginPath(); recCtx.arc(cx+r,cy+r,r,0,7); } };
-    recCtx.save(); clip(); recCtx.clip();
-    recCtx.translate(cx+d,cy); recCtx.scale(-1,1);
-    const vw=camVideo.videoWidth, vh=camVideo.videoHeight, vr=vw/vh;
-    let sw=vw,sh=vh,sx=0,sy=0;
-    if(vr>1){ sw=vh; sx=(vw-sw)/2; } else { sh=vw; sy=(vh-sh)/2; }
-    recCtx.drawImage(camVideo, sx,sy,sw,sh, 0,0,d,d);
-    recCtx.restore();
-    recCtx.save(); clip(); recCtx.lineWidth=Math.max(2,d*0.03); recCtx.strokeStyle='#fff'; recCtx.stroke(); recCtx.restore();
+  if(recConfig.showCamera && camActive){
+    const camSrc = latestCamFrame || (camVideo.videoWidth ? camVideo : null);  // 优先帧驱动的实时帧
+    const vw = camSrc && (camSrc.displayWidth || camSrc.videoWidth);
+    const vh = camSrc && (camSrc.displayHeight || camSrc.videoHeight);
+    if(camSrc && vw && vh){
+      const d=Math.max(60, Math.min(W,H)*(recConfig.cameraSize/700));
+      const m=Math.round(Math.min(W,H)*0.03), cx=W-d-m, cy=H-d-m, r=d/2;
+      const clip=()=>{ if(recConfig.cameraShape==='square'){ roundRectPath(recCtx,cx,cy,d,d,Math.max(8,d*.14)); } else { recCtx.beginPath(); recCtx.arc(cx+r,cy+r,r,0,7); } };
+      recCtx.save(); clip(); recCtx.clip();
+      recCtx.translate(cx+d,cy); recCtx.scale(-1,1);
+      const vr=vw/vh; let sw=vw,sh=vh,sx=0,sy=0;
+      if(vr>1){ sw=vh; sx=(vw-sw)/2; } else { sh=vw; sy=(vh-sh)/2; }
+      try{ recCtx.drawImage(camSrc, sx,sy,sw,sh, 0,0,d,d); }catch(e){}
+      recCtx.restore();
+      recCtx.save(); clip(); recCtx.lineWidth=Math.max(2,d*0.03); recCtx.strokeStyle='#fff'; recCtx.stroke(); recCtx.restore();
+    }
   }
 }
+function startCamPump(){
+  // 用摄像头轨的帧驱动更新 latestCamFrame，使合成的角落头像在本页退到后台时也实时不冻结
+  if(!window.MediaStreamTrackProcessor || !mediaStream) return;
+  const ct=mediaStream.getVideoTracks()[0];
+  if(!ct) return;
+  try{
+    const proc=new MediaStreamTrackProcessor({track:ct});
+    camReader=proc.readable.getReader();
+    const pump=()=>{
+      camReader.read().then(({done,value})=>{
+        if(done) return;
+        if(value){ if(latestCamFrame) latestCamFrame.close(); latestCamFrame=value; }
+        if(recState==='recording'||recState==='paused') pump();
+        else if(latestCamFrame){ latestCamFrame.close(); latestCamFrame=null; }
+      }).catch(()=>{});
+    };
+    pump();
+  }catch(e){ console.warn('摄像头帧驱动不可用，回退 video 元素', e); }
+}
 function startScreenComposite(){
+  if(recConfig.showCamera) startCamPump();
   drawScreenFrame();
   const vtrack=screenStream && screenStream.getVideoTracks()[0];
   if(window.MediaStreamTrackProcessor && vtrack){
@@ -1593,6 +1618,8 @@ function stopRecording(){
   recState='idle';
   clearInterval(recLoop);
   if(screenReader){ try{ screenReader.cancel(); }catch(e){} screenReader=null; }
+  if(camReader){ try{ camReader.cancel(); }catch(e){} camReader=null; }
+  if(latestCamFrame){ try{ latestCamFrame.close(); }catch(e){} latestCamFrame=null; }
   stopTimer();
   hideFrame(); screenStage.classList.remove('show');
   camWrap.style.visibility='';   // 恢复摄像头气泡显示
