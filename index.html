@@ -1986,11 +1986,7 @@ function setupLaunchMode(){
   const enable=document.getElementById('enableCam');
   const skip=document.getElementById('skipCam');
   const status=document.getElementById('welcomeStatus');
-  if(location.protocol==='file:'){
-    intro.textContent='你正在双击本地 HTML 打开：如果当前浏览器允许本地文件访问摄像头/麦克风，点击下方按钮后会弹出授权提示。';
-    skip.textContent='先不用摄像头，仅画板';
-    status.textContent='若浏览器拒绝本地文件授权，可改用 localhost 或 https 打开。';
-  }else if(!canUseMediaDevices()){
+  if(!canUseMediaDevices()){
     intro.textContent='当前浏览器不支持摄像头/麦克风授权，但白板、提词器和无摄像头录制仍可使用。';
     enable.disabled=true;
     enable.textContent='当前浏览器不可用摄像头/麦克风';
@@ -2046,7 +2042,12 @@ document.getElementById('enableCam').onclick=async ()=>{
   const s=document.getElementById('welcomeStatus');
   if(!canUseMediaDevices()){ s.textContent='当前浏览器没有提供摄像头/麦克风接口，可点「先不用摄像头」。'; return; }
   try{ s.textContent='正在请求摄像头/麦克风…'; await startCamera(); document.getElementById('welcome').classList.add('hidden'); }
-  catch(err){ console.error(err); s.textContent='未能获取摄像头/麦克风：'+(err.message||err.name)+'。可点「先不用摄像头」。'; }
+  catch(err){
+    console.error(err);
+    let msg='未能获取摄像头/麦克风：'+(err.message||err.name)+'。可点「先不用摄像头」继续。';
+    if(location.protocol==='file:') msg+='（如反复失败，请用 localhost 或 https 打开本页面）';
+    s.textContent=msg;
+  }
 };
 document.getElementById('skipCam').onclick=async ()=>{ await startMicOnly(); document.getElementById('welcome').classList.add('hidden'); };
 
