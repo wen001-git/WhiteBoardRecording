@@ -146,7 +146,10 @@
   /* ---------- 屏幕取景舞台（录屏模式 setup） ---------- */
   #screenStage{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;background:#0c0c0e;}
   #screenStage.show{display:flex;}
-  #screenVideo{max-width:100%;max-height:100%;object-fit:contain;background:#000;}
+  /* 取景用「冻结快照」canvas（静态图，避免实时画面在同屏自我递归的无限镜像） */
+  #screenSnap{background:#000;box-shadow:0 8px 40px rgba(0,0,0,.5);}
+  /* screenVideo 仅作 drawImage 取帧源，离屏隐藏、不显示（显示会造成无限镜像） */
+  #screenVideo{position:fixed;left:-20px;top:-20px;width:2px;height:2px;opacity:0;pointer-events:none;}
   #screenStage .stage-hint{position:fixed;top:18px;left:50%;transform:translateX(-50%);background:rgba(20,20,22,.85);color:#fff;font-size:13px;padding:8px 16px;border-radius:10px;white-space:nowrap;z-index:57;}
   .recbar{z-index:62;}
   /* 录制内容来源切换 + 屏幕模式隐藏白板专用项 */
@@ -369,8 +372,9 @@
 </div>
 
 <!-- 屏幕取景舞台（录屏模式：显示被捕获的屏幕实时画面 + 取景框选区） -->
+<video id="screenVideo" autoplay playsinline muted></video>
 <div id="screenStage">
-  <video id="screenVideo" autoplay playsinline muted></video>
+  <canvas id="screenSnap"></canvas>
   <div class="stage-hint">拖动绿色取景框选择要录制的屏幕区域，然后点「开始录制」</div>
 </div>
 
@@ -1425,16 +1429,21 @@ function cancelSetup(){
 /* ===================== 录屏模式（屏幕 + 摄像头 + 系统/麦克风声音） ===================== */
 const screenVideo=document.getElementById('screenVideo');
 const screenStage=document.getElementById('screenStage');
+const screenSnap=document.getElementById('screenSnap');
+const snapCtx=screenSnap.getContext('2d');
 let screenStream=null, screenReader=null, audioCtx=null, cropRect=null, screenOut={w:0,h:0};
 
-// screenVideo 在舞台内的实际显示矩形（object-fit:contain 居中、letterbox）
-function screenVideoDisplayRect(){
+// 把当前屏幕一帧画到快照 canvas，并按 contain 在舞台内定尺寸/居中（返回显示矩形）
+function layoutScreenSnap(){
   const vw=screenVideo.videoWidth||16, vh=screenVideo.videoHeight||9;
-  const cw=screenStage.clientWidth||window.innerWidth, ch=screenStage.clientHeight||window.innerHeight;
+  // 舞台为 inset:0 全屏，用 window 尺寸即可（可在舞台显示前就算好，避免把刚弹出的舞台截进快照）
+  const cw=window.innerWidth, ch=window.innerHeight;
   const ar=vw/vh, car=cw/ch;
-  let w,h;
-  if(ar>car){ w=cw; h=cw/ar; } else { h=ch; w=ch*ar; }
-  return { left:(cw-w)/2, top:(ch-h)/2, w, h, vw, vh };
+  let w,h; if(ar>car){ w=cw; h=cw/ar; } else { h=ch; w=ch*ar; }
+  screenSnap.width=vw; screenSnap.height=vh;                 // 内在像素 = 源像素
+  screenSnap.style.width=w+'px'; screenSnap.style.height=h+'px';
+  try{ snapCtx.drawImage(screenVideo,0,0,vw,vh); }catch(e){}
+  return { w, h };
 }
 function stopScreenStream(){
   if(screenStream){ screenStream.getTracks().forEach(t=>t.stop()); screenStream=null; }
@@ -1450,33 +1459,35 @@ async function enterScreenSetup(){
   screenVideo.srcObject=screenStream;
   try{ await screenVideo.play(); }catch(e){}
   if(!screenVideo.videoWidth){ await new Promise(r=>{ screenVideo.onloadedmetadata=()=>r(); setTimeout(r,1000); }); }
+  await new Promise(r=>setTimeout(r,150)); // 等一帧可用再截图
   const vtrack=screenStream.getVideoTracks()[0];
   if(vtrack) vtrack.addEventListener('ended', ()=>{ (recState==='recording'||recState==='paused') ? stopRecording() : cancelSetup(); });
+  layoutScreenSnap();                              // 先在舞台显示前截一帧（静态快照，避免无限镜像）
   screenStage.classList.add('show');
   recState='setup';
-  // 取景框默认置于画面显示区中央，锁所选比例
-  const dr=screenVideoDisplayRect(), ar=ratioVal();
-  let fw=dr.w*0.6, fh=fw/ar;
-  if(fh>dr.h*0.9){ fh=dr.h*0.9; fw=fh*ar; }
-  recConfig.frame={ x:dr.left+(dr.w-fw)/2, y:dr.top+(dr.h-fh)/2, w:fw, h:fh };
+  const rect=screenSnap.getBoundingClientRect(), ar=ratioVal();
+  let fw=rect.width*0.6, fh=fw/ar;
+  if(fh>rect.height*0.9){ fh=rect.height*0.9; fw=fh*ar; }
+  recConfig.frame={ x:rect.left+(rect.width-fw)/2, y:rect.top+(rect.height-fh)/2, w:fw, h:fh };
   applyFrameStyle(); recFrameEl.classList.remove('recording'); recFrameEl.style.display='block';
   updateRecUI();
 }
-// 取景框（视口坐标）→ 源视频像素 crop（坐标相对被捕获画面，切到别的 App 也固定）
+// 取景框（视口坐标）→ 源视频像素 crop（基于快照在屏显示矩形换算；坐标相对被捕获画面，切到别的 App 也固定）
 function computeCrop(){
-  const dr=screenVideoDisplayRect(), f=recConfig.frame;
-  const scale=dr.vw/dr.w;
-  let sx=(f.x-dr.left)*scale, sy=(f.y-dr.top)*scale, sw=f.w*scale, sh=f.h*scale;
-  sx=Math.max(0,Math.min(sx,dr.vw)); sy=Math.max(0,Math.min(sy,dr.vh));
-  sw=Math.max(2,Math.min(sw,dr.vw-sx)); sh=Math.max(2,Math.min(sh,dr.vh-sy));
+  const r=screenSnap.getBoundingClientRect(), f=recConfig.frame;
+  const scale=screenSnap.width / (r.width||1);
+  let sx=(f.x-r.left)*scale, sy=(f.y-r.top)*scale, sw=f.w*scale, sh=f.h*scale;
+  sx=Math.max(0,Math.min(sx,screenSnap.width)); sy=Math.max(0,Math.min(sy,screenSnap.height));
+  sw=Math.max(2,Math.min(sw,screenSnap.width-sx)); sh=Math.max(2,Math.min(sh,screenSnap.height-sy));
   return {sx,sy,sw,sh};
 }
-function drawScreenFrame(){
+function drawScreenFrame(src){
+  const img = src || screenVideo;   // 优先用帧驱动传入的 VideoFrame，否则用离屏 video 取最新帧
   const W=screenOut.w, H=screenOut.h;
   recCtx.setTransform(1,0,0,1,0,0);
   recCtx.fillStyle='#000'; recCtx.fillRect(0,0,W,H);
-  if(screenVideo.videoWidth && cropRect){
-    recCtx.drawImage(screenVideo, cropRect.sx,cropRect.sy,cropRect.sw,cropRect.sh, 0,0,W,H);
+  if(cropRect){
+    try{ recCtx.drawImage(img, cropRect.sx,cropRect.sy,cropRect.sw,cropRect.sh, 0,0,W,H); }catch(e){}
   }
   if(recConfig.showCamera && camActive && camVideo.videoWidth){
     const d=Math.max(60, Math.min(W,H)*(recConfig.cameraSize/700));
@@ -1502,8 +1513,7 @@ function startScreenComposite(){
       const pump=()=>{
         screenReader.read().then(({done,value})=>{
           if(done) return;
-          if(value) value.close();             // 仅用作「帧到达」节拍，画面从 screenVideo 取最新帧
-          drawScreenFrame();
+          if(value){ drawScreenFrame(value); value.close(); }   // 直接画传入的 VideoFrame（离屏 video 不显示也能录）
           if(recState==='recording'||recState==='paused') pump();
         }).catch(()=>{});
       };
