@@ -1459,18 +1459,11 @@ async function enterScreenSetup(){
   screenVideo.srcObject=screenStream;
   try{ await screenVideo.play(); }catch(e){}
   if(!screenVideo.videoWidth){ await new Promise(r=>{ screenVideo.onloadedmetadata=()=>r(); setTimeout(r,1000); }); }
-  await new Promise(r=>setTimeout(r,150)); // 等一帧可用再截图
+  await new Promise(r=>setTimeout(r,120)); // 等一帧可用
   const vtrack=screenStream.getVideoTracks()[0];
-  if(vtrack) vtrack.addEventListener('ended', ()=>{ (recState==='recording'||recState==='paused') ? stopRecording() : cancelSetup(); });
-  layoutScreenSnap();                              // 先在舞台显示前截一帧（静态快照，避免无限镜像）
-  screenStage.classList.add('show');
-  recState='setup';
-  const rect=screenSnap.getBoundingClientRect(), ar=ratioVal();
-  let fw=rect.width*0.6, fh=fw/ar;
-  if(fh>rect.height*0.9){ fh=rect.height*0.9; fw=fh*ar; }
-  recConfig.frame={ x:rect.left+(rect.width-fw)/2, y:rect.top+(rect.height-fh)/2, w:fw, h:fh };
-  applyFrameStyle(); recFrameEl.classList.remove('recording'); recFrameEl.style.display='block';
-  updateRecUI();
+  if(vtrack) vtrack.addEventListener('ended', ()=>{ if(recState==='recording'||recState==='paused') stopRecording(); else { stopScreenStream(); recState='idle'; updateRecUI(); } });
+  // 方案1：所选「窗口/整屏」原样录，无快照取景阶段 → 直接开始录制
+  await startScreenRecording();
 }
 // 取景框（视口坐标）→ 源视频像素 crop（基于快照在屏显示矩形换算；坐标相对被捕获画面，切到别的 App 也固定）
 function computeCrop(){
@@ -1540,14 +1533,16 @@ async function startScreenRecording(){
   recMime = pickMime();
   if(!recMime){ alert('当前浏览器不支持录制（MediaRecorder）。请用最新版 Chrome / Edge / Safari。'); return; }
   if(!screenStream || !screenVideo.videoWidth){ alert('屏幕画面尚未就绪，请重试。'); return; }
-  cropRect=computeCrop();
-  let ow=Math.round(cropRect.sw), oh=Math.round(cropRect.sh);
+  // 方案1：原样录整幅所选「窗口/整屏」，不裁剪
+  cropRect={ sx:0, sy:0, sw:screenVideo.videoWidth, sh:screenVideo.videoHeight };
+  let ow=screenVideo.videoWidth, oh=screenVideo.videoHeight;
   const maxSide=1920, mx=Math.max(ow,oh);
   if(mx>maxSide){ const k=maxSide/mx; ow=Math.round(ow*k); oh=Math.round(oh*k); }
   ow-=ow%2; oh-=oh%2;
   screenOut={ w:Math.max(2,ow), h:Math.max(2,oh) };
   recCanvas.width=screenOut.w; recCanvas.height=screenOut.h;
-  hideFrame(); screenStage.classList.remove('show');   // 收起取景，露出桌面方便切 App
+  hideFrame(); screenStage.classList.remove('show');
+  camWrap.style.visibility='hidden';   // 录屏期间隐藏页面上的摄像头气泡，避免整屏录到双重人脸（仍在解码，drawImage 可取帧）
   startScreenComposite();
   const vStream=recCanvas.captureStream(30);
   const audioTracks=await buildMixedAudioTracks();
@@ -1597,6 +1592,7 @@ function stopRecording(){
   if(screenReader){ try{ screenReader.cancel(); }catch(e){} screenReader=null; }
   stopTimer();
   hideFrame(); screenStage.classList.remove('show');
+  camWrap.style.visibility='';   // 恢复摄像头气泡显示
   stopScreenStream();
   if(audioCtx){ try{ audioCtx.close(); }catch(e){} audioCtx=null; }
   updateRecUI();
@@ -1765,7 +1761,7 @@ function updateSourceUI(){
   const hint=document.getElementById('sourceHint');
   const done=document.getElementById('settingsDone');
   if(recConfig.source==='screen'){
-    if(hint) hint.innerHTML='点「完成」后会弹出浏览器的「选择共享内容」窗口：<b>① 选「整个屏幕/窗口/标签页」 ② 先点一下那张画面缩略图（出现高亮边框），「分享」按钮才会变亮 ③ 点「分享」</b>（可勾「同时分享系统音频」一起录）。分享后再用取景框框选要录的区域。<br>提示：录屏需用 http://localhost 或 https 打开本页（file:// 双击打开无法录整屏）。';
+    if(hint) hint.innerHTML='点「完成」后会弹出浏览器的「选择共享内容」窗口：<b>① 选「窗口」录某个 App 最直观（也可选整屏/标签页） ② 先点一下那张画面缩略图（出现高亮边框），「分享」按钮才会变亮 ③ 点「分享」</b>（可勾「同时分享系统音频」一起录）。分享后<b>立即开始录制（按所选窗口/屏幕原样录）</b>，你的摄像头会合成在右下角。<br>提示：录屏需用 http://localhost 或 https 打开本页（file:// 无法录整屏）；录「整屏」会包含本页面，建议切到目标 App。';
     if(done) done.textContent='完成，选择屏幕区域';
   }else{
     if(hint) hint.textContent='';

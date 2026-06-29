@@ -34,8 +34,10 @@ python3 -m http.server 8000
 - `drawRecFrame()` 已读取上述 `recConfig` 字段，导出画面会同步设置面板中的背景、白卡片边距/圆角、摄像头形状/大小/开关、光标高亮；提词器仍不入录像。
 - 本轮验证：内联 JS 语法检查通过；本地 `http://localhost:8001/index.html` 打开后，录制设置弹窗可见且包含 6 个比例、5 个背景分类、18 个背景、圆角/边距/摄像头/麦克风/光标控件；浏览器控制台无 error。
 - 录制合成循环：白板模式用 `setInterval(1000/30)`；**录屏模式用屏幕轨 `MediaStreamTrackProcessor` 帧驱动**(Chrome/Edge),切到别的 App 后台仍满帧;无此 API 回退 `setInterval`(后台可能掉帧)。
-- **迭代四（录屏模式）**:`recConfig.source='board'|'screen'`;设置弹窗顶部「录制内容」分段控件,屏幕模式隐藏 `.board-only`(背景/圆角边距/光标);流程 `录制`→`enterScreenSetup`(getDisplayMedia→**先截一帧冻结快照画到 `#screenSnap` 再显示 `#screenStage`**,在静态快照上用 `#recFrame` 选区)→`开始录制`→`startScreenRecording`(取景框→`computeCrop` 源像素裁剪→`recCanvas`,`drawScreenFrame(src)` 画裁剪+角落摄像头,`buildMixedAudioTracks` 麦克风+系统声音 WebAudio 混音)→复用 `onRecStop/showExport`。
-- **⚠️ 录屏防无限镜像(重要)**:选「整个屏幕」时若把**实时**屏幕流铺满显示在同屏 → 自我递归无限隧道。故 setup 用**冻结快照**(`layoutScreenSnap` 在显示舞台前 `drawImage(screenVideo)` 截一帧)选区;`#screenVideo` 仅作取帧源、**离屏隐藏(opacity:0/2px)绝不铺满显示**;录制合成 `recCanvas` 不挂 DOM;Chrome 帧驱动直接画传入的 `VideoFrame`(隐藏 video 也能录)。
+- **迭代四/五（录屏模式，方案1：原样录）**:`recConfig.source='board'|'screen'`;设置弹窗顶部「录制内容」分段控件,屏幕模式隐藏 `.board-only`(背景/圆角边距/光标)。流程:`录制`/设置「完成」→ `enterScreenSetup`(直接 `getDisplayMedia`,用户选 窗口/整屏/标签页)→ **成功后立即 `startScreenRecording()`**(无快照/取景中间态)→ `drawScreenFrame(src)` 把**整幅** `screenVideo` 画进 `recCanvas`(尺寸=捕获画面、最长边≤1920 偶数)+ 右下角摄像头(`cameraSize/cameraShape` 镜像圆/方)→ `buildMixedAudioTracks` 麦克风+系统声音 WebAudio 混音 → 复用 `onRecStop/showExport`。
+- **帧驱动 & 防黑屏**:Chrome `MediaStreamTrackProcessor` 读屏幕轨,`drawScreenFrame(VideoFrame)` 帧到即画(切后台满帧、隐藏 video 也能录);无该 API 回退 `setInterval`。`#screenVideo` 仅取帧源、离屏隐藏。
+- **录屏隐藏摄像头气泡**:`startScreenRecording` 设 `camWrap.style.visibility='hidden'`(仍解码可 drawImage,不被整屏录到 → 避免双重人脸),`stopRecording` 恢复。
+- 注:`#screenStage`/`#screenSnap`/`computeCrop`/`layoutScreenSnap` 为旧裁剪流程遗留,方案1 已不调用(白板 `#recFrame` 仍正常用)。早期「选整屏无限镜像」「头像静止」均因旧的实时/快照铺满显示舞台,方案1 去掉该阶段后消除。
 - 已无头验证:源切换显隐、能力检测(`MediaStreamTrackProcessor`/`getDisplayMedia` 在本机可用)、白板模式状态机回归、无 console error。
 - ⚠️ 未验证(需真机授权,无头无法授予屏幕/摄像头):录屏裁剪是否准、切 App 是否满帧不冻结、脸在角落、麦克风+系统声音、mp4 可播;以及白板模式真实录制产物。
 
@@ -62,6 +64,7 @@ python3 -m http.server 8000
 
 | 日期 | 变更内容 |
 |------|---------|
+| 2026-06-29 | 录屏改方案1「窗口/整屏原样录」(去掉快照取景阶段)；录屏时隐藏摄像头气泡避免双重人脸；消除「头像静止」错觉 |
 | 2026-06-29 | 修复录屏选「整个屏幕」时的无限镜像递归：取景改用冻结快照、screenVideo 离屏隐藏、帧驱动画 VideoFrame |
 | 2026-06-29 | 持久化 Claude 全局规则的兼容部分到 AGENTS.md，确保跨 AI 工具接手时可见并可执行 |
 | 2026-06-29 | 按全局新规在开头补「目的/目标读者/如何阅读」；同步迭代四录屏模式状态与 TODO |
