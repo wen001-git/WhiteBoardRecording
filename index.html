@@ -238,6 +238,10 @@
 
 <!-- 顶部工具栏 -->
 <div class="toolbar" id="toolbar">
+  <button class="tool" id="lockBtn" title="锁定工具（画完不返回箭头，连续绘制）" aria-label="锁定工具">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+  </button>
+  <span class="sep"></span>
   <button class="tool" data-tool="hand" title="移动/平移 (H)" aria-label="移动/平移">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 11V7a2 2 0 0 1 4 0v4"/><path d="M11 10V5a2 2 0 0 1 4 0v6"/><path d="M15 11V7a2 2 0 0 1 4 0v6"/><path d="M7 11a2 2 0 0 0-4 0v2c0 5 3.5 8 8 8h3c3.3 0 5-2.5 5-6v-2"/><path d="M3 12l4 4"/></svg>
   </button>
@@ -1078,6 +1082,14 @@ function setPendingImagePosition(center){
   pendingImage.x=center.x-pendingImage.w/2;
   pendingImage.y=center.y-pendingImage.h/2;
 }
+let toolLocked = false;   // 锁定工具：画完不返回箭头，连续绘制
+// 画完一个对象后：未锁定→切回选择并选中刚画的对象(可立即缩放/移动)；锁定→保持当前工具连续画
+function afterCreate(idx){
+  if(toolLocked){ clearSelection(); return; }
+  setActiveTool('select');
+  selectedIndex = idx;
+  updateSelectionBox();
+}
 function setActiveTool(tool, openPicker=false){
   state.tool=tool;
   document.querySelectorAll('.tool[data-tool]').forEach(b=>b.classList.toggle('active',b.dataset.tool===tool));
@@ -1217,8 +1229,9 @@ function endAction(){
     const valid = draft.type==='pen' ? draft.points.length>0
       : draft.type==='arrow' ? (Math.hypot(draft.x2-draft.x1,draft.y2-draft.y1)>2)
       : (Math.abs(draft.w)>2 && Math.abs(draft.h)>2);
-    if(valid){ pushHistory(); state.scene.push(draft); }
-    draft=null; render();
+    if(valid){ pushHistory(); state.scene.push(draft); draft=null; afterCreate(state.scene.length-1); }
+    else { draft=null; }
+    render();
   }
   action=null; start=null; panStart=null; moveLast=null;
   board.style.cursor=cursorForTool();
@@ -1347,6 +1360,7 @@ function commitText(){
   if(val && textWorld){
     pushHistory();
     state.scene.push({ type:'text', color:textColor, x:textWorld.x, y:textWorld.y, text:val, fontSize:textFontSize });
+    afterCreate(state.scene.length-1);
     render();
   }
   textWorld=null;
@@ -2334,6 +2348,7 @@ document.querySelectorAll('.tool[data-tool]').forEach(btn=>{
   };
 });
 imageInput.onchange=()=>{ readImageFile(imageInput.files && imageInput.files[0]); };
+document.getElementById('lockBtn').onclick=(e)=>{ toolLocked=!toolLocked; e.currentTarget.classList.toggle('active',toolLocked); };
 document.getElementById('undoBtn').onclick=undo;
 document.getElementById('redoBtn').onclick=redo;
 document.getElementById('clearBtn').onclick=()=>{ if(state.scene.length && confirm('清空整个画布？')){ pushHistory(); state.scene=[]; clearSelection(); render(); } };
