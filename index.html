@@ -23,7 +23,10 @@
     display:flex;align-items:center;justify-content:center;color:var(--ink);font-size:18px;transition:.12s;position:relative;}
   .tool:hover{background:#f0eff5;}
   .tool.active{background:var(--accent-soft);color:var(--accent);}
-  .tool svg{width:20px;height:20px;}
+  .tool svg,.iconbtn svg,.recbtn svg,.zoombar svg{width:20px;height:20px;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none;}
+  .tool .solid-icon{fill:currentColor;stroke:none;}
+  .tool .key{position:absolute;right:7px;bottom:5px;font-size:10px;line-height:1;color:#b6b6bc;font-weight:500;}
+  .tool.active .key{color:var(--accent);}
   .sep{width:1px;height:26px;background:var(--line);margin:0 4px;}
   .tool[disabled]{opacity:.35;cursor:not-allowed;}
 
@@ -126,6 +129,9 @@
   .iconbtn:hover{background:#f0eff5;}
   .iconbtn.active{background:var(--accent-soft);color:var(--accent);border-color:var(--accent);}
 
+  /* ---------- 对象选择框（DOM 浮层，不进入录制 canvas） ---------- */
+  #selectionBox{position:fixed;z-index:12;display:none;pointer-events:none;border:1.5px solid #6965db;border-radius:4px;box-shadow:0 0 0 1px rgba(105,101,219,.18);}
+
   /* ---------- 录制取景框 ---------- */
   #recFrame{position:fixed;z-index:27;display:none;border:3px solid #18a558;border-radius:4px;box-shadow:0 0 0 99999px rgba(0,0,0,.18);cursor:move;}
   #recFrame .rf-handle{position:absolute;width:16px;height:16px;background:#18a558;border:2px solid #fff;border-radius:3px;}
@@ -217,25 +223,54 @@
 <body>
 
 <canvas id="board"></canvas>
+<div id="selectionBox"></div>
 
 <!-- 顶部工具栏 -->
 <div class="toolbar" id="toolbar">
-  <button class="tool" data-tool="hand" title="移动/平移 (H)">✋</button>
-  <button class="tool active" data-tool="pen" title="画笔 (P)">✏️</button>
-  <button class="tool" data-tool="rect" title="矩形 (R)">▭</button>
-  <button class="tool" data-tool="ellipse" title="圆 (O)">◯</button>
-  <button class="tool" data-tool="arrow" title="箭头 (A)">↗</button>
-  <button class="tool" data-tool="text" title="文字 (T)">T</button>
-  <button class="tool" data-tool="eraser" title="橡皮擦 (E)">🩹</button>
+  <button class="tool" data-tool="hand" title="移动/平移 (H)" aria-label="移动/平移">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 11V7a2 2 0 0 1 4 0v4"/><path d="M11 10V5a2 2 0 0 1 4 0v6"/><path d="M15 11V7a2 2 0 0 1 4 0v6"/><path d="M7 11a2 2 0 0 0-4 0v2c0 5 3.5 8 8 8h3c3.3 0 5-2.5 5-6v-2"/><path d="M3 12l4 4"/></svg>
+  </button>
+  <button class="tool active" data-tool="select" title="选择 (V)" aria-label="选择">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path class="solid-icon" d="M5 3l12.5 8.2-6.1 1.2 3.5 5.9-2.8 1.7-3.5-6-3.6 4V3z"/></svg>
+  </button>
+  <button class="tool" data-tool="text" title="文字 (T / 1)" aria-label="文字">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19l6-14 6 14"/><path d="M8 13h6"/></svg><span class="key">1</span>
+  </button>
+  <button class="tool" data-tool="ellipse" title="圆 (O / 2)" aria-label="圆">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/></svg><span class="key">2</span>
+  </button>
+  <button class="tool" data-tool="rect" title="矩形 (R / 3)" aria-label="矩形">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="1.5"/></svg><span class="key">3</span>
+  </button>
+  <button class="tool" data-tool="diamond" title="菱形 (D / 4)" aria-label="菱形">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l8 8-8 8-8-8 8-8z"/></svg><span class="key">4</span>
+  </button>
+  <button class="tool" data-tool="arrow" title="箭头 (A / 5)" aria-label="箭头">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="M14 7l5 5-5 5"/></svg><span class="key">5</span>
+  </button>
+  <button class="tool" data-tool="image" title="图片 (I / 6)" aria-label="图片">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="2"/><circle cx="9" cy="10" r="1.5"/><path d="M6.5 17l4.5-4 3 3 2-2 2.5 3"/></svg><span class="key">6</span>
+  </button>
+  <button class="tool" data-tool="eraser" title="橡皮擦 (E / 7)" aria-label="橡皮擦">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15l8-8a2.8 2.8 0 0 1 4 0l3 3a2.8 2.8 0 0 1 0 4l-5 5H8l-4-4z"/><path d="M10 19l-6-6"/><path d="M13 10l5 5"/></svg><span class="key">7</span>
+  </button>
   <span class="sep"></span>
-  <button class="tool" id="undoBtn" title="撤销 (Ctrl/Cmd+Z)">↶</button>
-  <button class="tool" id="redoBtn" title="重做 (Ctrl/Cmd+Shift+Z)">↷</button>
-  <button class="tool" id="clearBtn" title="清空画布">🗑️</button>
+  <button class="tool" id="undoBtn" title="撤销 (Ctrl/Cmd+Z)" aria-label="撤销">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 7l-4 4 4 4"/><path d="M4 11h9a5 5 0 0 1 0 10h-4"/></svg>
+  </button>
+  <button class="tool" id="redoBtn" title="重做 (Ctrl/Cmd+Shift+Z)" aria-label="重做">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 7l4 4-4 4"/><path d="M20 11h-9a5 5 0 0 0 0 10h4"/></svg>
+  </button>
+  <button class="tool" id="clearBtn" title="清空画布" aria-label="清空画布">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V5h6v2"/><path d="M7 7l1 13h8l1-13"/><path d="M10 11v5"/><path d="M14 11v5"/></svg>
+  </button>
 </div>
 
 <!-- 右上角：提词器开关 -->
 <div class="topright">
-  <button class="iconbtn" id="teleToggle" title="提词器">📜</button>
+  <button class="iconbtn" id="teleToggle" title="提词器" aria-label="提词器">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v5h4"/><path d="M10 12h5"/><path d="M10 16h5"/></svg>
+  </button>
 </div>
 
 <!-- 左侧属性面板 -->
@@ -294,11 +329,11 @@
 
 <!-- 提词器 -->
 <div id="tele">
-  <header><span>📜 提词器</span><span class="x" id="teleClose">✕</span></header>
+  <header><span>提词器</span><span class="x" id="teleClose">✕</span></header>
   <div class="teleControls">
-    <button id="telePlay">▶ 播放</button>
-    <button id="teleReset">🔼 回顶</button>
-    <button id="teleEdit">✎ 编辑</button>
+    <button id="telePlay">播放</button>
+    <button id="teleReset">回顶</button>
+    <button id="teleEdit">编辑</button>
     <label>速度<input type="range" id="teleSpeed" min="10" max="120" value="40" style="width:70px"></label>
     <label>字号<input type="range" id="teleFont" min="16" max="44" value="22" style="width:60px"></label>
   </div>
@@ -309,18 +344,20 @@
 
 提词器只显示给你看，不会出现在录制的视频里。</textarea>
   <div id="teleScroll" style="display:none;"></div>
-  <div class="privacy">🔒 提词器仅你可见，不会录进视频</div>
+  <div class="privacy">提词器仅你可见，不会录进视频</div>
 </div>
 
 <!-- 录制条 -->
 <div class="recbar">
-  <button class="recbtn ghost" id="recSettings" title="录制设置">⚙️</button>
+  <button class="recbtn ghost" id="recSettings" title="录制设置" aria-label="录制设置">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/><path d="M4 12h2"/><path d="M18 12h2"/><path d="M12 4v2"/><path d="M12 18v2"/><path d="M6.6 6.6l1.4 1.4"/><path d="M16 16l1.4 1.4"/><path d="M17.4 6.6L16 8"/><path d="M8 16l-1.4 1.4"/></svg>
+  </button>
   <span class="timer" id="timer">00:00</span>
   <button class="recbtn start" id="recStart"><span class="rec-dot"></span> 录制</button>
   <button class="recbtn ghost hidden" id="recCancel">✕ 取消</button>
   <button class="recbtn start hidden" id="recGo"><span class="rec-dot"></span> 开始录制</button>
-  <button class="recbtn ghost hidden" id="recPause">⏸ 暂停</button>
-  <button class="recbtn ghost hidden" id="recStop">⏹ 停止</button>
+  <button class="recbtn ghost hidden" id="recPause">暂停</button>
+  <button class="recbtn ghost hidden" id="recStop">停止</button>
 </div>
 
 <!-- 缩放条 -->
@@ -328,21 +365,24 @@
   <button id="zoomOut">−</button>
   <span class="zval" id="zoomVal">100%</span>
   <button id="zoomIn">+</button>
-  <button id="zoomReset" title="重置视图">⌂</button>
+  <button id="zoomReset" title="重置视图（回到 100% 并居中）" aria-label="重置视图">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V4h4"/><path d="M16 4h4v4"/><path d="M20 16v4h-4"/><path d="M8 20H4v-4"/></svg>
+  </button>
 </div>
 
 <!-- 文字输入浮层 -->
 <textarea id="textInput" rows="1"></textarea>
+<input id="imageInput" type="file" accept="image/*" style="display:none">
 
 <!-- 欢迎/授权弹窗 -->
 <div class="overlay" id="welcome">
   <div class="modal">
     <h2>欢迎使用 白板录制工具</h2>
     <p id="welcomeIntro">录制精美的白板视频，你的面部画面会出现在角落。非常适合教程、讲解和异步沟通。</p>
-    <div class="feat"><span class="emoji">🎨</span> 在无限白板上自由绘画</div>
-    <div class="feat"><span class="emoji">📹</span> 你的摄像头会出现在角落</div>
-    <div class="feat"><span class="emoji">📜</span> 内置提词器，方便看稿</div>
-    <div class="feat"><span class="emoji">⏺️</span> 准备好就点击录制</div>
+    <div class="feat">在无限白板上自由绘画</div>
+    <div class="feat">你的摄像头会出现在角落</div>
+    <div class="feat">内置提词器，方便看稿</div>
+    <div class="feat">准备好就点击录制</div>
     <button class="btn-primary" id="enableCam">允许摄像头与麦克风，开始</button>
     <button class="btn-line" id="skipCam">先不用摄像头，仅画板</button>
     <div class="status" id="welcomeStatus"></div>
@@ -352,9 +392,9 @@
 <!-- 导出预览弹窗 -->
 <div class="overlay hidden" id="exportModal">
   <div class="modal">
-    <h2>录制完成 🎬</h2>
+    <h2>录制完成</h2>
     <video id="previewVideo" controls></video>
-    <a id="downloadLink" class="btn-primary" style="display:block;text-align:center;text-decoration:none;">⬇ 下载视频</a>
+    <a id="downloadLink" class="btn-primary" style="display:block;text-align:center;text-decoration:none;">下载视频</a>
     <button class="btn-line hidden" id="convertMp4">转换为 mp4（在浏览器内转码）</button>
     <button class="btn-line" id="closeExport">关闭</button>
     <div class="status" id="exportStatus"></div>
@@ -399,8 +439,8 @@
         <div class="setting-section">
           <div class="set-label">录制内容</div>
           <div class="seg-row" id="sourceBtns">
-            <button class="seg-btn active" data-source="board" type="button">🎨 白板</button>
-            <button class="seg-btn" data-source="screen" type="button">🖥️ 屏幕</button>
+            <button class="seg-btn active" data-source="board" type="button">白板</button>
+            <button class="seg-btn" data-source="screen" type="button">屏幕</button>
           </div>
           <div class="set-hint" id="sourceHint" style="font-size:12px;color:var(--muted);margin-top:8px;"></div>
         </div>
@@ -485,7 +525,7 @@ const FILL_COLORS = ['transparent','#ffc9c9','#b2f2bb','#a5d8ff','#ffec99'];
 const WIDTHS = [1.5, 2.5, 5];
 
 const state = {
-  tool: 'pen',
+  tool: 'select',
   color: '#1e1e1e',
   fillColor: 'transparent',
   width: 2.5,
@@ -502,7 +542,9 @@ const state = {
 
 const board = document.getElementById('board');
 const ctx = board.getContext('2d');
+const selectionBox = document.getElementById('selectionBox');
 let dpr = Math.max(1, window.devicePixelRatio || 1);
+let selectedIndex = -1;
 
 /* ---------------------- VIEW + RENDER ---------------------------------- */
 function resize(){
@@ -591,6 +633,10 @@ function roughRect(rng,x,y,w,h,rough,cornerStyle='round',roughness='sketch'){
   const pts = cornerStyle==='sharp' ? rectPoints(x,y,w,h) : roundedRectPoints(x,y,w,h,Math.min(w,h,Math.max(10,Math.min(w,h)*0.18)));
   strokeSketchPath(rng, pts, true, rough, roughness);
 }
+function roughDiamond(rng,x,y,w,h,rough,roughness='sketch'){
+  const b=normalizedBox({x,y,w,h});
+  strokeSketchPath(rng, diamondPoints(b.x,b.y,b.w,b.h), true, rough, roughness);
+}
 // Excalidraw/Excalicord 风格：平滑双描边，轻微错位，不做粗糙锯齿变形
 function strokeSketchPath(rng,pts,closed,rough,roughness='sketch'){
   if(pts.length<2) return;
@@ -650,6 +696,9 @@ function drawSmoothPolyline(pts,closed){
   }
 }
 function rectPoints(x,y,w,h){ return [[x,y],[x+w,y],[x+w,y+h],[x,y+h]]; }
+function diamondPoints(x,y,w,h){
+  return [[x+w/2,y],[x+w,y+h/2],[x+w/2,y+h],[x,y+h/2]];
+}
 function roundedRectPoints(x,y,w,h,r){
   const pts=[], steps=8;
   const arcs=[
@@ -738,6 +787,13 @@ function beginEllipsePath(cx,cy,rx,ry){
   ctx.beginPath();
   ctx.ellipse(cx,cy,Math.abs(rx),Math.abs(ry),0,0,Math.PI*2);
 }
+function beginDiamondPath(x,y,w,h){
+  const pts=diamondPoints(x,y,w,h);
+  ctx.beginPath();
+  ctx.moveTo(pts[0][0],pts[0][1]);
+  for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i][0],pts[i][1]);
+  ctx.closePath();
+}
 function fillShape(o){
   if(!isFillVisible(o.fillColor)) return;
   ctx.save();
@@ -747,6 +803,8 @@ function fillShape(o){
     const b=normalizedBox(o); beginRectPath(b.x,b.y,b.w,b.h,o.cornerStyle||'round'); ctx.fill();
   }else if(o.type==='ellipse'){
     beginEllipsePath(o.x+o.w/2,o.y+o.h/2,o.w/2,o.h/2); ctx.fill();
+  }else if(o.type==='diamond'){
+    const b=normalizedBox(o); beginDiamondPath(b.x,b.y,b.w,b.h); ctx.fill();
   }
   ctx.restore();
 }
@@ -762,17 +820,32 @@ function strokeCleanObject(o){
     const b=normalizedBox(o); beginRectPath(b.x,b.y,b.w,b.h,o.cornerStyle||'round'); ctx.stroke();
   }else if(o.type==='ellipse'){
     beginEllipsePath(o.x+o.w/2,o.y+o.h/2,o.w/2,o.h/2); ctx.stroke();
+  }else if(o.type==='diamond'){
+    const b=normalizedBox(o); beginDiamondPath(b.x,b.y,b.w,b.h); ctx.stroke();
   }else if(o.type==='arrow'){
     drawArrow(o.x1,o.y1,o.x2,o.y2,o.width||4);
   }
+}
+
+const imageCache = new Map();
+function getCachedImage(src){
+  let item=imageCache.get(src);
+  if(item) return item;
+  const img=new Image();
+  item={img,loaded:false,failed:false};
+  img.onload=()=>{ item.loaded=true; render(); };
+  img.onerror=()=>{ item.failed=true; render(); };
+  img.src=src;
+  imageCache.set(src,item);
+  return item;
 }
 
 function drawObject(o){
   ctx.save();
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
-  ctx.strokeStyle = o.color;
-  ctx.fillStyle = o.color;
+  ctx.strokeStyle = o.color || '#1e1e1e';
+  ctx.fillStyle = o.color || '#1e1e1e';
   ctx.lineWidth = o.width || 4;
   ctx.globalAlpha = o.opacity ?? 1;
   setStrokePattern(o.strokeStyle || 'solid', o.width || 4);
@@ -780,7 +853,7 @@ function drawObject(o){
   const roughScale = roughness==='rough' ? 1.7 : 1;
   const rough = Math.max(1.5, (o.width||4)*0.9*roughScale); // 扰动幅度随线宽
   strokeBase = o.width || 4;                      // 手绘描边的基准线宽（逐段在此上下浮动）
-  if(roughness === 'clean' && (o.type==='pen'||o.type==='rect'||o.type==='ellipse'||o.type==='arrow')){
+  if(roughness === 'clean' && (o.type==='pen'||o.type==='rect'||o.type==='ellipse'||o.type==='diamond'||o.type==='arrow')){
     fillShape(o);
     strokeCleanObject(o);
   } else if(o.type === 'pen'){
@@ -797,12 +870,36 @@ function drawObject(o){
   } else if(o.type === 'ellipse'){
     fillShape(o);
     roughEllipse(mulberry32(o.seed||1), o.x+o.w/2, o.y+o.h/2, o.w/2, o.h/2, rough, roughness);
+  } else if(o.type === 'diamond'){
+    fillShape(o);
+    roughDiamond(mulberry32(o.seed||1), o.x,o.y,o.w,o.h, rough, roughness);
   } else if(o.type === 'arrow'){
     roughArrow(mulberry32(o.seed||1), o.x1,o.y1,o.x2,o.y2, o.width||4, rough);
   } else if(o.type === 'text'){
     ctx.font = (o.fontSize||28) + 'px ' + HAND_FONT;
     ctx.textBaseline = 'top';
     o.text.split('\n').forEach((line,i)=> ctx.fillText(line, o.x, o.y + i*(o.fontSize||28)*1.2));
+  } else if(o.type === 'image'){
+    const item=getCachedImage(o.src);
+    ctx.save();
+    if(o.preview) ctx.globalAlpha*=0.78;
+    if(item.loaded){
+      ctx.drawImage(item.img,o.x,o.y,o.w,o.h);
+      if(o.preview){
+        ctx.setLineDash([6,5]);
+        ctx.lineWidth=1.5/state.view.scale;
+        ctx.strokeStyle='rgba(91,87,214,.9)';
+        ctx.strokeRect(o.x,o.y,o.w,o.h);
+      }
+    }else{
+      ctx.setLineDash([6,5]);
+      ctx.lineWidth=1.5/state.view.scale;
+      ctx.strokeStyle=item.failed?'#e03131':'#5b57d6';
+      ctx.fillStyle='rgba(91,87,214,.08)';
+      ctx.fillRect(o.x,o.y,o.w,o.h);
+      ctx.strokeRect(o.x,o.y,o.w,o.h);
+    }
+    ctx.restore();
   }
   ctx.restore();
 }
@@ -827,13 +924,85 @@ function drawArrow(x1,y1,x2,y2,w){
   ctx.stroke();
 }
 
+function objectBounds(o){
+  const pad=(o.width||4)/2+6;
+  if(o.type==='pen'){
+    if(!o.points || !o.points.length) return null;
+    let minX=o.points[0].x, maxX=o.points[0].x, minY=o.points[0].y, maxY=o.points[0].y;
+    for(const p of o.points){
+      minX=Math.min(minX,p.x); maxX=Math.max(maxX,p.x);
+      minY=Math.min(minY,p.y); maxY=Math.max(maxY,p.y);
+    }
+    return {x:minX-pad,y:minY-pad,w:Math.max(1,maxX-minX)+pad*2,h:Math.max(1,maxY-minY)+pad*2};
+  }
+  if(o.type==='arrow'){
+    const head=Math.max(12,(o.width||4)*3), p=pad+head;
+    const x=Math.min(o.x1,o.x2), y=Math.min(o.y1,o.y2);
+    return {x:x-p,y:y-p,w:Math.abs(o.x2-o.x1)+p*2,h:Math.abs(o.y2-o.y1)+p*2};
+  }
+  if(o.type==='rect'||o.type==='ellipse'||o.type==='diamond'){
+    const b=normalizedBox(o);
+    return {x:b.x-pad,y:b.y-pad,w:b.w+pad*2,h:b.h+pad*2};
+  }
+  if(o.type==='text'){
+    const lines=(o.text||'').split('\n');
+    const fs=o.fontSize||28;
+    const w=Math.max(1,...lines.map(l=>l.length))*fs*.6;
+    const h=Math.max(1,lines.length)*fs*1.2;
+    return {x:o.x-pad,y:o.y-pad,w:w+pad*2,h:h+pad*2};
+  }
+  if(o.type==='image'){
+    return {x:o.x-pad,y:o.y-pad,w:o.w+pad*2,h:o.h+pad*2};
+  }
+  return null;
+}
+function updateSelectionBox(){
+  if(!selectionBox) return;
+  const o=state.scene[selectedIndex], b=o && objectBounds(o);
+  if(!b){ selectionBox.style.display='none'; return; }
+  const left=state.view.x+b.x*state.view.scale;
+  const top=state.view.y+b.y*state.view.scale;
+  selectionBox.style.left=left+'px';
+  selectionBox.style.top=top+'px';
+  selectionBox.style.width=Math.max(1,b.w*state.view.scale)+'px';
+  selectionBox.style.height=Math.max(1,b.h*state.view.scale)+'px';
+  selectionBox.style.display='block';
+}
+function clearSelection(){
+  selectedIndex=-1;
+  updateSelectionBox();
+}
+function selectObjectAt(w){
+  const tol=8/state.view.scale;
+  for(let i=state.scene.length-1;i>=0;i--){
+    if(hitTest(state.scene[i],w,tol)){
+      selectedIndex=i;
+      updateSelectionBox();
+      return true;
+    }
+  }
+  clearSelection();
+  return false;
+}
+function deleteSelectedObject(){
+  if(selectedIndex<0 || selectedIndex>=state.scene.length) return false;
+  pushHistory();
+  state.scene.splice(selectedIndex,1);
+  clearSelection();
+  render();
+  return true;
+}
+
 let draft = null; // 正在拖拽中的临时对象
+let pendingImage = null;
 
 function render(){
   clearBg();
   applyTransform();
   for(const o of state.scene) drawObject(o);
   if(draft) drawObject(draft);
+  if(pendingImage) drawObject(pendingImage);
+  updateSelectionBox();
 }
 
 /* --------------------------- HISTORY ----------------------------------- */
@@ -848,12 +1017,14 @@ function undo(){
   if(!state.undoStack.length) return;
   state.redoStack.push(snapshot());
   state.scene = state.undoStack.pop();
+  clearSelection();
   render(); updateHistoryButtons();
 }
 function redo(){
   if(!state.redoStack.length) return;
   state.undoStack.push(snapshot());
   state.scene = state.redoStack.pop();
+  clearSelection();
   render(); updateHistoryButtons();
 }
 function updateHistoryButtons(){
@@ -867,6 +1038,7 @@ let start = null;   // 世界坐标起点
 let panStart = null;
 let spaceDown = false;
 let erasedThisStroke = false;
+let lastPointerWorld = null;
 function currentDrawStyle(){
   return {
     color: state.color,
@@ -878,14 +1050,86 @@ function currentDrawStyle(){
     cornerStyle: state.cornerStyle
   };
 }
+function fitImageSize(nw,nh){
+  const scale=Math.min(1,360/nw,260/nh);
+  return {w:Math.max(1,Math.round(nw*scale)), h:Math.max(1,Math.round(nh*scale))};
+}
+function currentImageCenter(){
+  return lastPointerWorld || toWorld(window.innerWidth/2, window.innerHeight/2);
+}
+function setPendingImagePosition(center){
+  if(!pendingImage) return;
+  pendingImage.x=center.x-pendingImage.w/2;
+  pendingImage.y=center.y-pendingImage.h/2;
+}
+function setActiveTool(tool, openPicker=false){
+  state.tool=tool;
+  document.querySelectorAll('.tool[data-tool]').forEach(b=>b.classList.toggle('active',b.dataset.tool===tool));
+  updateStylePanel();
+  board.style.cursor=cursorForTool();
+  if(tool!=='select') clearSelection();
+  if(tool==='image' && openPicker){
+    imageInput.value='';
+    imageInput.click();
+  }
+}
+function activateImageTool(){
+  setActiveTool('image');
+}
+function activateSelectTool(){
+  setActiveTool('select');
+}
+function beginPendingImage(src,nw,nh){
+  const size=fitImageSize(nw,nh);
+  const center=currentImageCenter();
+  pendingImage={type:'image',src,w:size.w,h:size.h,x:center.x-size.w/2,y:center.y-size.h/2,preview:true};
+  getCachedImage(src);
+  activateImageTool();
+  render();
+}
+function readImageFile(file){
+  if(!file || !file.type || !file.type.startsWith('image/')) return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    const src=reader.result;
+    const img=new Image();
+    img.onload=()=>beginPendingImage(src,img.naturalWidth||img.width,img.naturalHeight||img.height);
+    img.onerror=()=>alert('图片读取失败，请换一张图片重试。');
+    img.src=src;
+  };
+  reader.readAsDataURL(file);
+}
+function placePendingImage(){
+  if(!pendingImage) return false;
+  pushHistory();
+  const placed={type:'image',src:pendingImage.src,x:pendingImage.x,y:pendingImage.y,w:pendingImage.w,h:pendingImage.h};
+  state.scene.push(placed);
+  pendingImage=null;
+  clearSelection();
+  activateSelectTool();
+  render();
+  return true;
+}
+function cancelPendingImage(){
+  if(!pendingImage) return false;
+  pendingImage=null;
+  activateSelectTool();
+  render();
+  return true;
+}
 
 board.addEventListener('pointerdown', (e)=>{
   if(e.button === 1) return;
   board.setPointerCapture(e.pointerId);
   const w = toWorld(e.clientX, e.clientY);
+  lastPointerWorld = w;
 
   const wantPan = state.tool === 'hand' || spaceDown || e.button === 2;
   if(wantPan){ action='pan'; panStart={mx:e.clientX,my:e.clientY,vx:state.view.x,vy:state.view.y}; return; }
+
+  if(pendingImage && e.button===0){ placePendingImage(); return; }
+
+  if(state.tool === 'select'){ selectObjectAt(w); return; }
 
   if(state.tool === 'text'){ openTextInput(e.clientX, e.clientY, w); return; }
 
@@ -893,6 +1137,9 @@ board.addEventListener('pointerdown', (e)=>{
     action='erase'; erasedThisStroke=false; eraseAt(w); return;
   }
 
+  if(state.tool === 'image') return;
+
+  clearSelection();
   action='draw'; start=w;
   const seed=(Math.random()*1e9)|0;
   const style=currentDrawStyle();
@@ -902,6 +1149,8 @@ board.addEventListener('pointerdown', (e)=>{
     draft = { type:'rect', ...style, x:w.x, y:w.y, w:0, h:0, seed };
   } else if(state.tool === 'ellipse'){
     draft = { type:'ellipse', ...style, x:w.x, y:w.y, w:0, h:0, seed };
+  } else if(state.tool === 'diamond'){
+    draft = { type:'diamond', ...style, x:w.x, y:w.y, w:0, h:0, seed };
   } else if(state.tool === 'arrow'){
     draft = { type:'arrow', ...style, x1:w.x, y1:w.y, x2:w.x, y2:w.y, seed };
   }
@@ -910,6 +1159,11 @@ board.addEventListener('pointerdown', (e)=>{
 
 board.addEventListener('pointermove', (e)=>{
   const w = toWorld(e.clientX, e.clientY);
+  lastPointerWorld = w;
+  if(pendingImage){
+    setPendingImagePosition(w);
+    render();
+  }
   if(action === 'pan'){
     state.view.x = panStart.vx + (e.clientX - panStart.mx);
     state.view.y = panStart.vy + (e.clientY - panStart.my);
@@ -961,7 +1215,7 @@ function eraseAt(w){
   for(let i=state.scene.length-1;i>=0;i--){ if(hitTest(state.scene[i], w, tol)){ hit=i; break; } }
   if(hit>=0){
     if(!erasedThisStroke){ pushHistory(); erasedThisStroke=true; }
-    state.scene.splice(hit,1); render();
+    state.scene.splice(hit,1); clearSelection(); render();
   }
 }
 function hitTest(o, p, tol){
@@ -971,7 +1225,7 @@ function hitTest(o, p, tol){
     return false;
   }
   if(o.type==='arrow') return distSeg(p,{x:o.x1,y:o.y1},{x:o.x2,y:o.y2})<tol+(o.width||4)/2;
-  if(o.type==='rect'||o.type==='ellipse'){
+  if(o.type==='rect'||o.type==='ellipse'||o.type==='diamond'){
     const x=Math.min(o.x,o.x+o.w), y=Math.min(o.y,o.y+o.h), w=Math.abs(o.w), h=Math.abs(o.h);
     return p.x>=x-tol && p.x<=x+w+tol && p.y>=y-tol && p.y<=y+h+tol;
   }
@@ -979,6 +1233,9 @@ function hitTest(o, p, tol){
     const lines=o.text.split('\n'); const h=lines.length*(o.fontSize||28)*1.2;
     const w=Math.max(...lines.map(l=>l.length))*(o.fontSize||28)*0.6;
     return p.x>=o.x-tol && p.x<=o.x+w+tol && p.y>=o.y-tol && p.y<=o.y+h+tol;
+  }
+  if(o.type==='image'){
+    return p.x>=o.x-tol && p.x<=o.x+o.w+tol && p.y>=o.y-tol && p.y<=o.y+o.h+tol;
   }
   return false;
 }
@@ -1124,7 +1381,7 @@ document.getElementById('telePlay').onclick = ()=>{ telePlaying? stopTele() : pl
 function playTele(){
   teleScroll.textContent = teleText.value;
   teleText.style.display='none'; teleScroll.style.display='block';
-  telePlaying=true; document.getElementById('telePlay').textContent='⏸ 暂停';
+  telePlaying=true; document.getElementById('telePlay').textContent='暂停';
   let last=performance.now();
   const step=(t)=>{
     if(!telePlaying) return;
@@ -1134,7 +1391,7 @@ function playTele(){
   };
   teleRAF=requestAnimationFrame(step);
 }
-function stopTele(){ telePlaying=false; cancelAnimationFrame(teleRAF); document.getElementById('telePlay').textContent='▶ 播放'; }
+function stopTele(){ telePlaying=false; cancelAnimationFrame(teleRAF); document.getElementById('telePlay').textContent='播放'; }
 
 /* --------------------------- RECORDER ---------------------------------- */
 let recCanvas=document.createElement('canvas');
@@ -1675,7 +1932,7 @@ function updateRecUI(){
     gear.classList.add('hidden');
     pause.classList.remove('hidden'); stop.classList.remove('hidden');
     timer.style.display='inline'; timer.classList.toggle('live', recState==='recording');
-    pause.textContent = recState==='paused' ? '▶ 继续' : '⏸ 暂停';
+    pause.textContent = recState==='paused' ? '继续' : '暂停';
   }
 }
 
@@ -1878,13 +2135,13 @@ function showExport(blob, isMp4){
   video.src=url;
   const ext = isMp4 ? 'mp4' : 'webm';
   link.href=url; link.download='whiteboard-'+Date.now()+'.'+ext;
-  link.textContent='⬇ 下载 '+ext.toUpperCase();
+  link.textContent='下载 '+ext.toUpperCase();
   conv.classList.toggle('hidden', isMp4); // 已是 mp4 则隐藏转换按钮
   const offlineHint = location.protocol==='file:'
     ? '离线双击打开时，转 mp4 需要临时联网下载转码器；没有网络也可以直接下载 webm。'
     : '';
   document.getElementById('exportStatus').textContent = isMp4
-    ? '✓ 已用浏览器原生编码导出 mp4'
+    ? '已用浏览器原生编码导出 mp4'
     : '当前浏览器原生只能录 webm，可点下方按钮转成 mp4（首次需联网下载转码器）。' + offlineHint;
   modal.classList.remove('hidden');
 }
@@ -1913,10 +2170,10 @@ document.getElementById('convertMp4').onclick = async ()=>{
     const mp4=new Blob([data.buffer],{type:'video/mp4'});
     const url=URL.createObjectURL(mp4);
     const link=document.getElementById('downloadLink');
-    link.href=url; link.download='whiteboard-'+Date.now()+'.mp4'; link.textContent='⬇ 下载 MP4';
+    link.href=url; link.download='whiteboard-'+Date.now()+'.mp4'; link.textContent='下载 MP4';
     document.getElementById('previewVideo').src=url;
     btn.classList.add('hidden');
-    status.textContent='✓ 已转换为 mp4，可下载。';
+    status.textContent='已转换为 mp4，可下载。';
   }catch(err){
     console.error(err);
     status.textContent='转码失败（可能是网络问题）。你仍可下载 webm，多数播放器都能播。';
@@ -1925,6 +2182,7 @@ document.getElementById('convertMp4').onclick = async ()=>{
 };
 
 /* --------------------------- UI WIRING --------------------------------- */
+const imageInput=document.getElementById('imageInput');
 // 样式面板
 const swatches=document.getElementById('swatches');
 COLORS.forEach(c=>{
@@ -1970,8 +2228,8 @@ document.getElementById('opacity').oninput=(e)=>{ state.opacity=+e.target.value/
 function updateStylePanel(){
   const tool=state.tool;
   const props=document.getElementById('props');
-  const isDraw=['pen','rect','ellipse','arrow'].includes(tool);
-  const isShape=['rect','ellipse'].includes(tool);
+  const isDraw=['pen','rect','ellipse','diamond','arrow'].includes(tool);
+  const isShape=['rect','ellipse','diamond'].includes(tool);
   const isText=tool==='text';
   props.classList.toggle('hidden', !(isDraw||isText));
   document.getElementById('strokeGroup').style.display = (isDraw||isText)?'block':'none';
@@ -1983,20 +2241,24 @@ function updateStylePanel(){
   document.getElementById('opacityGroup').style.display = isDraw?'block':'none';
   document.getElementById('fontGroup').style.display = isText?'block':'none';
 }
+function cursorForTool(){
+  if(pendingImage || state.tool==='image') return 'copy';
+  if(state.tool==='hand') return 'grab';
+  if(state.tool==='text') return 'text';
+  if(state.tool==='select') return 'default';
+  return 'crosshair';
+}
 
 // 工具切换
 document.querySelectorAll('.tool[data-tool]').forEach(btn=>{
   btn.onclick=()=>{
-    state.tool=btn.dataset.tool;
-    document.querySelectorAll('.tool[data-tool]').forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
-    updateStylePanel();
-    board.style.cursor = state.tool==='hand'?'grab':(state.tool==='text'?'text':'crosshair');
+    setActiveTool(btn.dataset.tool, btn.dataset.tool==='image');
   };
 });
+imageInput.onchange=()=>{ readImageFile(imageInput.files && imageInput.files[0]); };
 document.getElementById('undoBtn').onclick=undo;
 document.getElementById('redoBtn').onclick=redo;
-document.getElementById('clearBtn').onclick=()=>{ if(state.scene.length && confirm('清空整个画布？')){ pushHistory(); state.scene=[]; render(); } };
+document.getElementById('clearBtn').onclick=()=>{ if(state.scene.length && confirm('清空整个画布？')){ pushHistory(); state.scene=[]; clearSelection(); render(); } };
 
 // 缩放条
 document.getElementById('zoomIn').onclick=()=>zoomAt(innerWidth/2,innerHeight/2,1.2);
@@ -2059,17 +2321,47 @@ async function populateDevices(){
 
 // 键盘快捷键
 window.addEventListener('keydown',(e)=>{
+  const target=e.target;
+  if(target && (target.tagName==='TEXTAREA' || target.tagName==='INPUT' || target.isContentEditable)) return;
   if(textInput.style.display==='block') return; // 文字输入时不抢键
+  if(e.key==='Escape' && cancelPendingImage()){ e.preventDefault(); return; }
+  if((e.key==='Delete'||e.key==='Backspace') && deleteSelectedObject()){ e.preventDefault(); return; }
   if(e.code==='Space'){ spaceDown=true; if(state.tool!=='hand') board.style.cursor='grab'; }
   const meta=e.metaKey||e.ctrlKey;
   if(meta && e.key.toLowerCase()==='z'){ e.preventDefault(); e.shiftKey?redo():undo(); return; }
   if(meta && e.key.toLowerCase()==='y'){ e.preventDefault(); redo(); return; }
   if(meta) return;
-  const map={p:'pen',r:'rect',o:'ellipse',a:'arrow',t:'text',e:'eraser',h:'hand',v:'hand'};
+  const map={
+    p:'pen', r:'rect', o:'ellipse', d:'diamond', a:'arrow', t:'text',
+    e:'eraser', h:'hand', v:'select', i:'image',
+    '1':'text', '2':'ellipse', '3':'rect', '4':'diamond',
+    '5':'arrow', '6':'image', '7':'eraser'
+  };
   const k=e.key.toLowerCase();
-  if(map[k]){ document.querySelector(`.tool[data-tool="${map[k]}"]`).click(); }
+  if(map[k]){
+    const btn=document.querySelector(`.tool[data-tool="${map[k]}"]`);
+    if(btn) btn.click();
+    else setActiveTool(map[k]);
+  }
 });
-window.addEventListener('keyup',(e)=>{ if(e.code==='Space'){ spaceDown=false; board.style.cursor=state.tool==='hand'?'grab':(state.tool==='text'?'text':'crosshair'); } });
+window.addEventListener('keyup',(e)=>{ if(e.code==='Space'){ spaceDown=false; board.style.cursor=cursorForTool(); } });
+
+window.addEventListener('paste',(e)=>{
+  const target=e.target;
+  if(target && (target.tagName==='TEXTAREA' || target.tagName==='INPUT' || target.isContentEditable)) return;
+  const items=e.clipboardData && e.clipboardData.items;
+  if(!items) return;
+  for(const item of items){
+    if(item.kind==='file' && item.type && item.type.startsWith('image/')){
+      const file=item.getAsFile();
+      if(file){
+        e.preventDefault();
+        readImageFile(file);
+      }
+      return;
+    }
+  }
+});
 
 // 格式提示
 
@@ -2091,6 +2383,7 @@ document.getElementById('skipCam').onclick=async ()=>{ await startMicOnly(); doc
 setupLaunchMode();
 updateStylePanel();
 resize();
+board.style.cursor=cursorForTool();
 updateHistoryButtons();
 updateZoomLabel();
 updateRecUI();
