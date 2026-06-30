@@ -131,6 +131,12 @@
 
   /* ---------- 对象选择框（DOM 浮层，不进入录制 canvas） ---------- */
   #selectionBox{position:fixed;z-index:12;display:none;pointer-events:none;border:1.5px solid #6965db;border-radius:4px;box-shadow:0 0 0 1px rgba(105,101,219,.18);}
+  #selectionBox .sel-handle{position:absolute;width:12px;height:12px;background:#fff;border:1.5px solid #6965db;border-radius:2px;pointer-events:auto;touch-action:none;}
+  #selectionBox:not(.resizable) .sel-handle{display:none;}
+  #selectionBox .sel-handle[data-h="nw"]{left:-7px;top:-7px;cursor:nwse-resize;}
+  #selectionBox .sel-handle[data-h="ne"]{right:-7px;top:-7px;cursor:nesw-resize;}
+  #selectionBox .sel-handle[data-h="sw"]{left:-7px;bottom:-7px;cursor:nesw-resize;}
+  #selectionBox .sel-handle[data-h="se"]{right:-7px;bottom:-7px;cursor:nwse-resize;}
 
   /* ---------- 录制取景框 ---------- */
   #recFrame{position:fixed;z-index:27;display:none;border:3px solid #18a558;border-radius:4px;box-shadow:0 0 0 99999px rgba(0,0,0,.18);cursor:move;}
@@ -223,7 +229,12 @@
 <body>
 
 <canvas id="board"></canvas>
-<div id="selectionBox"></div>
+<div id="selectionBox">
+  <div class="sel-handle" data-h="nw"></div>
+  <div class="sel-handle" data-h="ne"></div>
+  <div class="sel-handle" data-h="sw"></div>
+  <div class="sel-handle" data-h="se"></div>
+</div>
 
 <!-- 顶部工具栏 -->
 <div class="toolbar" id="toolbar">
@@ -967,6 +978,9 @@ function updateSelectionBox(){
   selectionBox.style.width=Math.max(1,b.w*state.view.scale)+'px';
   selectionBox.style.height=Math.max(1,b.h*state.view.scale)+'px';
   selectionBox.style.display='block';
+  // 仅含 x/y/w/h 的对象(图片/矩形/圆/菱形)显示四角缩放手柄
+  const resizable = o && (o.type==='image'||o.type==='rect'||o.type==='ellipse'||o.type==='diamond');
+  selectionBox.classList.toggle('resizable', !!resizable);
 }
 function clearSelection(){
   selectedIndex=-1;
@@ -1039,6 +1053,8 @@ let panStart = null;
 let spaceDown = false;
 let erasedThisStroke = false;
 let lastPointerWorld = null;
+let moveLast = null, movePushed = false;   // 选中对象拖动
+let resizing = null;                        // 角手柄缩放
 function currentDrawStyle(){
   return {
     color: state.color,
@@ -1105,10 +1121,16 @@ function placePendingImage(){
   const placed={type:'image',src:pendingImage.src,x:pendingImage.x,y:pendingImage.y,w:pendingImage.w,h:pendingImage.h};
   state.scene.push(placed);
   pendingImage=null;
-  clearSelection();
-  activateSelectTool();
+  setActiveTool('select');                 // 切到选择工具（不会清除选中）
+  selectedIndex=state.scene.length-1;       // 放置后自动选中，立即可拖动/缩放
+  updateSelectionBox();
   render();
   return true;
+}
+function translateObject(o,dx,dy){
+  if(o.type==='pen'){ o.points.forEach(p=>{p.x+=dx;p.y+=dy;}); }
+  else if(o.type==='arrow'){ o.x1+=dx;o.y1+=dy;o.x2+=dx;o.y2+=dy; }
+  else { o.x+=dx; o.y+=dy; }
 }
 function cancelPendingImage(){
   if(!pendingImage) return false;
@@ -1129,7 +1151,11 @@ board.addEventListener('pointerdown', (e)=>{
 
   if(pendingImage && e.button===0){ placePendingImage(); return; }
 
-  if(state.tool === 'select'){ selectObjectAt(w); return; }
+  if(state.tool === 'select'){
+    const hit=selectObjectAt(w);
+    if(hit){ action='move'; moveLast=w; movePushed=false; board.style.cursor='grabbing'; }
+    return;
+  }
 
   if(state.tool === 'text'){ openTextInput(e.clientX, e.clientY, w); return; }
 
@@ -1170,6 +1196,15 @@ board.addEventListener('pointermove', (e)=>{
     render(); return;
   }
   if(action === 'erase'){ eraseAt(w); return; }
+  if(action === 'move' && selectedIndex>=0){
+    const o=state.scene[selectedIndex];
+    if(o){
+      if(!movePushed){ pushHistory(); movePushed=true; }
+      translateObject(o, w.x-moveLast.x, w.y-moveLast.y);
+      moveLast=w; render();
+    }
+    return;
+  }
   if(action !== 'draw' || !draft) return;
   if(draft.type === 'pen'){ draft.points.push(w); }
   else if(draft.type === 'arrow'){ draft.x2=w.x; draft.y2=w.y; }
@@ -1185,10 +1220,53 @@ function endAction(){
     if(valid){ pushHistory(); state.scene.push(draft); }
     draft=null; render();
   }
-  action=null; start=null; panStart=null;
+  action=null; start=null; panStart=null; moveLast=null;
+  board.style.cursor=cursorForTool();
 }
 board.addEventListener('pointerup', endAction);
 board.addEventListener('pointercancel', endAction);
+
+/* ---- 选中对象四角缩放（图片/矩形/圆/菱形） ---- */
+function resizeSelected(w){
+  const o=resizing.o, b=resizing.b, corner=resizing.corner;
+  if(resizing.aspect){
+    // 图片：锁定宽高比，固定对角不动
+    let fx,fy;
+    if(corner==='nw'){ fx=b.x+b.w; fy=b.y+b.h; }
+    else if(corner==='ne'){ fx=b.x; fy=b.y+b.h; }
+    else if(corner==='sw'){ fx=b.x+b.w; fy=b.y; }
+    else { fx=b.x; fy=b.y; }
+    let dw=Math.abs(w.x-fx), dh=Math.abs(w.y-fy);
+    if(dw/resizing.aspect > dh) dh=dw/resizing.aspect; else dw=dh*resizing.aspect;
+    dw=Math.max(8,dw); dh=Math.max(8,dh);
+    const ox=(w.x<fx)?fx-dw:fx, oy=(w.y<fy)?fy-dh:fy;
+    o.x=ox; o.y=oy; o.w=dw; o.h=dh;
+  }else{
+    let left=b.x, top=b.y, right=b.x+b.w, bottom=b.y+b.h;
+    if(corner==='nw'){ left=w.x; top=w.y; }
+    else if(corner==='ne'){ right=w.x; top=w.y; }
+    else if(corner==='sw'){ left=w.x; bottom=w.y; }
+    else { right=w.x; bottom=w.y; }
+    o.x=Math.min(left,right); o.y=Math.min(top,bottom);
+    o.w=Math.max(8,Math.abs(right-left)); o.h=Math.max(8,Math.abs(bottom-top));
+  }
+  render();
+}
+selectionBox.querySelectorAll('.sel-handle').forEach(h=>{
+  h.addEventListener('pointerdown',(e)=>{
+    if(selectedIndex<0) return;
+    const o=state.scene[selectedIndex];
+    if(!o || !('w' in o)) return;
+    e.stopPropagation(); e.preventDefault();
+    const b=normalizedBox(o);
+    resizing={ corner:h.dataset.h, o, b, aspect:(o.type==='image'? (b.w/b.h):0) };
+    pushHistory();
+    h.setPointerCapture(e.pointerId);
+  });
+  h.addEventListener('pointermove',(e)=>{ if(resizing) resizeSelected(toWorld(e.clientX,e.clientY)); });
+  h.addEventListener('pointerup',(e)=>{ resizing=null; });
+  h.addEventListener('pointercancel',()=>{ resizing=null; });
+});
 board.addEventListener('contextmenu', e=>e.preventDefault());
 
 // 滚轮缩放（以光标为中心）
