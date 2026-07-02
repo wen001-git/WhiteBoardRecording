@@ -3,18 +3,24 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-<title>白板录制工具 · Whiteboard Recorder</title>
+<title>Demo A 纸上工作室 · 白板录制工具</title>
 <style>
   :root{
-    --bg:#f7f6f3; --panel:#ffffff; --line:#e7e5e0; --ink:#1e1e1e;
-    --muted:#8a8780; --accent:#5b57d6; --accent-soft:#ecebfb;
-    --success:#16a34a; --success-soft:#e8f7ee; --warn:#f59e0b; --warn-soft:#fff4db;
-    --danger:#e03131; --danger-soft:#fde7e7; --stop:#2f2b28; --shadow:0 6px 24px rgba(0,0,0,.10);
+    --bg:#f3f0e9; --panel:#fffefb; --line:#e6e1d5; --ink:#292620;
+    --muted:#8e8875; --accent:#2b4acb; --accent-soft:#eaedfa;
+    --success:#1e8a5a; --success-soft:#e6f5ec; --warn:#e8a013; --warn-soft:#fdf3d9;
+    --danger:#da3b30; --danger-soft:#fbe7e4; --stop:#33302a;
+    --shadow:0 1px 2px rgba(58,50,32,.06),0 10px 28px rgba(58,50,32,.13);
     --radius:14px;
+    --hand:"Comic Sans MS","Segoe Print","Bradley Hand","Chalkboard SE","Hannotate SC","HanziPen SC","Kaiti SC","STKaiti","KaiTi","楷体","PingFang SC","Microsoft YaHei",sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{margin:0;height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;color:var(--ink);background:var(--bg);}
-  #board{position:fixed;inset:0;width:100%;height:100%;display:block;background:#ffffff;touch-action:none;cursor:crosshair;}
+  /* 纸面：暖纸色 + 极淡点阵（CSS 背景，canvas 本体透明 → 不会被录制采样） */
+  #board{position:fixed;inset:0;width:100%;height:100%;display:block;background-color:#faf8f2;
+    background-image:radial-gradient(rgba(101,88,55,.16) 1.1px,transparent 1.3px);background-size:28px 28px;
+    touch-action:none;cursor:crosshair;}
 
   /* ---------- 顶部工具栏 ---------- */
   .toolbar{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:30;
@@ -22,31 +28,36 @@
     border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:6px;}
   .tool{width:40px;height:40px;border:none;background:transparent;border-radius:10px;cursor:pointer;
     display:flex;align-items:center;justify-content:center;color:var(--ink);font-size:18px;transition:.12s;position:relative;}
-  .tool:hover{background:#f0eff5;}
+  .tool:hover{background:#f4f1e8;}
   .tool.active{background:var(--accent-soft);color:var(--accent);}
+  /* 签名元素：激活工具下的一道手绘墨迹下划线 */
+  .tool.active::after{content:"";position:absolute;left:7px;right:7px;bottom:2px;height:5px;pointer-events:none;
+    background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 6'%3E%3Cpath d='M2 4 C 8 2.2 14 4.8 21 3.4 S 34 2.4 42 3.8' fill='none' stroke='%232b4acb' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E") center/100% 100% no-repeat;
+    transform-origin:left center;animation:inkIn .18s ease-out;}
+  @keyframes inkIn{from{transform:scaleX(0);}to{transform:scaleX(1);}}
   .tool svg,.iconbtn svg,.recbtn svg,.zoombar svg{width:20px;height:20px;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none;}
   .tool .solid-icon{fill:currentColor;stroke:none;}
-  .tool .key{position:absolute;right:7px;bottom:5px;font-size:10px;line-height:1;color:#b6b6bc;font-weight:500;}
+  .tool .key{position:absolute;right:7px;bottom:5px;font-size:10px;line-height:1;color:#c4bda9;font-weight:500;font-family:var(--mono);}
   .tool.active .key{color:var(--accent);}
   .sep{width:1px;height:26px;background:var(--line);margin:0 4px;}
   .tool[disabled]{opacity:.35;cursor:not-allowed;}
   #toolHelp{position:fixed;top:78px;left:50%;transform:translateX(-50%);z-index:20;display:none;
-    color:#b7b4ae;font-size:15px;line-height:1.5;text-align:center;white-space:nowrap;pointer-events:none;}
+    color:#a9a28e;font-size:15px;line-height:1.5;text-align:center;white-space:nowrap;pointer-events:none;font-family:var(--hand);}
 
   /* ---------- 左侧属性面板 ---------- */
   .props{position:fixed;top:80px;left:14px;z-index:25;width:220px;max-height:calc(100vh - 160px);overflow:auto;background:var(--panel);
     border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;}
-  .props h4{margin:0 0 10px;font-size:13px;color:var(--ink);font-weight:600;letter-spacing:0;}
+  .props h4{margin:0 0 10px;font-size:14px;color:var(--ink);font-weight:700;letter-spacing:.4px;font-family:var(--hand);}
   .props .group + .group{margin-top:18px;}
   .swatches{display:flex;gap:8px;flex-wrap:wrap;}
   .swatch{width:30px;height:30px;border-radius:8px;cursor:pointer;border:2px solid rgba(0,0,0,.08);transition:.1s;}
   .swatch.active{outline:2px solid var(--accent);outline-offset:2px;}
   .swatch.none{background:repeating-conic-gradient(#ddd 0 25%,#fff 0 50%) 0 0/12px 12px;}
   .style-row,.widths{display:flex;gap:8px;}
-  .style-btn,.wbtn{width:42px;height:38px;border:1px solid transparent;background:#f3f2f7;border-radius:10px;cursor:pointer;
+  .style-btn,.wbtn{width:42px;height:38px;border:1px solid transparent;background:#f4f1e8;border-radius:10px;cursor:pointer;
     display:flex;align-items:center;justify-content:center;}
-  .style-btn:hover,.wbtn:hover{background:#eceaf3;}
-  .style-btn.active,.wbtn.active{color:#1f1b8f;background:#dedcff;border-color:#d5d2ff;}
+  .style-btn:hover,.wbtn:hover{background:#eceadf;}
+  .style-btn.active,.wbtn.active{color:var(--accent);background:var(--accent-soft);border-color:#d5dbf4;}
   .style-btn svg{width:19px;height:19px;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none;}
   .wbtn .dot{background:var(--ink);border-radius:999px;}
   .style-sample{display:block;width:18px;height:0;border-top:2px solid currentColor;}
@@ -56,10 +67,10 @@
   .corner-icon{width:18px;height:18px;border:2px dashed currentColor;}
   .corner-icon.round{border-radius:6px;}
   .font-row,.size-row{display:flex;gap:8px;flex-wrap:wrap;}
-  .font-btn,.size-btn{min-width:42px;height:38px;border:1px solid transparent;background:#f3f2f7;border-radius:10px;cursor:pointer;
+  .font-btn,.size-btn{min-width:42px;height:38px;border:1px solid transparent;background:#f4f1e8;border-radius:10px;cursor:pointer;
     display:flex;align-items:center;justify-content:center;color:var(--ink);font-size:15px;padding:0 10px;}
-  .font-btn:hover,.size-btn:hover{background:#eceaf3;}
-  .font-btn.active,.size-btn.active{color:#1f1b8f;background:#dedcff;border-color:#d5d2ff;}
+  .font-btn:hover,.size-btn:hover{background:#eceadf;}
+  .font-btn.active,.size-btn.active{color:var(--accent);background:var(--accent-soft);border-color:#d5dbf4;}
   .font-btn.more{font-size:13px;color:var(--muted);min-width:64px;}
   .font-popover{position:fixed;left:246px;top:160px;z-index:45;width:270px;background:var(--panel);border:1px solid var(--line);
     border-radius:14px;box-shadow:var(--shadow);padding:14px;display:none;}
@@ -70,7 +81,7 @@
   .font-list{max-height:260px;overflow:auto;display:flex;flex-direction:column;gap:6px;}
   .font-option{border:none;background:transparent;border-radius:10px;padding:9px 10px;text-align:left;cursor:pointer;color:var(--ink);
     display:flex;align-items:center;gap:10px;}
-  .font-option:hover{background:#f3f2f7;}
+  .font-option:hover{background:#f4f1e8;}
   .font-option.active{background:var(--accent-soft);color:var(--accent);}
   .font-preview{font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;}
   .font-tag{font-size:10px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:2px 6px;}
@@ -103,11 +114,11 @@
   .recbtn.warn:hover{background:#d97706;color:#fff;}
   .recbtn.stop{background:var(--stop);color:#fff;}
   .recbtn.stop:hover{background:#1f1c1a;}
-  .recbtn.ghost{background:#f0eff5;color:var(--ink);}
-  .recbtn.ghost:hover{background:#e7e6ee;}
+  .recbtn.ghost{background:#f4f1e8;color:var(--ink);}
+  .recbtn.ghost:hover{background:#e9e5d8;}
   .recbtn[disabled]{opacity:.45;cursor:not-allowed;}
   .rec-dot{width:10px;height:10px;border-radius:50%;background:#fff;}
-  .timer{font-variant-numeric:tabular-nums;font-weight:600;font-size:14px;min-width:54px;text-align:center;color:var(--ink);display:none;}
+  .timer{font-variant-numeric:tabular-nums;font-family:var(--mono);font-weight:600;font-size:14px;min-width:54px;text-align:center;color:var(--ink);display:none;}
   .timer.live::before{content:"●";color:var(--danger);margin-right:6px;animation:blink 1s steps(2) infinite;}
   @keyframes blink{50%{opacity:.2;}}
   .pill{font-size:11px;color:var(--muted);padding:2px 8px;border:1px solid var(--line);border-radius:999px;}
@@ -116,8 +127,8 @@
   .zoombar{position:fixed;bottom:18px;left:14px;z-index:25;display:flex;gap:2px;align-items:center;
     background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);padding:4px;}
   .zoombar button{width:30px;height:30px;border:none;background:transparent;border-radius:7px;cursor:pointer;font-size:16px;color:var(--ink);}
-  .zoombar button:hover{background:#f0eff5;}
-  .zoombar .zval{min-width:48px;text-align:center;font-size:13px;color:var(--muted);}
+  .zoombar button:hover{background:#f4f1e8;}
+  .zoombar .zval{min-width:48px;text-align:center;font-size:12px;color:var(--muted);font-family:var(--mono);}
 
   /* ---------- 提词器 ---------- */
   #tele{position:fixed;top:80px;right:14px;z-index:26;width:320px;max-height:60vh;display:none;flex-direction:column;
@@ -141,7 +152,7 @@
   /* ---------- 通用浮窗/弹窗 ---------- */
   .overlay{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:20px;}
   .modal{background:var(--panel);border-radius:18px;box-shadow:var(--shadow);max-width:520px;width:100%;padding:26px;}
-  .modal h2{margin:0 0 6px;font-size:22px;}
+  .modal h2{margin:0 0 6px;font-size:22px;font-family:var(--hand);letter-spacing:.5px;}
   .modal p{color:var(--muted);font-size:14px;line-height:1.6;margin:6px 0;}
   .feat{display:flex;align-items:center;gap:10px;margin:10px 0;font-size:14px;}
   .feat .emoji{font-size:18px;}
@@ -160,43 +171,43 @@
   .save-status{font-size:12px;color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:5px 10px;box-shadow:var(--shadow);opacity:0;transition:opacity .25s;white-space:nowrap;pointer-events:none;}
   .save-status.show{opacity:1;}
   .iconbtn{width:42px;height:42px;border:1px solid var(--line);background:var(--panel);border-radius:12px;box-shadow:var(--shadow);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;}
-  .iconbtn:hover{background:#f0eff5;}
+  .iconbtn:hover{background:#f4f1e8;}
   .iconbtn.active{background:var(--accent-soft);color:var(--accent);border-color:var(--accent);}
 
   /* ---------- 对象选择框（DOM 浮层，不进入录制 canvas） ---------- */
-  #selectionBox{position:fixed;z-index:12;display:none;pointer-events:none;border:1.5px solid #6965db;border-radius:4px;box-shadow:0 0 0 1px rgba(105,101,219,.18);transform-origin:center center;}
-  #selectionBox .sel-handle{position:absolute;width:12px;height:12px;background:#fff;border:1.5px solid #6965db;border-radius:2px;pointer-events:auto;touch-action:none;}
+  #selectionBox{position:fixed;z-index:12;display:none;pointer-events:none;border:1.5px solid #2b4acb;border-radius:4px;box-shadow:0 0 0 1px rgba(43,74,203,.16);transform-origin:center center;}
+  #selectionBox .sel-handle{position:absolute;width:12px;height:12px;background:#fff;border:1.5px solid #2b4acb;border-radius:2px;pointer-events:auto;touch-action:none;}
   #selectionBox:not(.resizable) .sel-handle{display:none;}
   #selectionBox .sel-handle[data-h="nw"]{left:-7px;top:-7px;cursor:nwse-resize;}
   #selectionBox .sel-handle[data-h="ne"]{right:-7px;top:-7px;cursor:nesw-resize;}
   #selectionBox .sel-handle[data-h="sw"]{left:-7px;bottom:-7px;cursor:nesw-resize;}
   #selectionBox .sel-handle[data-h="se"]{right:-7px;bottom:-7px;cursor:nwse-resize;}
-  #selectionBox .sel-rotate{position:absolute;left:50%;top:-34px;width:14px;height:14px;margin-left:-7px;border:1.5px solid #6965db;border-radius:50%;background:#fff;pointer-events:auto;cursor:grab;touch-action:none;}
-  #selectionBox .sel-rotate:after{content:"";position:absolute;left:50%;top:13px;width:1.5px;height:18px;background:#6965db;transform:translateX(-50%);}
+  #selectionBox .sel-rotate{position:absolute;left:50%;top:-34px;width:14px;height:14px;margin-left:-7px;border:1.5px solid #2b4acb;border-radius:50%;background:#fff;pointer-events:auto;cursor:grab;touch-action:none;}
+  #selectionBox .sel-rotate:after{content:"";position:absolute;left:50%;top:13px;width:1.5px;height:18px;background:#2b4acb;transform:translateX(-50%);}
   #selectionBox.rotating .sel-rotate{cursor:grabbing;}
 
   /* ---------- 幻灯片边框（DOM 浮层，不进入录制 canvas） ---------- */
   .slideFrame{position:fixed;z-index:13;pointer-events:none;border:2px solid #b7b4ae;border-radius:6px;box-sizing:border-box;}
-  .slideFrame.active{border-color:#5b57d6;box-shadow:0 0 0 1px rgba(91,87,214,.25);}
+  .slideFrame.active{border-color:#2b4acb;box-shadow:0 0 0 1px rgba(43,74,203,.22);}
   .slideFrame .slideLabel{position:absolute;left:0;top:-26px;background:#b7b4ae;color:#fff;font-size:12px;font-weight:600;padding:3px 9px;border-radius:6px 6px 0 0;white-space:nowrap;}
-  .slideFrame.active .slideLabel{background:#5b57d6;}
+  .slideFrame.active .slideLabel{background:#2b4acb;}
 
   /* ---------- 右侧幻灯片面板（常驻） ---------- */
   .slidesPanel{left:auto;right:14px;top:80px;z-index:24;width:72px;max-height:calc(100vh - 160px);display:flex;flex-direction:column;align-items:center;gap:10px;padding:14px 10px;}
   .slidesPanel h4{text-align:center;white-space:nowrap;}
   .slidesList{display:flex;flex-direction:column;align-items:center;gap:8px;overflow:auto;}
-  .slideItem{position:relative;width:40px;height:40px;border-radius:10px;background:#f3f2f7;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:var(--ink);flex-shrink:0;}
-  .slideItem:hover{background:#eceaf3;}
+  .slideItem{position:relative;width:40px;height:40px;border-radius:10px;background:#f4f1e8;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:var(--ink);flex-shrink:0;}
+  .slideItem:hover{background:#eceadf;}
   .slideItem.active{background:var(--accent);color:#fff;}
   .slideItem .slideDel{position:absolute;top:3px;right:3px;width:14px;height:14px;border-radius:50%;border:none;background:var(--danger);color:#fff;font-size:9px;line-height:1;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .12s;cursor:pointer;}
   .slideItem:hover .slideDel{opacity:1;}
   .slideItem .slideDel[disabled]{display:none;}
   .slideAddBtn{width:40px;height:40px;border:1px dashed var(--line);background:transparent;border-radius:10px;cursor:pointer;font-size:18px;color:var(--muted);display:flex;align-items:center;justify-content:center;}
-  .slideAddBtn:hover{background:#f3f2f7;color:var(--ink);}
+  .slideAddBtn:hover{background:#f4f1e8;color:var(--ink);}
 
   /* ---------- 录制取景框 ---------- */
-  #recFrame{position:fixed;z-index:27;display:none;border:3px solid #18a558;border-radius:4px;box-shadow:0 0 0 99999px rgba(0,0,0,.18);cursor:move;}
-  #recFrame .rf-handle{position:absolute;width:16px;height:16px;background:#18a558;border:2px solid #fff;border-radius:3px;}
+  #recFrame{position:fixed;z-index:27;display:none;border:3px solid #1e8a5a;border-radius:4px;box-shadow:0 0 0 99999px rgba(0,0,0,.18);cursor:move;}
+  #recFrame .rf-handle{position:absolute;width:16px;height:16px;background:#1e8a5a;border:2px solid #fff;border-radius:3px;}
   #recFrame .rf-handle.tl{left:-9px;top:-9px;cursor:nwse-resize;}
   #recFrame .rf-handle.tr{right:-9px;top:-9px;cursor:nesw-resize;}
   #recFrame .rf-handle.bl{left:-9px;bottom:-9px;cursor:nesw-resize;}
@@ -227,8 +238,8 @@
   .modal-wide{max-width:1000px;max-height:88vh;overflow:hidden;}
   .modal-head{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:18px;}
   .modal-head h2{margin:0;}
-  .x-btn{width:34px;height:34px;border:none;background:#f0eff5;border-radius:50%;cursor:pointer;font-size:14px;}
-  .x-btn:hover{background:#e7e6ee;}
+  .x-btn{width:34px;height:34px;border:none;background:#f4f1e8;border-radius:50%;cursor:pointer;font-size:14px;}
+  .x-btn:hover{background:#e9e5d8;}
   .settings-body{display:flex;gap:26px;min-height:0;}
   .settings-left{flex:0 0 360px;display:flex;flex-direction:column;align-items:stretch;}
   .settings-right{flex:1;min-width:0;max-height:70vh;overflow:auto;padding-right:8px;}
@@ -280,6 +291,10 @@
   .cursor-dot{width:30px;height:30px;border-radius:50%;border:2px solid transparent;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.12);}
   .cursor-dot.active{outline:3px solid var(--ink);outline-offset:3px;}
   .settings-done{position:sticky;bottom:0;margin-top:20px;}
+
+  /* ---------- 可达性 & 动效偏好 ---------- */
+  button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms !important;transition-duration:.01ms !important;}}
 </style>
 </head>
 <body>
@@ -701,8 +716,18 @@ function applyTransform(){
 
 function clearBg(){
   ctx.setTransform(1,0,0,1,0,0);
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0,0,board.width,board.height);
+  // 画布保持透明：纸面底色/点阵放在 #board 的 CSS 背景上，
+  // drawRecFrame 采样 board 像素时不带纹理，录制导出仍是纯白卡片
+  ctx.clearRect(0,0,board.width,board.height);
+}
+
+// 纸面点阵网格随视图缩放/平移联动（只动 CSS 背景，不写入 canvas）
+function syncBoardGrid(){
+  let step = 28 * state.view.scale;
+  while(step < 14) step *= 2;
+  while(step > 72) step /= 2;
+  board.style.backgroundSize = step + 'px ' + step + 'px';
+  board.style.backgroundPosition = state.view.x + 'px ' + state.view.y + 'px';
 }
 
 /* ---------------------- 手绘风格渲染（自写，零依赖） ----------------------
@@ -1217,7 +1242,7 @@ function drawObject(o){
     }else{
       ctx.setLineDash([6,5]);
       ctx.lineWidth=1.5/state.view.scale;
-      ctx.strokeStyle=item.failed?'#e03131':'#5b57d6';
+      ctx.strokeStyle=item.failed?'#e03131':'#2b4acb';
       ctx.fillStyle='rgba(91,87,214,.08)';
       ctx.fillRect(o.x,o.y,o.w,o.h);
       ctx.strokeRect(o.x,o.y,o.w,o.h);
@@ -1415,6 +1440,7 @@ let pendingImage = null;
 
 function render(){
   clearBg();
+  syncBoardGrid();
   applyTransform();
   for(let i=0;i<state.scene.length;i++){
     if(i===editingTextIndex && textInput.style.display==='block') continue;
