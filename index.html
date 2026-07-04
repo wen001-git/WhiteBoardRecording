@@ -9,8 +9,10 @@
     --bg:#f7f6f3; --panel:#ffffff; --line:#e7e5e0; --ink:#1e1e1e;
     --muted:#8a8780; --accent:#5b57d6; --accent-soft:#ecebfb;
     --success:#16a34a; --success-soft:#e8f7ee; --warn:#f59e0b; --warn-soft:#fff4db;
-    --danger:#e03131; --danger-soft:#fde7e7; --stop:#2f2b28; --shadow:0 6px 24px rgba(0,0,0,.10);
+    --danger:#e03131; --danger-soft:#fde7e7; --stop:#2f2b28;
+    --shadow:0 1px 2px rgba(24,22,38,.05),0 10px 30px rgba(24,22,38,.10);
     --radius:14px;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{margin:0;height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;color:var(--ink);background:var(--bg);}
@@ -23,10 +25,11 @@
   .tool{width:40px;height:40px;border:none;background:transparent;border-radius:10px;cursor:pointer;
     display:flex;align-items:center;justify-content:center;color:var(--ink);font-size:18px;transition:.12s;position:relative;}
   .tool:hover{background:#f0eff5;}
+  .tool:active{transform:scale(.94);}
   .tool.active{background:var(--accent-soft);color:var(--accent);}
   .tool svg,.iconbtn svg,.recbtn svg,.zoombar svg{width:20px;height:20px;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none;}
   .tool .solid-icon{fill:currentColor;stroke:none;}
-  .tool .key{position:absolute;right:7px;bottom:5px;font-size:10px;line-height:1;color:#b6b6bc;font-weight:500;}
+  .tool .key{position:absolute;right:7px;bottom:5px;font-size:10px;line-height:1;color:#b6b6bc;font-weight:500;font-family:var(--mono);}
   .tool.active .key{color:var(--accent);}
   .sep{width:1px;height:26px;background:var(--line);margin:0 4px;}
   .tool[disabled]{opacity:.35;cursor:not-allowed;}
@@ -40,13 +43,14 @@
   .props .group + .group{margin-top:18px;}
   .swatches{display:flex;gap:8px;flex-wrap:wrap;}
   .swatch{width:30px;height:30px;border-radius:8px;cursor:pointer;border:2px solid rgba(0,0,0,.08);transition:.1s;}
+  .swatch:hover{transform:scale(1.1);}
   .swatch.active{outline:2px solid var(--accent);outline-offset:2px;}
   .swatch.none{background:repeating-conic-gradient(#ddd 0 25%,#fff 0 50%) 0 0/12px 12px;}
   .style-row,.widths{display:flex;gap:8px;}
   .style-btn,.wbtn{width:42px;height:38px;border:1px solid transparent;background:#f3f2f7;border-radius:10px;cursor:pointer;
     display:flex;align-items:center;justify-content:center;}
   .style-btn:hover,.wbtn:hover{background:#eceaf3;}
-  .style-btn.active,.wbtn.active{color:#1f1b8f;background:#dedcff;border-color:#d5d2ff;}
+  .style-btn.active,.wbtn.active{color:var(--accent);background:var(--accent-soft);border-color:#dcdaf8;}
   .style-btn svg{width:19px;height:19px;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none;}
   .wbtn .dot{background:var(--ink);border-radius:999px;}
   .style-sample{display:block;width:18px;height:0;border-top:2px solid currentColor;}
@@ -59,7 +63,7 @@
   .font-btn,.size-btn{min-width:42px;height:38px;border:1px solid transparent;background:#f3f2f7;border-radius:10px;cursor:pointer;
     display:flex;align-items:center;justify-content:center;color:var(--ink);font-size:15px;padding:0 10px;}
   .font-btn:hover,.size-btn:hover{background:#eceaf3;}
-  .font-btn.active,.size-btn.active{color:#1f1b8f;background:#dedcff;border-color:#d5d2ff;}
+  .font-btn.active,.size-btn.active{color:var(--accent);background:var(--accent-soft);border-color:#dcdaf8;}
   .font-btn.more{font-size:13px;color:var(--muted);min-width:64px;}
   .font-popover{position:fixed;left:246px;top:160px;z-index:45;width:270px;background:var(--panel);border:1px solid var(--line);
     border-radius:14px;box-shadow:var(--shadow);padding:14px;display:none;}
@@ -107,7 +111,7 @@
   .recbtn.ghost:hover{background:#e7e6ee;}
   .recbtn[disabled]{opacity:.45;cursor:not-allowed;}
   .rec-dot{width:10px;height:10px;border-radius:50%;background:#fff;}
-  .timer{font-variant-numeric:tabular-nums;font-weight:600;font-size:14px;min-width:54px;text-align:center;color:var(--ink);display:none;}
+  .timer{font-variant-numeric:tabular-nums;font-family:var(--mono);font-weight:600;font-size:14px;min-width:54px;text-align:center;color:var(--ink);display:none;}
   .timer.live::before{content:"●";color:var(--danger);margin-right:6px;animation:blink 1s steps(2) infinite;}
   @keyframes blink{50%{opacity:.2;}}
   .pill{font-size:11px;color:var(--muted);padding:2px 8px;border:1px solid var(--line);border-radius:999px;}
@@ -117,7 +121,7 @@
     background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);padding:4px;}
   .zoombar button{width:30px;height:30px;border:none;background:transparent;border-radius:7px;cursor:pointer;font-size:16px;color:var(--ink);}
   .zoombar button:hover{background:#f0eff5;}
-  .zoombar .zval{min-width:48px;text-align:center;font-size:13px;color:var(--muted);}
+  .zoombar .zval{min-width:48px;text-align:center;font-size:12px;color:var(--muted);font-family:var(--mono);}
 
   /* ---------- 提词器 ---------- */
   #tele{position:fixed;top:80px;right:14px;z-index:26;width:320px;max-height:60vh;display:none;flex-direction:column;
@@ -137,6 +141,10 @@
     outline:none;caret-color:var(--ink);color:var(--ink);font-family:inherit;padding:2px 4px;resize:none;overflow:visible;
     line-height:1.2;min-width:160px;max-width:420px;white-space:pre-wrap;}
   #textInput span{white-space:pre-wrap;}
+  /* 文字编辑态的按键提示（DOM 浮层，不进录制） */
+  #textHint{position:fixed;z-index:41;display:none;background:rgba(20,20,22,.78);color:#fff;font-size:12px;
+    padding:4px 10px;border-radius:8px;white-space:nowrap;pointer-events:none;}
+  #textHint b{font-weight:600;color:#ffd97a;}
 
   /* ---------- 通用浮窗/弹窗 ---------- */
   .overlay{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:20px;}
@@ -164,35 +172,47 @@
   .iconbtn.active{background:var(--accent-soft);color:var(--accent);border-color:var(--accent);}
 
   /* ---------- 对象选择框（DOM 浮层，不进入录制 canvas） ---------- */
-  #selectionBox{position:fixed;z-index:12;display:none;pointer-events:none;border:1.5px solid #6965db;border-radius:4px;box-shadow:0 0 0 1px rgba(105,101,219,.18);transform-origin:center center;}
-  #selectionBox .sel-handle{position:absolute;width:12px;height:12px;background:#fff;border:1.5px solid #6965db;border-radius:2px;pointer-events:auto;touch-action:none;}
+  #selectionBox{position:fixed;z-index:12;display:none;pointer-events:none;border:1.5px solid var(--accent);border-radius:4px;box-shadow:0 0 0 1px rgba(91,87,214,.16);transform-origin:center center;}
+  #selectionBox .sel-handle{position:absolute;width:12px;height:12px;background:#fff;border:1.5px solid var(--accent);border-radius:2px;pointer-events:auto;touch-action:none;}
   #selectionBox:not(.resizable) .sel-handle{display:none;}
   #selectionBox .sel-handle[data-h="nw"]{left:-7px;top:-7px;cursor:nwse-resize;}
   #selectionBox .sel-handle[data-h="ne"]{right:-7px;top:-7px;cursor:nesw-resize;}
   #selectionBox .sel-handle[data-h="sw"]{left:-7px;bottom:-7px;cursor:nesw-resize;}
   #selectionBox .sel-handle[data-h="se"]{right:-7px;bottom:-7px;cursor:nwse-resize;}
-  #selectionBox .sel-rotate{position:absolute;left:50%;top:-34px;width:14px;height:14px;margin-left:-7px;border:1.5px solid #6965db;border-radius:50%;background:#fff;pointer-events:auto;cursor:grab;touch-action:none;}
-  #selectionBox .sel-rotate:after{content:"";position:absolute;left:50%;top:13px;width:1.5px;height:18px;background:#6965db;transform:translateX(-50%);}
+  #selectionBox .sel-rotate{position:absolute;left:50%;top:-34px;width:14px;height:14px;margin-left:-7px;border:1.5px solid var(--accent);border-radius:50%;background:#fff;pointer-events:auto;cursor:grab;touch-action:none;}
+  #selectionBox .sel-rotate:after{content:"";position:absolute;left:50%;top:13px;width:1.5px;height:18px;background:var(--accent);transform:translateX(-50%);}
   #selectionBox.rotating .sel-rotate{cursor:grabbing;}
 
   /* ---------- 幻灯片边框（DOM 浮层，不进入录制 canvas） ---------- */
   .slideFrame{position:fixed;z-index:13;pointer-events:none;border:2px solid #b7b4ae;border-radius:6px;box-sizing:border-box;}
-  .slideFrame.active{border-color:#5b57d6;box-shadow:0 0 0 1px rgba(91,87,214,.25);}
+  .slideFrame.active{border-color:var(--accent);box-shadow:0 0 0 1px rgba(91,87,214,.22);}
   .slideFrame .slideLabel{position:absolute;left:0;top:-26px;background:#b7b4ae;color:#fff;font-size:12px;font-weight:600;padding:3px 9px;border-radius:6px 6px 0 0;white-space:nowrap;}
-  .slideFrame.active .slideLabel{background:#5b57d6;}
+  .slideFrame.active .slideLabel{background:var(--accent);}
 
   /* ---------- 右侧幻灯片面板（常驻） ---------- */
-  .slidesPanel{left:auto;right:14px;top:80px;z-index:24;width:72px;max-height:calc(100vh - 160px);display:flex;flex-direction:column;align-items:center;gap:10px;padding:14px 10px;}
+  .slidesPanel{left:auto;right:14px;top:80px;z-index:24;width:76px;max-height:calc(100vh - 160px);display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 10px;}
   .slidesPanel h4{text-align:center;white-space:nowrap;}
-  .slidesList{display:flex;flex-direction:column;align-items:center;gap:8px;overflow:auto;}
-  .slideItem{position:relative;width:40px;height:40px;border-radius:10px;background:#f3f2f7;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:var(--ink);flex-shrink:0;}
+  /* 只允许纵向滚动：纵向滚动条出现时会占掉部分横向空间，若横向也开 auto，
+     固定 40px 宽的缩略图在收窄后会溢出触发多余的横向滚动条（连锁反应）；显式禁掉即可 */
+  .slidesList{display:flex;flex-direction:column;align-items:center;gap:6px;padding:6px;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;-ms-overflow-style:none;}
+  /* 隐藏滚动条视觉（鼠标滚轮/触控板仍可正常滚动）：经典/非覆盖式滚动条会占掉本就窄的面板宽度，
+     这在 Windows/部分 macOS「始终显示滚动条」设置下会让 76px 宽的面板显得更挤 */
+  .slidesList::-webkit-scrollbar{width:0;height:0;background:transparent;}
+  .slideItem{position:relative;width:36px;height:36px;border-radius:10px;background:#f3f2f7;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--ink);flex-shrink:0;}
   .slideItem:hover{background:#eceaf3;}
   .slideItem.active{background:var(--accent);color:#fff;}
-  .slideItem .slideDel{position:absolute;top:3px;right:3px;width:14px;height:14px;border-radius:50%;border:none;background:var(--danger);color:#fff;font-size:9px;line-height:1;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .12s;cursor:pointer;}
+  .slideItem .slideDel{position:absolute;top:-5px;right:-5px;width:14px;height:14px;border-radius:50%;border:1.5px solid var(--panel);border-style:solid;background:var(--danger);color:#fff;font-size:9px;line-height:1;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .12s;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.18);}
   .slideItem:hover .slideDel{opacity:1;}
   .slideItem .slideDel[disabled]{display:none;}
-  .slideAddBtn{width:40px;height:40px;border:1px dashed var(--line);background:transparent;border-radius:10px;cursor:pointer;font-size:18px;color:var(--muted);display:flex;align-items:center;justify-content:center;}
+  .slideAddBtn{width:36px;height:36px;border:1px dashed var(--line);background:transparent;border-radius:10px;cursor:pointer;font-size:16px;color:var(--muted);display:flex;align-items:center;justify-content:center;}
   .slideAddBtn:hover{background:#f3f2f7;color:var(--ink);}
+  /* 幻灯片之间的「在此插入」热区：默认几乎不可见，悬停才显出虚线+加号 */
+  .slideInsertZone{width:36px;height:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;flex-shrink:0;}
+  .slideInsertZone::before{content:"";position:absolute;left:2px;right:2px;top:50%;border-top:2px dashed var(--accent);opacity:0;transition:opacity .12s;}
+  .slideInsertZone .plus{width:15px;height:15px;border-radius:50%;background:var(--accent);color:#fff;font-size:11px;line-height:15px;text-align:center;opacity:0;transform:scale(.6);transition:.12s;position:relative;}
+  .slideInsertZone:hover::before{opacity:1;}
+  .slideInsertZone:hover .plus{opacity:1;transform:scale(1);}
+  .slideInsertZone.disabled{pointer-events:none;}
 
   /* ---------- 录制取景框 ---------- */
   #recFrame{position:fixed;z-index:27;display:none;border:3px solid #18a558;border-radius:4px;box-shadow:0 0 0 99999px rgba(0,0,0,.18);cursor:move;}
@@ -219,6 +239,7 @@
   /* screenVideo 仅作 drawImage 取帧源，离屏隐藏、不显示（显示会造成无限镜像） */
   #screenVideo{position:fixed;left:-20px;top:-20px;width:2px;height:2px;opacity:0;pointer-events:none;}
   #screenStage .stage-hint{position:fixed;top:18px;left:50%;transform:translateX(-50%);background:rgba(20,20,22,.85);color:#fff;font-size:13px;padding:8px 16px;border-radius:10px;white-space:nowrap;z-index:57;}
+  #camCueHint{position:fixed;top:18px;left:50%;transform:translateX(-50%);background:rgba(20,20,22,.85);color:#fff;font-size:13px;padding:8px 16px;border-radius:10px;white-space:nowrap;z-index:65;display:none;}
   .recbar{z-index:62;}
   /* 录制内容来源切换 + 屏幕模式隐藏白板专用项 */
   body.src-screen .board-only{display:none;}
@@ -274,12 +295,17 @@
   .switch input:checked + span{background:var(--ink);}
   .switch input:checked + span:before{transform:translateX(20px);}
   .seg-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .seg-row-4{grid-template-columns:repeat(4,1fr);}
   .seg-btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:12px;cursor:pointer;font-weight:700;color:var(--muted);}
   .seg-btn.active{background:var(--ink);border-color:var(--ink);color:#fff;}
   .cursor-colors{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
   .cursor-dot{width:30px;height:30px;border-radius:50%;border:2px solid transparent;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.12);}
   .cursor-dot.active{outline:3px solid var(--ink);outline-offset:3px;}
   .settings-done{position:sticky;bottom:0;margin-top:20px;}
+
+  /* ---------- 可达性 & 动效偏好 ---------- */
+  button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms !important;transition-duration:.01ms !important;}}
 </style>
 </head>
 <body>
@@ -484,6 +510,7 @@
   <button class="recbtn primary-green hidden" id="recGo"><span class="rec-dot"></span> 开始录制</button>
   <button class="recbtn warn hidden" id="recPause">暂停</button>
   <button class="recbtn stop hidden" id="recStop">停止</button>
+  <button class="recbtn ghost hidden" id="selfCheckBtn" title="打开/关闭画中画小窗，查看摄像头入镜画面（切到其他 App 也可见）">📷 自检</button>
 </div>
 
 <!-- 缩放条 -->
@@ -498,6 +525,7 @@
 
 <!-- 文字输入浮层 -->
 <div id="textInput" contenteditable="true" role="textbox" aria-label="文字输入"></div>
+<div id="textHint"><b>Shift+Enter</b> 换行 · <b>Enter</b> 完成 · <b>Esc</b> 取消</div>
 <input id="imageInput" type="file" accept="image/*" style="display:none">
 
 <!-- 欢迎/授权弹窗 -->
@@ -543,6 +571,8 @@
   <canvas id="screenSnap"></canvas>
   <div class="stage-hint">拖动绿色取景框选择要录制的屏幕区域，然后点「开始录制」</div>
 </div>
+<!-- 录屏开始前的摄像头入镜提示（录制一开始就隐藏，不会被录进成品） -->
+<div id="camCueHint"></div>
 
 <!-- 录制设置弹窗 -->
 <div class="overlay hidden" id="settingsModal">
@@ -570,7 +600,8 @@
           </div>
           <div class="set-hint" id="sourceHint" style="font-size:12px;color:var(--muted);margin-top:8px;"></div>
         </div>
-        <div class="setting-section">
+        <!-- 画面比例仅白板模式生效：录屏是按所选窗口/屏幕原样录，比例由源决定 -->
+        <div class="setting-section board-only">
           <div class="set-label">画面比例</div>
           <div class="ratio-grid" id="ratioGrid"></div>
           <div class="custom-ratio" id="customRatioBox">
@@ -615,6 +646,27 @@
           <div class="seg-row" id="cameraShapeBtns">
             <button class="seg-btn active" data-camera-shape="circle" type="button">○ 圆形</button>
             <button class="seg-btn" data-camera-shape="square" type="button">□ 方形</button>
+          </div>
+          <div class="set-label" style="margin-top:14px;">入镜位置<span style="font-weight:400;">（录屏模式；白板模式直接拖动页面上的摄像头气泡）</span></div>
+          <div class="seg-row seg-row-4" id="cameraPosBtns">
+            <button class="seg-btn" data-camera-pos="tl" type="button">左上</button>
+            <button class="seg-btn" data-camera-pos="tr" type="button">右上</button>
+            <button class="seg-btn" data-camera-pos="bl" type="button">左下</button>
+            <button class="seg-btn active" data-camera-pos="br" type="button">右下</button>
+          </div>
+          <div class="range-wrap">
+            <div class="range-head"><span>画面提亮</span><span id="cameraBrightnessVal">115%</span></div>
+            <input id="cameraBrightness" type="range" min="100" max="140" step="5" value="115">
+            <div class="range-ends"><span>原始</span><span>更亮</span></div>
+          </div>
+          <div class="range-wrap">
+            <div class="range-head"><span>美颜（磨皮）</span><span id="cameraSmoothVal">关</span></div>
+            <input id="cameraSmooth" type="range" min="0" max="100" step="10" value="0">
+            <div class="range-ends"><span>关</span><span>强</span></div>
+          </div>
+          <div id="camFxPreviewWrap" style="display:none;flex-direction:column;align-items:center;gap:6px;padding:4px 0 2px;">
+            <canvas id="camFxPreview" width="180" height="180" style="width:180px;height:180px;background:#1c1b22;"></canvas>
+            <div style="font-size:12px;color:var(--muted);">↑ 实时效果预览（提亮 / 磨皮 / 形状 调整立即可见）</div>
           </div>
         </div>
 
@@ -1079,12 +1131,10 @@ function transformBounds(o){
   if(o.type==='rect'||o.type==='ellipse'||o.type==='diamond') return normalizedBox(o);
   if(o.type==='image') return {x:o.x,y:o.y,w:Math.max(1,o.w),h:Math.max(1,o.h)};
   if(o.type==='text'){
-    const lines=(o.text||'').split('\n');
-    const fs=o.fontSize||28;
+    const {lines,totalHeight}=textLinesLayout(o);
     const align=textAlignValue(o);
-    const w=Math.max(1,...lines.map((l,i)=>measureRichLine(o,i)));
-    const h=Math.max(textLineHeight(fs), lines.length*textLineHeight(fs));
-    return {x:textBoxLeft(o.x,w,align),y:o.y,w,h};
+    const w=Math.max(1,...lines.map(l=>measureRichLine(o,l.index)));
+    return {x:textBoxLeft(o.x,w,align),y:o.y,w,h:Math.max(textLineHeight(o.fontSize||28),totalHeight)};
   }
   return null;
 }
@@ -1104,6 +1154,24 @@ function textObjectFont(o){
   return (o.fontSize || 28) + 'px ' + fontStack(o.fontFamily || 'hand');
 }
 function textLineHeight(fs){ return fs * 1.24; }
+// 每行的最大字号（该行内若有选区级更大/更小字号的 run，取其中最大值决定行高）
+function lineMaxFontSize(o,lineIndex){
+  let max=o.fontSize||28;
+  for(const ch of textLineChunks(o,lineIndex)) if(ch.fontSize>max) max=ch.fontSize;
+  return max;
+}
+// 文本对象的逐行布局：每行 {index,text,top,height}，top/height 按该行最大字号累加
+// （支持混合字号后行高不再是常量，drawObject/transformBounds/objectBounds/drawShapeLabel 统一走这里，避免四处重复算法）
+function textLinesLayout(o){
+  const raw=(o.text||'').split('\n');
+  let y=0; const lines=[];
+  for(let i=0;i<raw.length;i++){
+    const h=textLineHeight(lineMaxFontSize(o,i));
+    lines.push({index:i,text:raw[i],top:y,height:h});
+    y+=h;
+  }
+  return {lines, totalHeight:y||textLineHeight(o.fontSize||28)};
+}
 function textAlignValue(o){ return o.textAlign || 'left'; }
 function textBoxLeft(anchorX,width,align){
   if(align === 'center') return anchorX - width / 2;
@@ -1119,26 +1187,25 @@ function textLineChunks(o,lineIndex){
   for(let i=0;i<line.length;i++){
     const st=runStyleAt(o,start+i);
     const prev=chunks[chunks.length-1];
-    if(prev && prev.color===st.color && prev.fontFamily===st.fontFamily) prev.text += line[i];
-    else chunks.push({text:line[i],color:st.color,fontFamily:st.fontFamily});
+    if(prev && prev.color===st.color && prev.fontFamily===st.fontFamily && prev.fontSize===st.fontSize) prev.text += line[i];
+    else chunks.push({text:line[i],color:st.color,fontFamily:st.fontFamily,fontSize:st.fontSize});
   }
-  if(!chunks.length) chunks.push({text:' ',color:o.color||'#1e1e1e',fontFamily:o.fontFamily||'hand'});
+  if(!chunks.length) chunks.push({text:' ',color:o.color||'#1e1e1e',fontFamily:o.fontFamily||'hand',fontSize:o.fontSize||28});
   return chunks;
 }
 function measureRichLine(o,lineIndex){
-  const fs=o.fontSize||28;
   let w=0;
   ctx.save();
   for(const ch of textLineChunks(o,lineIndex)){
-    ctx.font = fs + 'px ' + fontStack(ch.fontFamily);
+    ctx.font = ch.fontSize + 'px ' + fontStack(ch.fontFamily);
     w += ctx.measureText(ch.text).width;
   }
   ctx.restore();
   return w;
 }
 function drawRichLine(o,lineIndex,x,y){
-  const fs=o.fontSize||28;
   const chunks=textLineChunks(o,lineIndex);
+  const lineFs=lineMaxFontSize(o,lineIndex);
   const align=textAlignValue(o);
   const w=measureRichLine(o,lineIndex);
   let cx=textBoxLeft(x,w,align);
@@ -1146,9 +1213,10 @@ function drawRichLine(o,lineIndex,x,y){
   ctx.textAlign='left';
   ctx.textBaseline='top';
   for(const ch of chunks){
-    ctx.font = fs + 'px ' + fontStack(ch.fontFamily);
+    ctx.font = ch.fontSize + 'px ' + fontStack(ch.fontFamily);
     ctx.fillStyle = ch.color;
-    ctx.fillText(ch.text,cx,y);
+    // 行内混合字号按底部近似对齐：整行以最大字号的顶部为基准，较小字号下沉补差
+    ctx.fillText(ch.text, cx, y + (lineFs - ch.fontSize));
     cx += ctx.measureText(ch.text).width;
   }
   ctx.restore();
@@ -1199,9 +1267,7 @@ function drawObject(o){
   } else if(o.type === 'arrow'){
     roughArrow(mulberry32(o.seed||1), o.x1,o.y1,o.x2,o.y2, o.width||4, rough);
   } else if(o.type === 'text'){
-    const fs = o.fontSize || 28;
-    const lines=(o.text||'').split('\n');
-    lines.forEach((line,i)=> drawRichLine(o,i,o.x,o.y + i*textLineHeight(fs)));
+    textLinesLayout(o).lines.forEach(l=> drawRichLine(o,l.index,o.x,o.y+l.top));
   } else if(o.type === 'image'){
     const item=getCachedImage(o.src);
     ctx.save();
@@ -1232,14 +1298,13 @@ function drawShapeLabel(o){
   if(editingLabelIndex>=0 && state.scene[editingLabelIndex]===o && textInput.style.display==='block') return; // 编辑中由输入框显示
   const b=normalizedBox(o);
   const labelObj=shapeLabelTextObject(o);
-  const fs=labelObj.fontSize||24;
   ctx.save();
   ctx.globalAlpha=o.opacity ?? 1;
-  const lines=String(o.label).split('\n'), lh=textLineHeight(fs);
-  const top=b.y+b.h/2-(lines.length*lh)/2;
+  const {lines,totalHeight}=textLinesLayout(labelObj);
+  const top=b.y+b.h/2-totalHeight/2;
   labelObj.x=b.x+b.w/2;
   labelObj.y=top;
-  lines.forEach((ln,i)=>drawRichLine(labelObj,i,labelObj.x,top+i*lh));
+  lines.forEach(l=>drawRichLine(labelObj,l.index,labelObj.x,top+l.top));
   ctx.restore();
 }
 
@@ -1289,15 +1354,14 @@ function objectBounds(o){
     return {x:b.x-pad,y:b.y-pad,w:b.w+pad*2,h:b.h+pad*2};
   }
   if(o.type==='text'){
-    const lines=(o.text||'').split('\n');
     const fs=o.fontSize||28;
     const align=textAlignValue(o);
-    const w=Math.max(1,...lines.map((l,i)=>measureRichLine(o,i)));
-    const lineH=textLineHeight(fs);
+    const {lines,totalHeight}=textLinesLayout(o);
+    const w=Math.max(1,...lines.map(l=>measureRichLine(o,l.index)));
     const textPadX=Math.max(12, fs*.32);
     const textPadTop=Math.max(10, fs*.24);
     const textPadBottom=Math.max(12, fs*.34);
-    const h=Math.max(lineH, lines.length*lineH);
+    const h=Math.max(textLineHeight(fs), totalHeight);
     return {x:textBoxLeft(o.x,w,align)-textPadX,y:o.y-textPadTop,w:w+textPadX*2,h:h+textPadTop+textPadBottom};
   }
   if(o.type==='image'){
@@ -1424,6 +1488,7 @@ function render(){
   if(pendingImage) drawObject(pendingImage);
   updateSelectionBox();
   updateSlideFrames();
+  syncTextHint();
   if(autoloadDone) scheduleSave();   // 任何重绘=内容/视图有变 → 防抖自动保存
 }
 
@@ -1774,6 +1839,8 @@ function applyResizeFromBox(target,orig,from,to){
     const anchor=mapPointBetweenBoxes({x:orig.x,y:orig.y},from,to);
     target.x=anchor.x; target.y=anchor.y;
     target.fontSize=Math.max(8,(orig.fontSize||28)*scale);
+    // 选区级字号（runs）跟随整体缩放比例联动，否则拖角缩放时局部放大的字会和整体比例脱节
+    target.runs=(orig.runs||[]).map(r=> r.fontSize!=null ? {...r, fontSize:Math.max(8,r.fontSize*scale)} : r);
   }
   target.rotation=orig.rotation||0;
 }
@@ -1952,16 +2019,18 @@ function normalizedTextRuns(text,runs){
       start:Math.max(0,Math.min(len,r.start|0)),
       end:Math.max(0,Math.min(len,r.end|0)),
       color:r.color,
-      fontFamily:r.fontFamily
+      fontFamily:r.fontFamily,
+      fontSize:r.fontSize
     }))
-    .filter(r=>r.end>r.start && (r.color || r.fontFamily));
+    .filter(r=>r.end>r.start && (r.color || r.fontFamily || r.fontSize));
 }
 function runStyleAt(o,index){
-  const style={color:o.color||'#1e1e1e',fontFamily:o.fontFamily||'hand'};
+  const style={color:o.color||'#1e1e1e',fontFamily:o.fontFamily||'hand',fontSize:o.fontSize||28};
   for(const r of normalizedTextRuns(o.text||'',o.runs)){
     if(index>=r.start && index<r.end){
       if(r.color) style.color=r.color;
       if(r.fontFamily) style.fontFamily=r.fontFamily;
+      if(r.fontSize) style.fontSize=r.fontSize;
     }
   }
   return style;
@@ -1988,9 +2057,11 @@ function richTextToHtml(o){
     const styles=[];
     if(st.color !== (o.color||'#1e1e1e')) styles.push(`color:${st.color}`);
     if(st.fontFamily !== (o.fontFamily||'hand')) styles.push(`font-family:${fontStack(st.fontFamily)}`);
+    if(st.fontSize !== (o.fontSize||28)) styles.push(`font-size:${st.fontSize*state.view.scale}px`);
     const attrs=[
       st.color !== (o.color||'#1e1e1e') ? `data-color="${escapeHtml(st.color)}"` : '',
       st.fontFamily !== (o.fontFamily||'hand') ? `data-font-family="${escapeHtml(st.fontFamily)}"` : '',
+      st.fontSize !== (o.fontSize||28) ? `data-font-size="${st.fontSize}"` : '',
       styles.length ? `style="${escapeHtml(styles.join(';'))}"` : ''
     ].filter(Boolean).join(' ');
     html += attrs ? `<span ${attrs}>${escapeHtml(ch)}</span>` : escapeHtml(ch);
@@ -2007,8 +2078,8 @@ function richTextFromInput(){
       const start=text.length;
       text+=node.nodeValue || '';
       const end=text.length;
-      if(end>start && (inherited.color || inherited.fontFamily)){
-        runs.push({start,end,color:inherited.color,fontFamily:inherited.fontFamily});
+      if(end>start && (inherited.color || inherited.fontFamily || inherited.fontSize)){
+        runs.push({start,end,color:inherited.color,fontFamily:inherited.fontFamily,fontSize:inherited.fontSize});
       }
       return;
     }
@@ -2017,6 +2088,7 @@ function richTextFromInput(){
     const next={...inherited};
     if(node.dataset.color) next.color=node.dataset.color;
     if(node.dataset.fontFamily) next.fontFamily=node.dataset.fontFamily;
+    if(node.dataset.fontSize) next.fontSize=+node.dataset.fontSize;
     const before=text.length;
     node.childNodes.forEach(child=>walk(child,next));
     if(node !== textInput && node.tagName==='DIV' && text.length>before && !text.endsWith('\n')) text+='\n';
@@ -2046,6 +2118,7 @@ function wrapTextSelection(patch){
   const span=document.createElement('span');
   if(patch.color){ span.dataset.color=patch.color; span.style.color=patch.color; }
   if(patch.fontFamily){ span.dataset.fontFamily=patch.fontFamily; span.style.fontFamily=fontStack(patch.fontFamily); }
+  if(patch.fontSize){ span.dataset.fontSize=patch.fontSize; span.style.fontSize=(patch.fontSize*state.view.scale)+'px'; }
   try{
     span.appendChild(range.extractContents());
     range.insertNode(span);
@@ -2206,6 +2279,7 @@ function commitText(){
   }else{
     finishTextEditingState();
   }
+  syncTextHint();
 }
 function cancelTextInput(){
   if(textInput.style.display==='none') return;
@@ -2248,7 +2322,19 @@ textInput.addEventListener('keydown', (e)=>{
   if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); commitText(); }
   if(e.key==='Escape'){ e.preventDefault(); cancelTextInput(); }
 });
-textInput.addEventListener('input', applyTextInputStyle);
+textInput.addEventListener('input', ()=>{ applyTextInputStyle(); syncTextHint(); });
+
+// 编辑态按键提示：跟随输入框下方（贴近底边时翻到上方），输入框隐藏时自动消失
+const textHint=document.getElementById('textHint');
+function syncTextHint(){
+  const on = textInput.style.display==='block';
+  if(!on){ if(textHint.style.display!=='none') textHint.style.display='none'; return; }
+  const r=textInput.getBoundingClientRect();
+  const below = r.bottom+34 < window.innerHeight;
+  textHint.style.display='block';
+  textHint.style.left=Math.max(8,r.left)+'px';
+  textHint.style.top=(below ? r.bottom+8 : r.top-30)+'px';
+}
 
 /* --------------------------- CAMERA ------------------------------------ */
 const camWrap = document.getElementById('camWrap');
@@ -2428,10 +2514,80 @@ const recConfig = {
   showCamera:true,
   cameraSize:160,
   cameraShape:'circle',
+  cameraPosition:'br',     // 录屏模式入镜角落 tl|tr|bl|br（白板模式由页面气泡拖拽定位）
+  cameraBrightness:115,    // 合成时摄像头提亮 100~140（%）
+  cameraSmooth:0,          // 美颜磨皮强度 0~100（0=关）
   micDeviceId:'',
   cursorHighlight:true,
   cursorColor:'#ff4d4f'
 };
+
+// 摄像头提亮：在头像上叠一层 'screen' 混合的白色薄层（GPU 合成；
+// 不用 ctx.filter——canvas filter 会让每帧落入软件渲染，实测导致录制卡顿）
+function camBrightAlpha(){
+  const b=recConfig.cameraBrightness||100;
+  return b>100 ? Math.min(0.35,(b-100)/125) : 0;
+}
+// 美颜磨皮 v2：肤色掩膜磨皮（只平滑皮肤，眼睛/头发/背景保持锐利，不再有全画面雾面感）。
+// 原理：工作画布固定 200px → 盒式模糊得到柔化层 → 逐像素按 YCbCr 肤色概率
+// 把柔化层混回原画（皮肤区域混合多，非皮肤区域不动）。纯 CPU 但分辨率固定，
+// 每帧约 1~3ms；依旧不碰 ctx.filter（软件渲染卡顿）。
+const FX_P=200;
+const fxWork=document.createElement('canvas'); fxWork.width=FX_P; fxWork.height=FX_P;
+const fxWorkCtx=fxWork.getContext('2d',{ willReadFrequently:true });
+let fxBlurBuf=null, fxTmpBuf=null;
+function fxRamp(v,a,b,c,d2){ if(v<=a||v>=d2) return 0; if(v<b) return (v-a)/(b-a); if(v<=c) return 1; return (d2-v)/(d2-c); }
+function boxBlurRGB(src,out,w,h,r){
+  const n=w*h; if(!fxTmpBuf||fxTmpBuf.length!==n*3) fxTmpBuf=new Float32Array(n*3);
+  const div=2*r+1;
+  for(let y=0;y<h;y++){                     // 水平
+    const row=y*w; let sR=0,sG=0,sB=0;
+    for(let x=-r;x<=r;x++){ const i=(row+Math.min(w-1,Math.max(0,x)))*4; sR+=src[i];sG+=src[i+1];sB+=src[i+2]; }
+    for(let x=0;x<w;x++){
+      const t=(row+x)*3; fxTmpBuf[t]=sR/div; fxTmpBuf[t+1]=sG/div; fxTmpBuf[t+2]=sB/div;
+      const ia=(row+Math.min(w-1,x+r+1))*4, is=(row+Math.max(0,x-r))*4;
+      sR+=src[ia]-src[is]; sG+=src[ia+1]-src[is+1]; sB+=src[ia+2]-src[is+2];
+    }
+  }
+  for(let x=0;x<w;x++){                     // 垂直
+    let sR=0,sG=0,sB=0;
+    for(let y=-r;y<=r;y++){ const t=(Math.min(h-1,Math.max(0,y))*w+x)*3; sR+=fxTmpBuf[t];sG+=fxTmpBuf[t+1];sB+=fxTmpBuf[t+2]; }
+    for(let y=0;y<h;y++){
+      const o=(y*w+x)*3; out[o]=sR/div; out[o+1]=sG/div; out[o+2]=sB/div;
+      const ta=(Math.min(h-1,y+r+1)*w+x)*3, ts=(Math.max(0,y-r)*w+x)*3;
+      sR+=fxTmpBuf[ta]-fxTmpBuf[ts]; sG+=fxTmpBuf[ta+1]-fxTmpBuf[ts+1]; sB+=fxTmpBuf[ta+2]-fxTmpBuf[ts+2];
+    }
+  }
+}
+function skinSmoothInto(src, sx, sy, sw, sh, strength){
+  fxWorkCtx.drawImage(src, sx,sy,sw,sh, 0,0,FX_P,FX_P);
+  const img=fxWorkCtx.getImageData(0,0,FX_P,FX_P), d=img.data, n=FX_P*FX_P;
+  if(!fxBlurBuf||fxBlurBuf.length!==n*3) fxBlurBuf=new Float32Array(n*3);
+  boxBlurRGB(d, fxBlurBuf, FX_P, FX_P, 6);
+  for(let i=0;i<n;i++){
+    const o=i*4, R=d[o], G=d[o+1], B=d[o+2];
+    const Cb=128-0.168736*R-0.331264*G+0.5*B;
+    const Cr=128+0.5*R-0.418688*G-0.081312*B;
+    // 经典 YCbCr 肤色范围，软边界避免斑驳
+    const m=fxRamp(Cb,77,85,119,127)*fxRamp(Cr,133,140,166,173)*strength;
+    if(m>0){
+      const b=i*3;
+      d[o]  =R+(fxBlurBuf[b]  -R)*m;
+      d[o+1]=G+(fxBlurBuf[b+1]-G)*m;
+      d[o+2]=B+(fxBlurBuf[b+2]-B)*m;
+    }
+  }
+  fxWorkCtx.putImageData(img,0,0);
+  return fxWork;
+}
+function drawCamBeautified(ctx, src, sx, sy, sw, sh, d){
+  const s=(recConfig.cameraSmooth||0)/100;
+  if(s<=0){ try{ ctx.drawImage(src, sx,sy,sw,sh, 0,0,d,d); }catch(e){} return; }
+  try{
+    const w=skinSmoothInto(src, sx,sy,sw,sh, Math.min(1,s));
+    ctx.drawImage(w, 0,0,FX_P,FX_P, 0,0,d,d);
+  }catch(e){ try{ ctx.drawImage(src, sx,sy,sw,sh, 0,0,d,d); }catch(_){} }
+}
 
 function getRatioConfig(){
   if(recConfig.ratio==='custom'){
@@ -2553,6 +2709,20 @@ function addSlide(){
   renderSlidePanel();
   selectSlide(state.slides.length-1);
 }
+function insertSlideAt(targetIndex){
+  if(recState!=='idle') return;   // 与删除同样的保护：录制相关状态下禁止插入，避免正在录的目标幻灯片错位
+  const R=getRatioConfig();
+  // 参照插入点前一张幻灯片的位置，新幻灯片放在其正下方；不重排任何已有幻灯片的世界坐标
+  // （面板编号/方向键导航只看数组顺序，不看物理位置，因此无需整体重排即可正确插入到中间）
+  const ref = state.slides[Math.max(0,targetIndex-1)] || state.slides[targetIndex] || null;
+  let x=0, y=0;
+  if(ref){ x=ref.x; y=ref.y+ref.h+60; }
+  const slide={ id:'slide_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7), x, y, w:R.w, h:R.h };
+  state.slides.splice(targetIndex,0,slide);
+  if(state.activeSlide>=targetIndex) state.activeSlide+=1;   // 原选中幻灯片的数组位置后移，保持指向同一张
+  renderSlidePanel();
+  selectSlide(targetIndex);   // 插入后立即选中新幻灯片，方便直接画内容
+}
 function deleteSlide(index){
   if(index<0 || index>=state.slides.length) return;
   if(recState!=='idle') return;   // 录制相关状态下禁止删除，避免正在录的目标幻灯片被删掉
@@ -2582,6 +2752,16 @@ function renderSlidePanel(){
   const list=document.getElementById('slidesList'); if(!list) return;
   list.innerHTML='';
   const delDisabled = recState!=='idle';
+  const insertDisabled = recState!=='idle';
+  function addInsertZone(targetIndex){
+    const zone=document.createElement('div');
+    zone.className='slideInsertZone'+(insertDisabled?' disabled':'');
+    zone.title='在此插入幻灯片';
+    zone.innerHTML='<span class="plus">+</span>';
+    zone.addEventListener('click',(e)=>{ e.stopPropagation(); if(!insertDisabled) insertSlideAt(targetIndex); });
+    list.appendChild(zone);
+  }
+  if(state.slides.length) addInsertZone(0);
   state.slides.forEach((s,i)=>{
     const item=document.createElement('div');
     item.className='slideItem'+(i===state.activeSlide?' active':'');
@@ -2590,6 +2770,7 @@ function renderSlidePanel(){
     item.addEventListener('click',(e)=>{ if(e.target.closest('.slideDel')) return; selectSlide(i); });
     item.querySelector('.slideDel').addEventListener('click',(e)=>{ e.stopPropagation(); if(!delDisabled) deleteSlide(i); });
     list.appendChild(item);
+    addInsertZone(i+1);
   });
 }
 document.getElementById('slideAddBtn').onclick = addSlide;
@@ -2703,8 +2884,18 @@ function drawRecFrame(){
     const vw=camVideo.videoWidth, vh=camVideo.videoHeight, vr=vw/vh;
     let sw=vw,sh=vh,sx=0,sy=0;
     if(vr>1){ sw=vh; sx=(vw-sw)/2; } else { sh=vw; sy=(vh-sh)/2; }
-    recCtx.drawImage(camVideo, sx,sy,sw,sh, 0,0,d,d);
+    drawCamBeautified(recCtx, camVideo, sx,sy,sw,sh, d);
     recCtx.restore();
+    const ba=camBrightAlpha();
+    if(ba>0){ // 提亮：只作用于头像区域（卡片裁剪内），screen 混合白色
+      recCtx.save();
+      roundRectPath(recCtx,cardX,cardY,cardW,cardH,radius); recCtx.clip();
+      if(recConfig.cameraShape==='square'){ roundRectPath(recCtx,cx,cy,d,d,Math.max(8,d*.14)); }
+      else { recCtx.beginPath(); recCtx.arc(cx+r,cy+r,r,0,7); }
+      recCtx.globalCompositeOperation='screen';
+      recCtx.fillStyle='rgba(255,255,255,'+ba+')'; recCtx.fill();
+      recCtx.restore();
+    }
     recCtx.save(); roundRectPath(recCtx,cardX,cardY,cardW,cardH,radius); recCtx.clip();
     if(recConfig.cameraShape==='square'){
       roundRectPath(recCtx,cx,cy,d,d,Math.max(8,d*.14));
@@ -2751,6 +2942,46 @@ const screenSnap=document.getElementById('screenSnap');
 const snapCtx=screenSnap.getContext('2d');
 let screenStream=null, screenReader=null, audioCtx=null, cropRect=null, screenOut={w:0,h:0};
 let camReader=null, latestCamFrame=null;   // 摄像头帧驱动：后台也实时不冻结
+const PIP_OK = !!window.documentPictureInPicture || !!document.pictureInPictureEnabled;   // 「自检」画中画能力
+
+/* ---- 「自检」画中画：录屏时随时查看摄像头入镜画面（置顶小窗，切到其他 App 也可见） ---- */
+let pipWin=null, pipVideoEl=null;
+async function toggleSelfCheck(){
+  if(pipWin){ try{ pipWin.close(); }catch(e){} pipWin=null; return; }
+  if(pipVideoEl && document.pictureInPictureElement){ try{ await document.exitPictureInPicture(); }catch(e){} pipVideoEl=null; return; }
+  if(!mediaStream || !mediaStream.getVideoTracks().length) return;
+  if(window.documentPictureInPicture){
+    try{
+      pipWin = await documentPictureInPicture.requestWindow({ width:260, height:236 });
+      const doc=pipWin.document;
+      doc.body.style.cssText='margin:0;background:#141311;color:#f0ede6;font-family:system-ui,sans-serif;display:flex;flex-direction:column;height:100vh;overflow:hidden;';
+      const v=doc.createElement('video');
+      v.autoplay=true; v.muted=true; v.playsInline=true;
+      v.srcObject=new MediaStream(mediaStream.getVideoTracks());
+      v.style.cssText='flex:1;min-height:0;width:100%;object-fit:cover;transform:scaleX(-1);';
+      const bar=doc.createElement('div');
+      bar.style.cssText='display:flex;align-items:center;gap:6px;padding:6px 10px;font-size:12px;font-weight:600;';
+      bar.innerHTML='<span style="width:8px;height:8px;border-radius:50%;background:#e03131;animation:blink 1s steps(2) infinite;"></span> REC · 摄像头已入镜';
+      const tip=doc.createElement('div');
+      tip.style.cssText='padding:0 10px 8px;font-size:11px;opacity:.65;line-height:1.4;white-space:normal;';
+      tip.textContent='录「整屏」时此小窗也会被录进去，看完请关闭。';
+      const st=doc.createElement('style'); st.textContent='@keyframes blink{50%{opacity:.2}}';
+      doc.head.appendChild(st); doc.body.append(v,bar,tip);
+      pipWin.addEventListener('pagehide', ()=>{ pipWin=null; });
+      return;
+    }catch(e){ console.warn('documentPictureInPicture 失败，回退 video 画中画', e); pipWin=null; }
+  }
+  try{
+    // 降级：直接把摄像头 video 元素送进画中画（无法附文字说明，但画面可见）
+    await camVideo.requestPictureInPicture();
+    pipVideoEl=camVideo;
+    camVideo.addEventListener('leavepictureinpicture', ()=>{ pipVideoEl=null; }, { once:true });
+  }catch(e){ console.warn('画中画不可用', e); }
+}
+function closeSelfCheck(){
+  if(pipWin){ try{ pipWin.close(); }catch(e){} pipWin=null; }
+  if(pipVideoEl && document.pictureInPictureElement){ try{ document.exitPictureInPicture(); }catch(e){} pipVideoEl=null; }
+}
 
 // 把当前屏幕一帧画到快照 canvas，并按 contain 在舞台内定尺寸/居中（返回显示矩形）
 function layoutScreenSnap(){
@@ -2772,9 +3003,16 @@ async function enterScreenSetup(){
   if(!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia){
     alert('当前浏览器不支持屏幕录制（getDisplayMedia）。请用最新版 Chrome / Edge。'); return;
   }
+  // 摄像头入镜提示：选择共享内容期间可见；录制一开始（或取消）立即隐藏，不会被录进成品
+  const camCue=document.getElementById('camCueHint');
+  if(recConfig.showCamera && camActive){
+    const posName={tl:'左上角',tr:'右上角',bl:'左下角',br:'右下角'}[recConfig.cameraPosition||'br'];
+    camCue.textContent='📷 你的摄像头会合成在录制画面'+posName+'；录制中可点录制条上的「自检」随时查看';
+    camCue.style.display='block';
+  }
   try{
     screenStream = await navigator.mediaDevices.getDisplayMedia({ video:{ frameRate:30 }, audio:true });
-  }catch(e){ console.warn('已取消/拒绝屏幕共享', e); recState='idle'; updateRecUI(); return; }
+  }catch(e){ camCue.style.display='none'; console.warn('已取消/拒绝屏幕共享', e); recState='idle'; updateRecUI(); return; }
   screenVideo.srcObject=screenStream;
   try{ await screenVideo.play(); }catch(e){}
   if(!screenVideo.videoWidth){ await new Promise(r=>{ screenVideo.onloadedmetadata=()=>r(); setTimeout(r,1000); }); }
@@ -2793,7 +3031,9 @@ function computeCrop(){
   sw=Math.max(2,Math.min(sw,screenSnap.width-sx)); sh=Math.max(2,Math.min(sh,screenSnap.height-sy));
   return {sx,sy,sw,sh};
 }
+let lastCompositeTs=0;   // 最近一次合成时间，供摄像头帧兜底驱动去重
 function drawScreenFrame(src){
+  lastCompositeTs=performance.now();
   const img = src || screenVideo;   // 优先用帧驱动传入的 VideoFrame，否则用离屏 video 取最新帧
   const W=screenOut.w, H=screenOut.h;
   recCtx.setTransform(1,0,0,1,0,0);
@@ -2807,14 +3047,26 @@ function drawScreenFrame(src){
     const vh = camSrc && (camSrc.displayHeight || camSrc.videoHeight);
     if(camSrc && vw && vh){
       const d=Math.max(60, Math.min(W,H)*(recConfig.cameraSize/700));
-      const m=Math.round(Math.min(W,H)*0.03), cx=W-d-m, cy=H-d-m, r=d/2;
+      const pos=recConfig.cameraPosition||'br';   // 四角可选，默认右下
+      const mx=Math.round(Math.min(W,H)*0.03), r=d/2;
+      // 底部边距抬高到 6%：避免头像贴住底边（回放时常被播放器控制栏盖住下缘）
+      const my=Math.round(Math.min(W,H)*((pos==='bl'||pos==='br') ? 0.06 : 0.03));
+      const cx=(pos==='tl'||pos==='bl') ? mx : W-d-mx;
+      const cy=(pos==='tl'||pos==='tr') ? my : H-d-my;
       const clip=()=>{ if(recConfig.cameraShape==='square'){ roundRectPath(recCtx,cx,cy,d,d,Math.max(8,d*.14)); } else { recCtx.beginPath(); recCtx.arc(cx+r,cy+r,r,0,7); } };
       recCtx.save(); clip(); recCtx.clip();
       recCtx.translate(cx+d,cy); recCtx.scale(-1,1);
       const vr=vw/vh; let sw=vw,sh=vh,sx=0,sy=0;
       if(vr>1){ sw=vh; sx=(vw-sw)/2; } else { sh=vw; sy=(vh-sh)/2; }
-      try{ recCtx.drawImage(camSrc, sx,sy,sw,sh, 0,0,d,d); }catch(e){}
+      drawCamBeautified(recCtx, camSrc, sx,sy,sw,sh, d);
       recCtx.restore();
+      const ba=camBrightAlpha();
+      if(ba>0){ // 提亮：screen 混合白色薄层，只填头像路径
+        recCtx.save(); clip();
+        recCtx.globalCompositeOperation='screen';
+        recCtx.fillStyle='rgba(255,255,255,'+ba+')'; recCtx.fill();
+        recCtx.restore();
+      }
       recCtx.save(); clip(); recCtx.lineWidth=Math.max(2,d*0.03); recCtx.strokeStyle='#fff'; recCtx.stroke(); recCtx.restore();
     }
   }
@@ -2830,7 +3082,12 @@ function startCamPump(){
     const pump=()=>{
       camReader.read().then(({done,value})=>{
         if(done) return;
-        if(value){ if(latestCamFrame) latestCamFrame.close(); latestCamFrame=value; }
+        if(value){
+          if(latestCamFrame) latestCamFrame.close(); latestCamFrame=value;
+          // 屏幕内容静止时 screen 轨可能长时间不出帧，头像会跟着冻结；
+          // 用摄像头帧兜底驱动合成（40ms 内刚画过就跳过，避免双倍绘制）
+          if(recConfig.source==='screen' && performance.now()-lastCompositeTs>40) drawScreenFrame();
+        }
         if(recState==='recording'||recState==='paused') pump();
         else if(latestCamFrame){ latestCamFrame.close(); latestCamFrame=null; }
       }).catch(()=>{});
@@ -2873,6 +3130,7 @@ async function buildMixedAudioTracks(){
   }catch(e){ console.warn('混音失败，仅用麦克风', e); return micTracks.length?micTracks:sysTracks; }
 }
 async function startScreenRecording(){
+  document.getElementById('camCueHint').style.display='none';   // 录制开始前先撤掉提示，避免入镜
   recMime = pickMime();
   if(!recMime){ alert('当前浏览器不支持录制（MediaRecorder）。请用最新版 Chrome / Edge / Safari。'); return; }
   if(!screenStream || !screenVideo.videoWidth){ alert('屏幕画面尚未就绪，请重试。'); return; }
@@ -2935,6 +3193,7 @@ function stopRecording(){
   try{ recorder.stop(); }catch(e){}
   recState='idle';
   clearInterval(recLoop);
+  closeSelfCheck();   // 停止录制自动关闭「自检」画中画
   if(screenReader){ try{ screenReader.cancel(); }catch(e){} screenReader=null; }
   if(camReader){ try{ camReader.cancel(); }catch(e){} camReader=null; }
   if(latestCamFrame){ try{ latestCamFrame.close(); }catch(e){} latestCamFrame=null; }
@@ -2981,8 +3240,10 @@ function updateRecUI(){
   const gear=document.getElementById('recSettings'),
         start=document.getElementById('recStart'), cancel=document.getElementById('recCancel'),
         go=document.getElementById('recGo'), pause=document.getElementById('recPause'),
-        stop=document.getElementById('recStop'), timer=document.getElementById('timer');
+        stop=document.getElementById('recStop'), timer=document.getElementById('timer'),
+        selfCheck=document.getElementById('selfCheckBtn');
   [start,cancel,go,pause,stop].forEach(b=>b.classList.add('hidden'));
+  selfCheck.classList.add('hidden');
   [start,cancel,go,pause,stop].forEach(b=>b.classList.remove('primary-green','warn','stop','ghost'));
   start.classList.add('primary-green');
   go.classList.add('primary-green');
@@ -3000,6 +3261,8 @@ function updateRecUI(){
     stop.classList.add('stop');
     timer.style.display='inline'; timer.classList.toggle('live', recState==='recording');
     pause.textContent = recState==='paused' ? '继续' : '暂停';
+    // 录屏模式且摄像头入镜时，提供「自检」画中画入口
+    if(recConfig.source==='screen' && recConfig.showCamera && camActive && PIP_OK) selfCheck.classList.remove('hidden');
   }
 }
 
@@ -3052,8 +3315,10 @@ function buildBgGrid(){
 function updatePreview(){
   const frame=document.getElementById('setFrame');
   const card=frame.querySelector('.set-card');
-  const r=getRatioConfig(), bg=BACKGROUNDS[recConfig.bgIndex] || BACKGROUNDS[0];
-  const hasDecor = bg.type!=='none';
+  const isScreen = recConfig.source==='screen';   // 录屏按源原样录：预览用中性 16:9，不套比例/壁纸装饰
+  const r = isScreen ? {w:1600,h:900} : getRatioConfig();
+  const bg=BACKGROUNDS[recConfig.bgIndex] || BACKGROUNDS[0];
+  const hasDecor = !isScreen && bg.type!=='none';
   const outputMin=Math.min(r.w,r.h);
   // 画框按比例显式定尺寸以适配预览面板（aspect-ratio + max-* 单独会塌成 0）
   const pane=document.getElementById('setPreview'), padPane=24;
@@ -3078,6 +3343,11 @@ function updatePreview(){
   const camD=Math.max(10, cardW*(recConfig.cameraSize/900));
   cam.style.width=camD+'px'; cam.style.height=camD+'px';
   cam.style.borderRadius=recConfig.cameraShape==='circle'?'50%':Math.max(4,camD*0.16)+'px';
+  const pp=recConfig.cameraPosition||'br';   // 预览圆点跟随入镜位置
+  cam.style.left  =(pp==='tl'||pp==='bl')?'6%':'auto';
+  cam.style.right =(pp==='tr'||pp==='br')?'6%':'auto';
+  cam.style.top   =(pp==='tl'||pp==='tr')?'6%':'auto';
+  cam.style.bottom=(pp==='bl'||pp==='br')?'6%':'auto';
   // 光标高亮
   const cursor=card.querySelector('.preview-cursor');
   cursor.style.display=recConfig.cursorHighlight?'block':'none';
@@ -3116,7 +3386,7 @@ function updateSourceUI(){
   const hint=document.getElementById('sourceHint');
   const done=document.getElementById('settingsDone');
   if(recConfig.source==='screen'){
-    if(hint) hint.innerHTML='点「完成」后会弹出浏览器的「选择共享内容」窗口：<b>① 选「窗口」录某个 App 最直观（也可选整屏/标签页） ② 先点一下那张画面缩略图（出现高亮边框），「分享」按钮才会变亮 ③ 点「分享」</b>（可勾「同时分享系统音频」一起录）。分享后<b>立即开始录制（按所选窗口/屏幕原样录）</b>，你的摄像头会合成在右下角。<br>提示：录屏需用 http://localhost 或 https 打开本页（file:// 无法录整屏）；录「整屏」会包含本页面，建议切到目标 App。';
+    if(hint) hint.innerHTML='点「完成」→ 选要录的<b>窗口</b>（或整屏/标签页）→ 点「分享」就开始录。想录声音，把「同时分享系统音频」打开。你的摄像头会自动出现在画面角落，位置和大小在下方设置。';
     if(done) done.textContent='完成，选择屏幕区域';
   }else{
     if(hint) hint.textContent='';
@@ -3158,6 +3428,22 @@ function bindSettingsControls(){
       applyCameraSettings(); updatePreview();
     };
   });
+  document.querySelectorAll('[data-camera-pos]').forEach(btn=>{
+    btn.onclick=()=>{
+      recConfig.cameraPosition=btn.dataset.cameraPos;
+      document.querySelectorAll('[data-camera-pos]').forEach(b=>b.classList.toggle('active',b===btn));
+      updatePreview();
+    };
+  });
+  document.getElementById('cameraBrightness').oninput=e=>{
+    recConfig.cameraBrightness=+e.target.value;
+    document.getElementById('cameraBrightnessVal').textContent=recConfig.cameraBrightness+'%';
+    updatePreview();
+  };
+  document.getElementById('cameraSmooth').oninput=e=>{
+    recConfig.cameraSmooth=+e.target.value;
+    document.getElementById('cameraSmoothVal').textContent=recConfig.cameraSmooth>0?recConfig.cameraSmooth+'%':'关';
+  };
   document.getElementById('micSelect').onchange=e=>{ recConfig.micDeviceId=e.target.value; };
   document.getElementById('cursorHighlight').onchange=e=>{ recConfig.cursorHighlight=e.target.checked; updatePreview(); };
   const row=document.getElementById('cursorColors');
@@ -3180,6 +3466,44 @@ function syncSettingsInputs(){
   document.getElementById('cameraSize').value=recConfig.cameraSize;
   document.getElementById('cursorHighlight').checked=recConfig.cursorHighlight;
   document.querySelectorAll('[data-camera-shape]').forEach(b=>b.classList.toggle('active',b.dataset.cameraShape===recConfig.cameraShape));
+  document.querySelectorAll('[data-camera-pos]').forEach(b=>b.classList.toggle('active',b.dataset.cameraPos===(recConfig.cameraPosition||'br')));
+  document.getElementById('cameraBrightness').value=recConfig.cameraBrightness;
+  document.getElementById('cameraBrightnessVal').textContent=recConfig.cameraBrightness+'%';
+  document.getElementById('cameraSmooth').value=recConfig.cameraSmooth;
+  document.getElementById('cameraSmoothVal').textContent=recConfig.cameraSmooth>0?recConfig.cameraSmooth+'%':'关';
+}
+// 设置弹窗内的摄像头实时效果预览：与录制合成走同一条 drawCamBeautified/camBrightAlpha 管线，
+// 所见即所录；弹窗关闭或无摄像头时循环自动停止。
+let camFxLoopOn=false;
+function startCamFxPreview(){
+  const cv=document.getElementById('camFxPreview'), wrap=document.getElementById('camFxPreviewWrap');
+  if(!cv||!wrap) return;
+  if(!camActive){ wrap.style.display='none'; return; }
+  wrap.style.display='flex';
+  if(camFxLoopOn) return;
+  camFxLoopOn=true;
+  const ctx=cv.getContext('2d');
+  const tick=()=>{
+    if(document.getElementById('settingsModal').classList.contains('hidden') || !camActive){
+      camFxLoopOn=false; return;
+    }
+    cv.style.borderRadius = recConfig.cameraShape==='circle' ? '50%' : '18px';
+    const vw=camVideo.videoWidth, vh=camVideo.videoHeight;
+    if(vw&&vh){
+      let sw=vw,sh=vh,sx=0,sy=0;
+      if(vw/vh>1){ sw=vh; sx=(vw-sw)/2; } else { sh=vw; sy=(vh-sh)/2; }
+      const D=cv.width;
+      ctx.save();
+      ctx.clearRect(0,0,D,D);
+      ctx.translate(D,0); ctx.scale(-1,1);          // 镜像，与录制一致
+      drawCamBeautified(ctx, camVideo, sx,sy,sw,sh, D);
+      ctx.restore();
+      const ba=camBrightAlpha();
+      if(ba>0){ ctx.save(); ctx.globalCompositeOperation='screen'; ctx.fillStyle='rgba(255,255,255,'+ba+')'; ctx.fillRect(0,0,D,D); ctx.restore(); }
+    }
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
 }
 async function openSettings(){
   bindSettingsControls();
@@ -3189,6 +3513,7 @@ async function openSettings(){
   buildBgCategories();
   buildBgGrid();
   document.getElementById('settingsModal').classList.remove('hidden');
+  startCamFxPreview();
   // 弹窗可见后再量取画框尺寸（getBoundingClientRect 需要已布局），否则预览内缩算不准
   updatePreview();
   requestAnimationFrame(updatePreview);
@@ -3313,7 +3638,10 @@ function beginSelectedEdit(){ if(!editingText() && selectedObj()) pushHistory();
 function patchSelectedLive(patch){ if(editingText()) return; const o=selectedObj(); if(!o) return; Object.assign(o,patch); render(); }
 function applyTextEditingPatch(patch){
   if(!editingText()) return false;
-  const usedSelection = wrapTextSelection(patch);
+  // 选区级样式支持颜色/字体/字号（runs 模型）；对齐/透明度是整段属性，
+  // 即使编辑框内有选中文本也应作用于整段——否则会包一个空 span 后静默无效
+  const runnable = !!(patch.color || patch.fontFamily || patch.fontSize);
+  const usedSelection = runnable && wrapTextSelection(patch);
   if(!usedSelection){
     if(patch.color) textColor=patch.color;
     if(patch.fontFamily) textFontFamily=patch.fontFamily;
@@ -3656,6 +3984,7 @@ document.getElementById('recCancel').onclick=cancelSetup;
 document.getElementById('recGo').onclick=()=> recConfig.source==='screen' ? startScreenRecording() : startRecording(); // 「开始录制」
 document.getElementById('recPause').onclick=pauseRecording;
 document.getElementById('recStop').onclick=stopRecording;
+document.getElementById('selfCheckBtn').onclick=toggleSelfCheck;   // 录屏中查看摄像头入镜画面
 document.getElementById('closeSettings').onclick=()=>document.getElementById('settingsModal').classList.add('hidden');
 document.getElementById('settingsDone').onclick=()=>{ document.getElementById('settingsModal').classList.add('hidden'); recConfig.source==='screen' ? enterScreenSetup() : enterSetup(); };
 
