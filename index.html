@@ -109,6 +109,16 @@
   .recbtn.stop:hover{background:#1f1c1a;}
   .recbtn.ghost{background:#f0eff5;color:var(--ink);}
   .recbtn.ghost:hover{background:#e7e6ee;}
+  .recbtn.media-toggle{position:relative;width:44px;height:44px;justify-content:center;background:#f0eff5;color:var(--muted);padding:0;gap:0;}
+  .recbtn.media-toggle svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;}
+  .recbtn.media-toggle .media-off-slash{display:block;}
+  .recbtn.media-toggle.on{background:#e8f7ef;color:#146c43;}
+  .recbtn.media-toggle.on .media-off-slash{display:none;}
+  .recbtn.media-toggle.on .media-dot{background:#22c55e;box-shadow:0 0 0 3px rgba(34,197,94,.18);}
+  .recbtn.media-toggle.off .media-dot{background:#aaa;}
+  .recbtn.media-toggle.busy{opacity:.7;cursor:wait;}
+  .media-dot{position:absolute;right:8px;bottom:8px;width:8px;height:8px;border-radius:50%;background:#aaa;border:2px solid var(--panel);}
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
   .recbtn[disabled]{opacity:.45;cursor:not-allowed;}
   .rec-dot{width:10px;height:10px;border-radius:50%;background:#fff;}
   .timer{font-variant-numeric:tabular-nums;font-family:var(--mono);font-weight:600;font-size:14px;min-width:54px;text-align:center;color:var(--ink);display:none;}
@@ -542,6 +552,15 @@
   <button class="recbtn ghost" id="recSettings" title="录制设置" aria-label="录制设置">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/><path d="M9.6 3.2l.5 2a7.3 7.3 0 0 0-1.5.9l-1.9-1-1.8 1.8 1 1.9a7.3 7.3 0 0 0-.7 1.6l-2 .6v2.5l2 .6c.2.6.4 1.1.7 1.6l-1 1.9 1.8 1.8 1.9-1c.5.3 1 .6 1.5.8l.5 2h2.8l.5-2c.5-.2 1-.5 1.5-.8l1.9 1 1.8-1.8-1-1.9c.3-.5.6-1 .7-1.6l2-.6V11l-2-.6a7.3 7.3 0 0 0-.7-1.6l1-1.9-1.8-1.8-1.9 1a7.3 7.3 0 0 0-1.5-.9l-.5-2H9.6z"/></svg>
   </button>
+  <button class="recbtn media-toggle off" id="mediaToggle" title="开启摄像头和麦克风" aria-label="开启摄像头和麦克风" type="button">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h7A2.5 2.5 0 0 1 16 8.5v7a2.5 2.5 0 0 1-2.5 2.5h-7A2.5 2.5 0 0 1 4 15.5v-7z"/>
+      <path d="M16 10l4-2.4v8.8L16 14"/>
+      <path class="media-off-slash" d="M4 4l16 16"/>
+    </svg>
+    <span class="media-dot"></span>
+    <span class="sr-only" id="mediaToggleText">摄像头/麦克风 关</span>
+  </button>
   <span class="timer" id="timer">00:00</span>
   <button class="recbtn primary-green" id="recStart"><span class="rec-dot"></span> 录制</button>
   <button class="recbtn ghost hidden" id="recCancel">✕ 取消</button>
@@ -584,7 +603,7 @@
     <div class="feat">内置提词器，方便看稿</div>
     <div class="feat">准备好就点击录制</div>
     <button class="btn-primary" id="enableCam">允许摄像头与麦克风，开始</button>
-    <button class="btn-line" id="skipCam">先不用摄像头，仅画板</button>
+    <button class="btn-line" id="skipCam">先不用摄像头和麦克风，仅画板</button>
     <div class="status" id="welcomeStatus"></div>
   </div>
 </div>
@@ -2558,20 +2577,79 @@ function syncTextHint(){
 /* --------------------------- CAMERA ------------------------------------ */
 const camWrap = document.getElementById('camWrap');
 const camVideo = document.getElementById('camVideo');
+const mediaToggle = document.getElementById('mediaToggle');
+const mediaToggleText = document.getElementById('mediaToggleText');
 let mediaStream = null;     // 含 video + audio
 let camActive = false;
+let mediaBusy = false;
 
-async function startCamera(){
+function activeTracks(stream){
+  return stream ? stream.getTracks().filter(t=>t.readyState!=='ended') : [];
+}
+function isUserMediaActive(){
+  return activeTracks(mediaStream).length>0;
+}
+function updateMediaToggleUI(){
+  if(!mediaToggle || !mediaToggleText) return;
+  const on=isUserMediaActive();
+  mediaToggle.classList.toggle('on',on);
+  mediaToggle.classList.toggle('off',!on);
+  mediaToggle.classList.toggle('busy',mediaBusy);
+  mediaToggle.disabled=mediaBusy;
+  mediaToggleText.textContent=on?'摄像头/麦克风 开':'摄像头/麦克风 关';
+  const label=on?'关闭摄像头和麦克风':'开启摄像头和麦克风';
+  mediaToggle.title=label;
+  mediaToggle.setAttribute('aria-label',label);
+}
+function stopTracks(stream){
+  if(stream) stream.getTracks().forEach(t=>{ try{ t.stop(); }catch(e){} });
+}
+function stopUserMedia(){
+  closeSelfCheck();
+  if(camReader){ try{ camReader.cancel(); }catch(e){} camReader=null; }
+  if(latestCamFrame){ try{ latestCamFrame.close(); }catch(e){} latestCamFrame=null; }
+  stopTracks(mediaStream);
+  mediaStream=null;
+  stopTracks(recAudioStream);
+  recAudioStream=null;
+  camVideo.srcObject=null;
+  camActive=false;
+  camWrap.style.display='none';
+  updateMediaToggleUI();
+}
+async function enableUserMedia(){
   if(!canUseMediaDevices()) throw new Error('当前打开方式不支持摄像头/麦克风权限');
+  stopUserMedia();
   mediaStream = await navigator.mediaDevices.getUserMedia({
     video:{ facingMode:'user', width:{ideal:1280}, height:{ideal:720} },
     audio:true
   });
+  mediaStream.getTracks().forEach(t=>t.addEventListener('ended',()=>{
+    const live=activeTracks(mediaStream);
+    const hasVideo=mediaStream && mediaStream.getVideoTracks().some(track=>track.readyState!=='ended');
+    camActive=!!hasVideo;
+    if(!hasVideo){
+      camVideo.srcObject=null;
+      camWrap.style.display='none';
+    }
+    if(live.length===0){
+      mediaStream=null;
+      camActive=false;
+      camVideo.srcObject=null;
+      camWrap.style.display='none';
+      updateMediaToggleUI();
+    }
+  }));
   camVideo.srcObject = mediaStream;
   camWrap.style.display='block';
   camActive=true;
   applyCameraSettings();
   await populateDevices();
+  updateMediaToggleUI();
+  return mediaStream;
+}
+async function startCamera(){
+  return enableUserMedia();
 }
 async function startMicOnly(){
   if(!canUseMediaDevices()) return;
@@ -3490,7 +3568,7 @@ function startCamPump(){
   }catch(e){ console.warn('摄像头帧驱动不可用，回退 video 元素', e); }
 }
 function startScreenComposite(){
-  if(recConfig.showCamera) startCamPump();
+  if(recConfig.showCamera && camActive) startCamPump();
   drawScreenFrame();
   const vtrack=screenStream && screenStream.getVideoTracks()[0];
   if(window.MediaStreamTrackProcessor && vtrack){
@@ -3607,6 +3685,7 @@ function onRecStop(){
 
 async function getRecordingAudioTracks(){
   if(recAudioStream){ recAudioStream.getTracks().forEach(t=>t.stop()); recAudioStream=null; }
+  if(!isUserMediaActive()) return [];
   if(recConfig.micDeviceId && canUseMediaDevices()){
     try{
       recAudioStream = await navigator.mediaDevices.getUserMedia({
@@ -3617,7 +3696,7 @@ async function getRecordingAudioTracks(){
       console.warn('选择的麦克风不可用，改用当前默认音轨', e);
     }
   }
-  return mediaStream ? mediaStream.getAudioTracks() : [];
+  return mediaStream ? mediaStream.getAudioTracks().filter(t=>t.readyState!=='ended') : [];
 }
 
 /* 计时 */
@@ -4369,6 +4448,20 @@ document.getElementById('recGo').onclick=()=> recConfig.source==='screen' ? star
 document.getElementById('recPause').onclick=pauseRecording;
 document.getElementById('recStop').onclick=stopRecording;
 document.getElementById('selfCheckBtn').onclick=toggleSelfCheck;   // 录屏中查看摄像头入镜画面
+document.getElementById('mediaToggle').onclick=async ()=>{
+  if(mediaBusy) return;
+  mediaBusy=true; updateMediaToggleUI();
+  try{
+    if(isUserMediaActive()) stopUserMedia();
+    else await enableUserMedia();
+  }catch(err){
+    console.error(err);
+    alert('未能开启摄像头/麦克风：'+(err.message||err.name));
+    stopUserMedia();
+  }finally{
+    mediaBusy=false; updateMediaToggleUI();
+  }
+};
 document.getElementById('closeSettings').onclick=()=>document.getElementById('settingsModal').classList.add('hidden');
 document.getElementById('settingsDone').onclick=()=>{ document.getElementById('settingsModal').classList.add('hidden'); recConfig.source==='screen' ? enterScreenSetup() : enterSetup(); };
 
@@ -4385,7 +4478,7 @@ function setupLaunchMode(){
     intro.textContent='当前浏览器不支持摄像头/麦克风授权，但白板、提词器和无摄像头录制仍可使用。';
     enable.disabled=true;
     enable.textContent='当前浏览器不可用摄像头/麦克风';
-    skip.textContent='仅使用白板';
+    skip.textContent='先不用摄像头和麦克风，仅画板';
     status.textContent='建议使用最新版 Chrome / Edge / Safari。';
   }
 }
@@ -4473,7 +4566,7 @@ window.addEventListener('paste',(e)=>{
 // 欢迎弹窗
 document.getElementById('enableCam').onclick=async ()=>{
   const s=document.getElementById('welcomeStatus');
-  if(!canUseMediaDevices()){ s.textContent='当前浏览器没有提供摄像头/麦克风接口，可点「先不用摄像头」。'; return; }
+  if(!canUseMediaDevices()){ s.textContent='当前浏览器没有提供摄像头/麦克风接口，可点「先不用摄像头和麦克风，仅画板」。'; return; }
   try{
     s.textContent='正在请求摄像头/麦克风…';
     await startCamera();
@@ -4481,15 +4574,16 @@ document.getElementById('enableCam').onclick=async ()=>{
   }
   catch(err){
     console.error(err);
-    let msg='未能获取摄像头/麦克风：'+(err.message||err.name)+'。可点「先不用摄像头」继续。';
+    stopUserMedia();
+    let msg='未能获取摄像头/麦克风：'+(err.message||err.name)+'。可点「先不用摄像头和麦克风，仅画板」继续。';
     if(location.protocol==='file:') msg+='（如反复失败，请用 localhost 或 https 打开本页面）';
     s.textContent=msg;
   }
 };
-document.getElementById('skipCam').onclick=async ()=>{
+document.getElementById('skipCam').onclick=()=>{
   const s=document.getElementById('welcomeStatus');
-  s.textContent='正在请求麦克风…';
-  await startMicOnly();
+  s.textContent='';
+  stopUserMedia();
   document.getElementById('welcome').classList.add('hidden');
 };
 
@@ -4503,6 +4597,7 @@ board.style.cursor=cursorForTool();
 updateHistoryButtons();
 updateZoomLabel();
 updateRecUI();
+updateMediaToggleUI();
 </script>
 </body>
 </html>
