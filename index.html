@@ -123,6 +123,20 @@
   .zoombar button:hover{background:#f0eff5;}
   .zoombar .zval{min-width:48px;text-align:center;font-size:12px;color:var(--muted);font-family:var(--mono);}
 
+  /* ---------- 鸟瞰图 ---------- */
+  #minimap{position:fixed;left:14px;bottom:70px;z-index:23;width:180px;height:120px;
+    background:rgba(255,255,255,.86);backdrop-filter:blur(8px);border:1px solid var(--line);
+    border-radius:8px;box-shadow:var(--shadow);overflow:hidden;user-select:none;}
+  #minimap canvas{display:block;width:100%;height:100%;cursor:grab;touch-action:none;}
+  #minimap.dragging canvas{cursor:grabbing;}
+  #minimap .mini-toggle{position:absolute;right:5px;top:5px;width:22px;height:22px;border:none;border-radius:6px;
+    background:rgba(255,255,255,.88);color:var(--muted);box-shadow:0 1px 4px rgba(0,0,0,.12);cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;}
+  #minimap .mini-toggle svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+  #minimap .mini-toggle:hover{background:#f0eff5;color:var(--ink);}
+  #minimap.collapsed{width:36px;height:36px;}
+  #minimap.collapsed canvas{display:none;}
+  #minimap.collapsed .mini-toggle{inset:7px;width:22px;height:22px;}
+
   /* ---------- 提词器 ---------- */
   #tele{position:fixed;top:80px;right:14px;z-index:26;width:320px;max-height:60vh;display:none;flex-direction:column;
     background:rgba(20,20,22,.86);backdrop-filter:blur(6px);color:#fff;border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
@@ -139,7 +153,7 @@
   /* ---------- 文字输入浮层 ---------- */
   #textInput{position:fixed;z-index:40;display:none;background:transparent;border:0;box-shadow:none;
     outline:none;caret-color:var(--ink);color:var(--ink);font-family:inherit;padding:2px 4px;resize:none;overflow:visible;
-    line-height:1.2;min-width:160px;max-width:420px;white-space:pre-wrap;}
+    line-height:1.24;min-width:160px;max-width:420px;white-space:pre-wrap;}
   #textInput span{white-space:pre-wrap;}
   /* 文字编辑态的按键提示（DOM 浮层，不进录制） */
   #textHint{position:fixed;z-index:41;display:none;background:rgba(20,20,22,.78);color:#fff;font-size:12px;
@@ -190,11 +204,23 @@
   .slideFrame.active .slideLabel{background:var(--accent);}
 
   /* ---------- 右侧幻灯片面板（常驻） ---------- */
-  .slidesPanel{left:auto;right:14px;top:80px;z-index:24;width:76px;max-height:calc(100vh - 160px);display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 10px;}
+  .slidesPanel{left:auto;right:14px;top:80px;z-index:24;width:76px;max-height:calc(100vh - 160px);display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 10px;overflow:visible;}
   .slidesPanel h4{text-align:center;white-space:nowrap;}
+  .slideRatioBtn{width:58px;min-height:42px;border:1px solid var(--line);background:#fff;border-radius:10px;padding:6px 4px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.06);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;color:var(--ink);position:relative;}
+  .slideRatioBtn:hover,.slideRatioBtn.active{border-color:var(--accent);background:#f4f2ff;}
+  .slideRatioBtn::after{content:"";position:absolute;right:5px;bottom:5px;border-left:3px solid transparent;border-right:3px solid transparent;border-top:4px solid var(--muted);opacity:.8;}
+  .slideRatioBtn .ratio-main{font-size:12px;font-weight:700;line-height:1;font-family:var(--mono);}
+  .slideRatioBtn .ratio-sub{font-size:9px;line-height:1.1;color:var(--muted);max-width:46px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .slideRatioPopover{position:fixed;right:auto;top:auto;z-index:46;width:220px;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:12px;display:none;}
+  .slideRatioPopover.show{display:block;}
+  .slideRatioPopover .ratio-grid{grid-template-columns:repeat(2,1fr);gap:8px;}
+  .slideRatioPopover .ratio-btn{padding:10px 7px;border-radius:8px;}
+  .slideRatioPopover .ratio-btn .r-main{font-size:14px;}
+  .slideRatioPopover .ratio-btn .r-sub{font-size:10px;}
+  .slideRatioPopover .custom-ratio input{padding:7px 8px;font-size:12px;border-radius:8px;}
   /* 只允许纵向滚动：纵向滚动条出现时会占掉部分横向空间，若横向也开 auto，
      固定 40px 宽的缩略图在收窄后会溢出触发多余的横向滚动条（连锁反应）；显式禁掉即可 */
-  .slidesList{display:flex;flex-direction:column;align-items:center;gap:6px;padding:6px;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;-ms-overflow-style:none;}
+  .slidesList{display:flex;flex-direction:column;align-items:center;gap:6px;padding:6px;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;-ms-overflow-style:none;flex:1 1 auto;min-height:0;max-height:calc(100vh - 305px);}
   /* 隐藏滚动条视觉（鼠标滚轮/触控板仍可正常滚动）：经典/非覆盖式滚动条会占掉本就窄的面板宽度，
      这在 Windows/部分 macOS「始终显示滚动条」设置下会让 76px 宽的面板显得更挤 */
   .slidesList::-webkit-scrollbar{width:0;height:0;background:transparent;}
@@ -495,6 +521,18 @@
 <!-- 幻灯片面板（右侧，常驻） -->
 <div class="props slidesPanel" id="slidesPanel">
   <h4>幻灯片</h4>
+  <button class="slideRatioBtn" id="slideRatioBtn" title="幻灯片尺寸" aria-label="幻灯片尺寸" aria-expanded="false" type="button">
+    <span class="ratio-main" id="slideRatioMain">16:9</span>
+    <span class="ratio-sub" id="slideRatioSub">YouTube</span>
+  </button>
+  <div class="slideRatioPopover" id="slideRatioPopover">
+    <div class="ratio-grid" id="slideRatioGrid"></div>
+    <div class="custom-ratio" id="slideCustomRatioBox">
+      <input id="slideCustomW" type="number" min="240" max="3840" step="10" aria-label="幻灯片自定义宽度">
+      <span>×</span>
+      <input id="slideCustomH" type="number" min="240" max="3840" step="10" aria-label="幻灯片自定义高度">
+    </div>
+  </div>
   <div class="slidesList" id="slidesList"></div>
   <button class="slideAddBtn" id="slideAddBtn" title="新增幻灯片" aria-label="新增幻灯片">+</button>
 </div>
@@ -523,9 +561,17 @@
   </button>
 </div>
 
+<!-- 鸟瞰图（DOM 浮层，不进入录制） -->
+<div id="minimap" aria-label="鸟瞰图">
+  <canvas id="minimapCanvas"></canvas>
+  <button class="mini-toggle" id="minimapToggle" title="折叠/展开鸟瞰图" aria-label="折叠/展开鸟瞰图">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 9V5h4"/><path d="M15 5h4v4"/><path d="M19 15v4h-4"/><path d="M9 19H5v-4"/></svg>
+  </button>
+</div>
+
 <!-- 文字输入浮层 -->
 <div id="textInput" contenteditable="true" role="textbox" aria-label="文字输入"></div>
-<div id="textHint"><b>Shift+Enter</b> 换行 · <b>Enter</b> 完成 · <b>Esc</b> 取消</div>
+<div id="textHint"><b>Enter</b> 换行 · 点击外部完成 · <b>Esc</b> 取消</div>
 <input id="imageInput" type="file" accept="image/*" style="display:none">
 
 <!-- 欢迎/授权弹窗 -->
@@ -727,10 +773,16 @@ const board = document.getElementById('board');
 const ctx = board.getContext('2d');
 const selectionBox = document.getElementById('selectionBox');
 const textInput = document.getElementById('textInput');
+const minimapEl = document.getElementById('minimap');
+const minimapCanvas = document.getElementById('minimapCanvas');
+const minimapToggle = document.getElementById('minimapToggle');
 let dpr = Math.max(1, window.devicePixelRatio || 1);
 let selectedIndex = -1;
 let editingTextIndex = -1;
 let editingLabelIndex = -1;   // 正在编辑「形状内文字」的对象下标
+let minimapCollapsed = false;
+let minimapBounds = null;
+let minimapDragging = false;
 
 /* ---------------------- VIEW + RENDER ---------------------------------- */
 function resize(){
@@ -1455,10 +1507,17 @@ function beginLabelEdit(index){
   textColor=o.labelColor||o.color||'#1e1e1e';
   textFontSize=fs; textFontFamily=o.labelFontFamily||'hand'; textAlign='center'; textOpacity=o.opacity ?? 1;
   const s=worldToScreen({x:b.x+b.w/2, y:b.y+b.h/2});
-  setTextInputRichObject(shapeLabelTextObject(o));
+  const labelObj=shapeLabelTextObject(o);
+  setTextInputRichObject(labelObj);
   textInput.style.display='block';
   textInput.style.left=s.x+'px';
   textInput.style.top=(s.y - fs*state.view.scale*0.6)+'px';
+  resetTextInputBox();
+  const measuredWidth=measuredTextInputWidth(labelObj);
+  if(measuredWidth){
+    textInput.style.width = measuredWidth + 'px';
+    textInput.style.maxWidth = 'none';
+  }
   applyTextInputStyle();
   updateStylePanel();
   render();
@@ -1488,12 +1547,144 @@ function render(){
   if(pendingImage) drawObject(pendingImage);
   updateSelectionBox();
   updateSlideFrames();
+  updateMinimap();
   syncTextHint();
   if(autoloadDone) scheduleSave();   // 任何重绘=内容/视图有变 → 防抖自动保存
 }
 
 function worldToScreen(p){
   return { x: state.view.x + p.x * state.view.scale, y: state.view.y + p.y * state.view.scale };
+}
+
+/* --------------------------- MINIMAP ----------------------------------- */
+function viewportWorldRect(){
+  const tl=toWorld(0,0), br=toWorld(window.innerWidth,window.innerHeight);
+  return {x:tl.x,y:tl.y,w:br.x-tl.x,h:br.y-tl.y};
+}
+function unionRect(a,b){
+  if(!b) return a || null;
+  if(!a) return {...b};
+  const x=Math.min(a.x,b.x), y=Math.min(a.y,b.y);
+  const r=Math.max(a.x+a.w,b.x+b.w), bt=Math.max(a.y+a.h,b.y+b.h);
+  return {x,y,w:Math.max(1,r-x),h:Math.max(1,bt-y)};
+}
+function minimapObjectBounds(o){
+  if(!o) return null;
+  if(o.type==='image') return transformBounds(o) || objectBounds(o);
+  return objectBounds(o) || transformBounds(o);
+}
+function collectMinimapBounds(){
+  let bounds=null;
+  state.slides.forEach(s=>{ bounds=unionRect(bounds,s); });
+  state.scene.forEach(o=>{ bounds=unionRect(bounds,minimapObjectBounds(o)); });
+  bounds=unionRect(bounds,viewportWorldRect());
+  if(!bounds) bounds=viewportWorldRect();
+  const pad=Math.max(bounds.w,bounds.h)*0.08 || 120;
+  return {x:bounds.x-pad,y:bounds.y-pad,w:bounds.w+pad*2,h:bounds.h+pad*2};
+}
+function minimapScaleFor(bounds,w,h){
+  return Math.min(w/bounds.w,h/bounds.h);
+}
+function minimapWorldToPoint(p,bounds,w,h){
+  const scale=minimapScaleFor(bounds,w,h);
+  const ox=(w-bounds.w*scale)/2, oy=(h-bounds.h*scale)/2;
+  return {x:ox+(p.x-bounds.x)*scale,y:oy+(p.y-bounds.y)*scale,scale,ox,oy};
+}
+function minimapRectToPointRect(r,bounds,w,h){
+  const a=minimapWorldToPoint({x:r.x,y:r.y},bounds,w,h);
+  return {x:a.x,y:a.y,w:r.w*a.scale,h:r.h*a.scale};
+}
+function minimapPointToWorld(clientX,clientY){
+  if(!minimapBounds || !minimapCanvas) return null;
+  const r=minimapCanvas.getBoundingClientRect();
+  const w=r.width, h=r.height;
+  const scale=minimapScaleFor(minimapBounds,w,h);
+  const ox=(w-minimapBounds.w*scale)/2, oy=(h-minimapBounds.h*scale)/2;
+  return {
+    x:minimapBounds.x+(clientX-r.left-ox)/scale,
+    y:minimapBounds.y+(clientY-r.top-oy)/scale
+  };
+}
+function centerViewOnWorld(p){
+  state.view.x=window.innerWidth/2 - p.x*state.view.scale;
+  state.view.y=window.innerHeight/2 - p.y*state.view.scale;
+  render();
+}
+function updateMinimap(){
+  if(!minimapEl || !minimapCanvas || minimapCollapsed) return;
+  const rect=minimapEl.getBoundingClientRect();
+  const W=Math.max(1,Math.round(rect.width)), H=Math.max(1,Math.round(rect.height));
+  const ratio=Math.max(1,window.devicePixelRatio||1);
+  if(minimapCanvas.width!==Math.round(W*ratio) || minimapCanvas.height!==Math.round(H*ratio)){
+    minimapCanvas.width=Math.round(W*ratio);
+    minimapCanvas.height=Math.round(H*ratio);
+  }
+  const c=minimapCanvas.getContext('2d');
+  c.setTransform(ratio,0,0,ratio,0,0);
+  c.clearRect(0,0,W,H);
+  minimapBounds=collectMinimapBounds();
+
+  c.fillStyle='rgba(255,255,255,.72)';
+  c.fillRect(0,0,W,H);
+
+  const sceneBounds=state.scene.reduce((b,o)=>unionRect(b,minimapObjectBounds(o)),null);
+  if(sceneBounds){
+    const r=minimapRectToPointRect(sceneBounds,minimapBounds,W,H);
+    c.fillStyle='rgba(30,30,30,.06)';
+    c.strokeStyle='rgba(30,30,30,.16)';
+    c.lineWidth=1;
+    c.fillRect(r.x,r.y,Math.max(1,r.w),Math.max(1,r.h));
+    c.strokeRect(r.x,r.y,Math.max(1,r.w),Math.max(1,r.h));
+  }
+
+  state.slides.forEach((s,i)=>{
+    const r=minimapRectToPointRect(s,minimapBounds,W,H);
+    c.lineWidth=i===state.activeSlide?2:1;
+    c.strokeStyle=i===state.activeSlide?'rgba(91,87,214,.95)':'rgba(91,87,214,.34)';
+    c.fillStyle=i===state.activeSlide?'rgba(91,87,214,.10)':'rgba(91,87,214,.035)';
+    c.fillRect(r.x,r.y,Math.max(1,r.w),Math.max(1,r.h));
+    c.strokeRect(r.x,r.y,Math.max(1,r.w),Math.max(1,r.h));
+  });
+
+  const view=minimapRectToPointRect(viewportWorldRect(),minimapBounds,W,H);
+  c.strokeStyle='rgba(224,49,49,.92)';
+  c.fillStyle='rgba(224,49,49,.08)';
+  c.lineWidth=1.5;
+  c.fillRect(view.x,view.y,Math.max(2,view.w),Math.max(2,view.h));
+  c.strokeRect(view.x,view.y,Math.max(2,view.w),Math.max(2,view.h));
+}
+if(minimapToggle){
+  minimapToggle.addEventListener('click',(e)=>{
+    e.stopPropagation();
+    minimapCollapsed=!minimapCollapsed;
+    minimapEl.classList.toggle('collapsed',minimapCollapsed);
+    minimapToggle.setAttribute('aria-label',minimapCollapsed?'展开鸟瞰图':'折叠鸟瞰图');
+    if(!minimapCollapsed) updateMinimap();
+  });
+}
+if(minimapCanvas){
+  minimapCanvas.addEventListener('pointerdown',(e)=>{
+    if(e.button!==0) return;
+    e.preventDefault();
+    e.stopPropagation();
+    minimapDragging=true;
+    minimapEl.classList.add('dragging');
+    minimapCanvas.setPointerCapture(e.pointerId);
+    const p=minimapPointToWorld(e.clientX,e.clientY);
+    if(p) centerViewOnWorld(p);
+  });
+  minimapCanvas.addEventListener('pointermove',(e)=>{
+    if(!minimapDragging) return;
+    e.preventDefault();
+    const p=minimapPointToWorld(e.clientX,e.clientY);
+    if(p) centerViewOnWorld(p);
+  });
+  const endMinimapDrag=()=>{
+    minimapDragging=false;
+    minimapEl.classList.remove('dragging');
+  };
+  minimapCanvas.addEventListener('pointerup',endMinimapDrag);
+  minimapCanvas.addEventListener('pointercancel',endMinimapDrag);
 }
 
 /* --------------------------- HISTORY ----------------------------------- */
@@ -2094,7 +2285,7 @@ function richTextFromInput(){
     if(node !== textInput && node.tagName==='DIV' && text.length>before && !text.endsWith('\n')) text+='\n';
   }
   textInput.childNodes.forEach(node=>walk(node,{}));
-  text=text.replace(/\n$/,'').replace(/\s+$/,'');
+  text=text.replace(/\u200B/g,'').replace(/\n$/,'').replace(/\s+$/,'');
   runs=normalizedTextRuns(text,runs);
   return {text,runs};
 }
@@ -2132,6 +2323,23 @@ function wrapTextSelection(patch){
     console.warn('应用文字选区样式失败', e);
     return false;
   }
+}
+function insertTextInputNewline(){
+  textInput.focus();
+  document.execCommand('insertHTML', false, '<br>\u200B');
+  applyTextInputStyle();
+  syncTextHint();
+}
+function measuredTextInputWidth(o){
+  if(!o || o.type!=='text') return null;
+  const {lines}=textLinesLayout(o);
+  const w=Math.max(1,...lines.map(l=>measureRichLine(o,l.index)));
+  // DOM and canvas font metrics differ slightly; a few pixels avoid accidental rewrap.
+  return Math.ceil(w * state.view.scale + 10);
+}
+function resetTextInputBox(){
+  textInput.style.width = '';
+  textInput.style.maxWidth = '';
 }
 function applyTextInputStyle(){
   textInput.style.color = textColor;
@@ -2213,6 +2421,14 @@ function openTextInput(sx, sy, w, edit=null){
   textInput.style.display='block';
   textInput.style.left = sx+'px';
   textInput.style.top = sy+'px';
+  resetTextInputBox();
+  if(source){
+    const measuredWidth=measuredTextInputWidth(source);
+    if(measuredWidth){
+      textInput.style.width = measuredWidth + 'px';
+      textInput.style.maxWidth = 'none';
+    }
+  }
   applyTextInputStyle();
   updateStylePanel();
   render();
@@ -2313,13 +2529,16 @@ document.addEventListener('pointerdown', (e)=>{
     keepTextEditOpenForStyle = true;
     setTimeout(()=>{ keepTextEditOpenForStyle = false; }, 250);
   }
+  if(textInput.style.display==='block' && target && target.closest && !target.closest('#textInput,#fontGroup,#textAlignGroup,#opacityGroup,#strokeGroup')){
+    commitText();
+  }
 }, true);
 textInput.addEventListener('blur', ()=>{
   if(keepTextEditOpenForStyle) return;
   commitText();
 });
 textInput.addEventListener('keydown', (e)=>{
-  if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); commitText(); }
+  if(e.key==='Enter'){ e.preventDefault(); insertTextInputNewline(); }
   if(e.key==='Escape'){ e.preventDefault(); cancelTextInput(); }
 });
 textInput.addEventListener('input', ()=>{ applyTextInputStyle(); syncTextHint(); });
@@ -2601,6 +2820,28 @@ function getRatioConfig(){
   return RATIOS[recConfig.ratio] || RATIOS['16:9'];
 }
 function ratioVal(){ const r=getRatioConfig(); return r.w/r.h; }
+function ratioLabel(){
+  const r=getRatioConfig();
+  return {main:r.main, sub:r.sub};
+}
+function applyRatioChange(){
+  updateSlideRatioButton();
+  buildSlideRatioPicker();
+  buildRatioGrid();
+  updatePreview();
+  if(state.slides.length) resizeSlidesToRatio();
+  else if(recState==='setup') showFrame();
+}
+function setRecordingRatio(key){
+  recConfig.ratio=key;
+  applyRatioChange();
+}
+function setCustomRecordingRatio(w,h){
+  recConfig.customW=Math.max(240,Math.min(3840,+w||1080));
+  recConfig.customH=Math.max(240,Math.min(3840,+h||1920));
+  if(recConfig.ratio!=='custom') recConfig.ratio='custom';
+  applyRatioChange();
+}
 function bgCss(bg){
   if(bg.type==='none') return 'repeating-conic-gradient(#ddd 0 25%,#fff 0 50%) 0 0/14px 14px';
   if(bg.type==='solid') return bg.color;
@@ -2673,6 +2914,7 @@ function roundRectPath(c,x,y,w,h,r){
 }
 
 /* --------------------------- 幻灯片 ---------------------------------- */
+const SLIDE_GAP = 80;
 function fitViewToRect(rect, marginRatio=0.86){
   const availW=window.innerWidth*marginRatio, availH=window.innerHeight*marginRatio;
   const scale=Math.min(availW/rect.w, availH/rect.h);
@@ -2698,26 +2940,103 @@ function selectSlide(index){
   renderSlidePanel();
 }
 function addSlide(){
-  const R=getRatioConfig();
-  let x=0, y=0;
-  if(state.slides.length){
-    const last=state.slides[state.slides.length-1];
-    x=last.x+last.w+60; y=last.y;
-  }
-  const slide={ id:'slide_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7), x, y, w:R.w, h:R.h };
+  const slide=createSlideAtSmartPosition();
   state.slides.push(slide);
   renderSlidePanel();
   selectSlide(state.slides.length-1);
 }
+function slideId(){
+  return 'slide_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+}
+function rectIntersectionArea(a,b){
+  const x=Math.max(a.x,b.x), y=Math.max(a.y,b.y);
+  const r=Math.min(a.x+a.w,b.x+b.w), bt=Math.min(a.y+a.h,b.y+b.h);
+  return Math.max(0,r-x)*Math.max(0,bt-y);
+}
+function rectsOverlap(a,b,pad=0){
+  return !(a.x+a.w+pad<=b.x || b.x+b.w+pad<=a.x || a.y+a.h+pad<=b.y || b.y+b.h+pad<=a.y);
+}
+function slideOverlapsAny(candidate, pad=0){
+  return state.slides.some(s=>rectsOverlap(candidate,s,pad));
+}
+function findFreeSlideSlot(base,size=base){
+  let candidate={id:slideId(),x:base.x+base.w+SLIDE_GAP,y:base.y,w:size.w,h:size.h};
+  let guard=0;
+  while(slideOverlapsAny(candidate,0) && guard<200){
+    candidate={...candidate,x:candidate.x+candidate.w+SLIDE_GAP};
+    guard++;
+  }
+  return candidate;
+}
+function viewportOverlapsActiveSlide(threshold=0.35){
+  if(state.activeSlide<0 || state.activeSlide>=state.slides.length) return false;
+  const active=state.slides[state.activeSlide];
+  const view=viewportWorldRect();
+  const overlap=rectIntersectionArea(view,active);
+  const activeArea=Math.max(1,active.w*active.h);
+  const viewArea=Math.max(1,view.w*view.h);
+  return overlap/Math.min(activeArea,viewArea) >= threshold;
+}
+function slideFromViewportCenter(R){
+  const center=toWorld(window.innerWidth/2,window.innerHeight/2);
+  return { id:slideId(), x:center.x-R.w/2, y:center.y-R.h/2, w:R.w, h:R.h };
+}
+function createSlideAtSmartPosition(){
+  commitText();
+  const R=getRatioConfig();
+  if(!state.slides.length) return slideFromViewportCenter(R);
+  if(viewportOverlapsActiveSlide()){
+    const active=state.slides[state.activeSlide];
+    return findFreeSlideSlot(active,R);
+  }
+  const byView=slideFromViewportCenter(R);
+  if(!slideOverlapsAny(byView,0)) return byView;
+  return findFreeSlideSlot(byView);
+}
+function rectCenterPoint(r){
+  return {x:r.x+r.w/2,y:r.y+r.h/2};
+}
+function rectContainsPoint(rect,p,pad=0){
+  return p.x>=rect.x-pad && p.x<=rect.x+rect.w+pad && p.y>=rect.y-pad && p.y<=rect.y+rect.h+pad;
+}
+function objectBelongsToSlide(o,slide){
+  const b=transformBounds(o) || objectBounds(o);
+  return !!b && rectContainsPoint(slide, rectCenterPoint(b), 1);
+}
+function shiftSlidesAndContents(startIndex, dx, dy){
+  if(startIndex<0 || startIndex>=state.slides.length || (!dx && !dy)) return;
+  const sourceRects=state.slides.slice(startIndex).map(s=>({...s}));
+  const movedObjects=new Set();
+  state.scene.forEach((o,i)=>{
+    if(sourceRects.some(slide=>objectBelongsToSlide(o,slide))) movedObjects.add(i);
+  });
+  movedObjects.forEach(i=>translateObject(state.scene[i],dx,dy));
+  for(let i=startIndex;i<state.slides.length;i++){
+    state.slides[i].x+=dx;
+    state.slides[i].y+=dy;
+  }
+}
+function createSlideForDeckInsert(targetIndex){
+  commitText();
+  const R=getRatioConfig();
+  const index=Math.max(0,Math.min(targetIndex,state.slides.length));
+  if(!state.slides.length) return slideFromViewportCenter(R);
+  const prev=state.slides[index-1] || null;
+  const next=state.slides[index] || null;
+  if(prev){
+    const slide={id:slideId(),x:prev.x+prev.w+SLIDE_GAP,y:prev.y,w:R.w,h:R.h};
+    if(next){
+      const minNextX=slide.x+slide.w+SLIDE_GAP;
+      const dx=Math.max(0,minNextX-next.x);
+      if(dx>0) shiftSlidesAndContents(index,dx,0);
+    }
+    return slide;
+  }
+  return {id:slideId(),x:next.x-R.w-SLIDE_GAP,y:next.y,w:R.w,h:R.h};
+}
 function insertSlideAt(targetIndex){
   if(recState!=='idle') return;   // 与删除同样的保护：录制相关状态下禁止插入，避免正在录的目标幻灯片错位
-  const R=getRatioConfig();
-  // 参照插入点前一张幻灯片的位置，新幻灯片放在其正下方；不重排任何已有幻灯片的世界坐标
-  // （面板编号/方向键导航只看数组顺序，不看物理位置，因此无需整体重排即可正确插入到中间）
-  const ref = state.slides[Math.max(0,targetIndex-1)] || state.slides[targetIndex] || null;
-  let x=0, y=0;
-  if(ref){ x=ref.x; y=ref.y+ref.h+60; }
-  const slide={ id:'slide_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7), x, y, w:R.w, h:R.h };
+  const slide=createSlideForDeckInsert(targetIndex);
   state.slides.splice(targetIndex,0,slide);
   if(state.activeSlide>=targetIndex) state.activeSlide+=1;   // 原选中幻灯片的数组位置后移，保持指向同一张
   renderSlidePanel();
@@ -2748,8 +3067,62 @@ function resizeSlidesToRatio(){
   if(state.activeSlide>=0) selectSlide(state.activeSlide);
   render();
 }
+function updateSlideRatioButton(){
+  const main=document.getElementById('slideRatioMain');
+  const sub=document.getElementById('slideRatioSub');
+  if(!main || !sub) return;
+  const label=ratioLabel();
+  main.textContent=label.main;
+  sub.textContent=label.sub;
+}
+function buildSlideRatioPicker(){
+  const grid=document.getElementById('slideRatioGrid');
+  if(!grid) return;
+  grid.innerHTML='';
+  Object.keys(RATIOS).forEach(k=>{
+    const r=RATIOS[k], b=document.createElement('button');
+    b.className='ratio-btn'+(k===recConfig.ratio?' active':'');
+    b.type='button';
+    b.innerHTML=`<div class="r-main">${r.main}</div><div class="r-sub">${r.sub}</div>`;
+    b.onclick=(e)=>{
+      e.stopPropagation();
+      setRecordingRatio(k);
+      if(k!=='custom'){
+        closeSlideRatioPopover();
+      }
+    };
+    grid.appendChild(b);
+  });
+  const customBox=document.getElementById('slideCustomRatioBox');
+  const customW=document.getElementById('slideCustomW');
+  const customH=document.getElementById('slideCustomH');
+  if(customBox) customBox.classList.toggle('show', recConfig.ratio==='custom');
+  if(customW) customW.value=recConfig.customW;
+  if(customH) customH.value=recConfig.customH;
+}
+function positionSlideRatioPopover(){
+  const btn=document.getElementById('slideRatioBtn');
+  const pop=document.getElementById('slideRatioPopover');
+  if(!btn || !pop || !pop.classList.contains('show')) return;
+  const br=btn.getBoundingClientRect();
+  const pr=pop.getBoundingClientRect();
+  const gap=10;
+  const left=Math.max(12, Math.min(window.innerWidth - pr.width - 12, br.left - pr.width - gap));
+  const top=Math.max(12, Math.min(window.innerHeight - pr.height - 12, br.top));
+  pop.style.left=left+'px';
+  pop.style.top=top+'px';
+}
+function closeSlideRatioPopover(){
+  document.getElementById('slideRatioPopover')?.classList.remove('show');
+  const btn=document.getElementById('slideRatioBtn');
+  if(btn){
+    btn.classList.remove('active');
+    btn.setAttribute('aria-expanded','false');
+  }
+}
 function renderSlidePanel(){
   const list=document.getElementById('slidesList'); if(!list) return;
+  updateSlideRatioButton();
   list.innerHTML='';
   const delDisabled = recState!=='idle';
   const insertDisabled = recState!=='idle';
@@ -2774,6 +3147,27 @@ function renderSlidePanel(){
   });
 }
 document.getElementById('slideAddBtn').onclick = addSlide;
+document.getElementById('slideRatioBtn').onclick = (e)=>{
+  e.stopPropagation();
+  const btn=document.getElementById('slideRatioBtn');
+  const pop=document.getElementById('slideRatioPopover');
+  buildSlideRatioPicker();
+  pop.classList.toggle('show');
+  const open=pop.classList.contains('show');
+  btn.classList.toggle('active', open);
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  positionSlideRatioPopover();
+};
+document.getElementById('slideCustomW').oninput=e=>setCustomRecordingRatio(e.target.value, recConfig.customH);
+document.getElementById('slideCustomH').oninput=e=>setCustomRecordingRatio(recConfig.customW, e.target.value);
+document.getElementById('slideRatioPopover').addEventListener('click', e=>e.stopPropagation());
+document.addEventListener('pointerdown', (e)=>{
+  const pop=document.getElementById('slideRatioPopover');
+  if(!pop || !pop.classList.contains('show')) return;
+  if(e.target.closest && e.target.closest('#slideRatioPopover,#slideRatioBtn')) return;
+  closeSlideRatioPopover();
+});
+window.addEventListener('resize', positionSlideRatioPopover);
 
 /* ---- 取景框（setup 状态） ---- */
 const recFrameEl=document.getElementById('recFrame');
@@ -3277,11 +3671,7 @@ function buildRatioGrid(){
     b.className='ratio-btn'+(k===recConfig.ratio?' active':'');
     b.innerHTML=`<div class="r-main">${r.main}</div><div class="r-sub">${r.sub}</div>`;
     b.onclick=()=>{
-      recConfig.ratio=k;
-      buildRatioGrid();
-      updatePreview();
-      if(state.slides.length) resizeSlidesToRatio();
-      else if(recState==='setup') showFrame();
+      setRecordingRatio(k);
     };
     g.appendChild(b);
   }
@@ -3399,16 +3789,10 @@ function bindSettingsControls(){
     btn.onclick=()=>{ recConfig.source=btn.dataset.source; updateSourceUI(); updatePreview(); };
   });
   document.getElementById('customW').oninput=e=>{
-    recConfig.customW=+e.target.value||1080;
-    updatePreview();
-    if(state.slides.length) resizeSlidesToRatio();
-    else if(recState==='setup') showFrame();
+    setCustomRecordingRatio(e.target.value, recConfig.customH);
   };
   document.getElementById('customH').oninput=e=>{
-    recConfig.customH=+e.target.value||1920;
-    updatePreview();
-    if(state.slides.length) resizeSlidesToRatio();
-    else if(recState==='setup') showFrame();
+    setCustomRecordingRatio(recConfig.customW, e.target.value);
   };
   document.getElementById('randomBg').onclick=()=>{
     const pool=BACKGROUNDS.map((bg,i)=>({bg,i})).filter(x=>x.bg.type!=='none' && (recConfig.bgCategory==='all' || x.bg.cat===recConfig.bgCategory));
