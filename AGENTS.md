@@ -14,7 +14,7 @@ python3 -m http.server 8000
 > ⚠️ 摄像头/麦克风需要安全上下文（https 或 localhost）。直接 `file://` 双击会被多数浏览器拦摄像头，务必走 localhost 或部署到静态托管。
 
 ## 硬约束
-- **单个 HTML 文件**（`index.html`），HTML/CSS/JS 全内联，零构建、零依赖。
+- `whiteboard.html` 与 `whiteboard-pro.html` 均保持为**独立单 HTML 应用**，HTML/CSS/JS 全内联，零构建、零依赖；根 `index.html` 只负责入口跳转。
 - 现阶段**不引入后端、不引入框架**。
 - 录制有两种来源：① 录白板(合成白板+摄像头) ② 录屏幕(`getDisplayMedia` + 取景框裁剪 + 角落摄像头 + 麦克风/系统声音)。两者都合成进**一个**视频。
 - 导出 **mp4**：原生 `MediaRecorder` 支持则直接录 mp4；否则录 webm + 按需懒加载 ffmpeg.wasm 转 mp4（仅此一处可联网拉 CDN）。
@@ -29,11 +29,12 @@ python3 -m http.server 8000
 - **Git/GitHub**：GitHub remote 使用 SSH URL，不用 HTTPS；只有用户明确要求时才提交/推送。
 
 ## 当前状态
-- `index.html` 已实现 M0~M3 + 迭代二（手绘风格 + 录制比例/背景/取景框）+ 迭代三（绘图样式面板、摄像头可拖拽缩放、更细真实手绘线条、完整录制设置）+ 贴图功能 + 指针选择/Delete 删除对象 + 菱形/直线工具 + 丰富文本样式 + 对象缩放/旋转（单文件）。
+- **入口结构调整(2026-07-14)**：新的轻量 `index.html` 使用 `location.replace('./whiteboard-pro.html')`（兼有 meta refresh 与普通链接回退）处理根路径入口；`whiteboard.html` 与 `whiteboard-pro.html` 均为可独立运行的应用文件。两份应用目前同源并共享现有 localStorage；正式加入账号体系时应设置独立存储命名空间或显式迁移。仓库文档不记录各独立文件的商业版本归属。
+- `whiteboard.html` 与初始 `whiteboard-pro.html` 已实现 M0~M3 + 迭代二（手绘风格 + 录制比例/背景/取景框）+ 迭代三（绘图样式面板、摄像头可拖拽缩放、更细真实手绘线条、完整录制设置）+ 贴图功能 + 指针选择/Delete 删除对象 + 菱形/直线工具 + 丰富文本样式 + 对象缩放/旋转（各自为独立单文件应用）。
 - 迭代三录制设置已补齐并接入真实合成：比例含 `Custom` 自定义；背景含分类筛选、随机壁纸、离线程序纹理/渐变/纯色/无；白卡片支持圆角半径与画布边距；摄像头支持录制开关、大小、圆形/方形；麦克风下拉由 `populateDevices()` 填充；录制光标高亮支持开关和颜色。
 - `drawRecFrame()` 已读取上述 `recConfig` 字段，导出画面会同步设置面板中的背景、白卡片边距/圆角、摄像头形状/大小/开关、光标高亮；提词器仍不入录像。
 - 贴图对象保存为 `{type:'image',src,x,y,w,h}`（`src` 为 dataURL），导入/粘贴时会自动裁掉透明/近白空边；由 `imageCache` 缓存 `HTMLImageElement`；图片对象参与重绘、撤销/重做、橡皮擦命中、缩放平移和录制导出。
-- **彩铅小人贴纸(2026-07-11)**：顶部工具栏图片按钮旁 `#stickerBtn` 弹出 `#stickerPopover`，贴纸数据改为 `STICKER_GROUPS` 三分组：`男生` 14 个固定真实短发角色表情/动作、`女生` 14 个固定双侧小辫角色表情/动作、`综合` 保留第一版 8 个原创透明 PNG（无所不能、开心、疑惑、焦虑、灵感、低落、专注、庆祝）。男生/女生新增表情含哭泣、笑着哭、喜极而泣、期待、失落、愣住、奔跑等；衣服颜色/款式允许变化以保留第一版的视觉丰富度，但发型/脸型保持角色一致；`女生·低落` 已手工补回右侧三道漫画竖线，这是该情绪的关键视觉符号，后续替换素材时不要丢掉。所有素材通过边缘泛洪去白底后内联为 `data:image/png;base64`，不新增外部运行时文件，保持单 HTML；点击贴纸仍调用 `beginPendingImage(sticker.src,sticker.w||240,sticker.h||240)`，复用现有图片对象流程，因此可在画布单击放置、拖动、缩放、删除、撤销/重做，并进入录制导出。贴纸弹窗与普通工具按钮高亮互斥：`openStickerPopover()` 会临时清掉 `.tool[data-tool]` 高亮，点击空白关闭时恢复 `state.tool` 对应高亮，点击普通工具时先隐藏贴纸弹窗再切工具，避免小人和铅笔等同时显示选中态。
+- **彩铅小人贴纸(2026-07-11~13)**：顶部工具栏图片按钮旁 `#stickerBtn` 弹出 `#stickerPopover`，贴纸数据为 `STICKER_GROUPS` 三分组：`男生` 14 个固定真实短发角色表情/动作、`女生` 14 个自然中长发低辫角色表情/动作、`综合` 保留第一版 8 个原创透明 PNG（无所不能、开心、疑惑、焦虑、灵感、低落、专注、庆祝）。女生组是独立女性角色结构：圆润脸型、自然侧分额发、后脑与低辫连贯，禁止用“男生短发加辫子”的改装方式；辫子可见性必须服从人物视角，正脸/近正脸显示左右两个低辫子，侧脸、转头或低头时只显示实际可见的一侧，不能把整组固定成单辫或机械对称双辫。嘴型/眼型按情绪分别设计，不统一张嘴，`喜极而泣` 也保持小眼睛而非大眼 anime 风。男生/女生新增表情含哭泣、笑着哭、喜极而泣、期待、失落、愣住、奔跑等；衣服颜色/款式允许变化以保留第一版的视觉丰富度，但发型/脸型保持角色一致；`女生·低落` 保留右侧三道漫画竖线，这是该情绪的关键视觉符号。女生新素材去色键后以透明高质量 WebP 内联，其他素材仍可为透明 PNG；均不新增外部运行时文件，保持单 HTML。点击贴纸仍调用 `beginPendingImage(sticker.src,sticker.w||240,sticker.h||240)`，复用现有图片对象流程，因此可在画布单击放置、拖动、缩放、删除、撤销/重做，并进入录制导出。贴纸弹窗与普通工具按钮高亮互斥：`openStickerPopover()` 会临时清掉 `.tool[data-tool]` 高亮，点击空白关闭时恢复 `state.tool` 对应高亮，点击普通工具时先隐藏贴纸弹窗再切工具，避免小人和铅笔等同时显示选中态。
 - 选择工具 `select` 是默认工具；主工具栏顺序为 hand/select/text/ellipse/rect/diamond/arrow/line/pen/image/sticker/eraser，数字下标从 text 开始为 1~9（sticker 不占数字快捷键）；点击对象显示 DOM 选中框，可拖动对象、拖四角缩放、拖顶部圆点旋转，按 `Delete/Backspace` 删除选中对象并支持撤销/重做。选中框不画进 canvas，因此不进入录制导出。
 - **动态流动线条(2026-07-11)**：左侧绘图属性面板新增「动态效果」组，`strokeMotion:'none'|'flow'` 与 `strokeStyle`（实线/虚线/点线）和 `roughness`（规整/手绘/粗糙）正交，可组合出“手绘 + 动态流动”“箭头 + 动态流动”“圆圈 + 动态流动”等效果；flow 按钮图标本身也是 SVG 动态虚线箭头（CSS `flowIconDash`，尊重 `prefers-reduced-motion`）。渲染时先画原始线条，再用 `drawFlowOverlay()` 叠一层按 `lineDashOffset` 移动的虚线高亮；只有存在 flow 对象时才用 `requestAnimationFrame` 持续重绘，动画帧调用 `render({skipSave:true})`，避免自动保存被动画刷屏。它画在 `board` canvas 内，白板录制会自然捕获；旧对象缺字段时默认静态。验证：内联 JS 语法通过；无头 Chromium 断言通过（动态效果面板显示、点击 flow 后状态/新对象字段为 `flow`、按钮图标动画生效、动画循环启动、无 console error）。
 - 文字工具支持新建文字时设置字体、字号、左/中/右对齐和透明度；字体采用离线系统字体栈为主，网络可用时加载 Nunito / Lilita One / Comic Neue 增强；文字对象保存 `fontFamily/textAlign/opacity`，旧对象缺字段会 fallback。文字编辑态的 `#textInput` 无边框，提交后不自动保留选中框；选择工具下点选文字后可拖动移动，双击文字或选中后按 Enter 可重新编辑；Esc 取消编辑，清空提交会删除该文字。
@@ -50,7 +51,7 @@ python3 -m http.server 8000
 - **顶部工具栏紧凑化(2026-07-11)**：主工具栏从 `top:14px + 40px按钮 + 6px padding` 压到 `top:10px + 34px按钮 + 4px padding`，整体高度约 54px→44px，图标 20px→18px、快捷键角标 10px→9px，`#toolHelp` 同步上移；录制条顶边同步为 `top:10px`，小屏下移位置从 72px 调到 60px。验证：内联 JS 语法通过；无头 Chromium 检查 1600/1400/1200 视口下工具栏高度约 44px，录制条仍不与工具栏/幻灯片面板重叠。
 - **右侧面板分层对齐(2026-07-11)**：右侧幻灯片面板 `.slidesPanel` 从 `top:80px` 下移到 `top:128px`，避免紧贴上方录制框；提词器面板 `#tele` 也改为 `top:128px;right:104px`，和右侧下方控制区同一条起始线，并避开 76px 宽幻灯片栏；`.slidesList` 的最大高度同步从 `calc(100vh - 305px)` 调到 `calc(100vh - 353px)`。验证：内联 JS 语法通过；静态核对 CSS 对齐值生效。
 - 录制合成循环：白板模式用 `setInterval(1000/30)`；**录屏模式用屏幕轨 `MediaStreamTrackProcessor` 帧驱动**(Chrome/Edge),切到别的 App 后台仍满帧;无此 API 回退 `setInterval`(后台可能掉帧)。
-- **录屏来源分流 + 隐私裁剪(2026-07-12)**：`enterScreenSetup()` 请求共享后读取 `videoTrack.getSettings().displaySurface`。`browser`（Chrome 标签页）与 `window`（窗口）使用完整源边界并立即调用 `startScreenRecording()`，因为 Chrome 分享后会自动切到目标页面，不能要求用户再返回白板确认；标签页不会包含浏览器栏，窗口则原样包含整个窗口。只有 `monitor`（整个屏幕）或无法识别来源时才进入 `#screenStage/#screenSnap` 冻结预览，用独立 `#screenCropFrame` 拖动/四角缩放后点「确认区域并开始录制」；因此“只录某个窗口的一部分”的正确路径是选择整个屏幕后裁剪。裁剪使用会话级归一化 `screenCropNorm{x,y,w,h}`，不复用/不持久化白板 `recConfig.frame`；整屏默认从顶部 12% 以下开始，选区靠近顶部 6% 时显示隐私警告。`drawScreenFrame()` 按源当前尺寸换算像素裁剪，输出最长边≤1920且保持选区比例；预览舞台、绿色框和提示都是 DOM，不进入 `recCanvas`。
+- **录屏来源分流 + 隐私裁剪(2026-07-12)**：`enterScreenSetup()` 请求共享后读取 `videoTrack.getSettings().displaySurface`。`browser`（Chrome 标签页）与 `window`（窗口）使用完整源边界并立即调用 `startScreenRecording()`，因为 Chrome 分享后会自动切到目标页面，不能要求用户再返回白板确认；标签页不会包含浏览器栏，窗口则原样包含整个窗口。只有 `monitor`（整个屏幕）或无法识别来源时才进入 `#screenStage/#screenSnap` 冻结预览，用独立 `#screenCropFrame` 拖动/四角缩放后点右上录制条中的「确认区域并开始录制」；底部绿色重复按钮已移除，避免与浏览器共享条/macOS Dock 拥挤并保持唯一主操作。因此“只录某个窗口的一部分”的正确路径是选择整个屏幕后裁剪。裁剪使用会话级归一化 `screenCropNorm{x,y,w,h}`，不复用/不持久化白板 `recConfig.frame`；整屏默认从顶部 12% 以下开始，选区靠近顶部 6% 时显示隐私警告。`drawScreenFrame()` 按源当前尺寸换算像素裁剪，输出最长边≤1920且保持选区比例；预览舞台、绿色框和提示都是 DOM，不进入 `recCanvas`。
 - **录屏停止收尾(2026-07-12)**：`stopRecording()` 增加 `recStopping/recStopHandled` 一次性守卫，停止前主动 `requestData()`，并在浏览器因“停止分享”漏发 `MediaRecorder.onstop` 时于 1.8 秒后用已收集 `recChunks` 兜底调用 `onRecStop()`；why：确保 Chrome 标签页/窗口共享结束后仍可靠弹出“录制完成”，同时避免 ended/stop 双重触发生成两次完成页。
 - **帧驱动 & 防黑屏**:Chrome `MediaStreamTrackProcessor` 读屏幕轨,`drawScreenFrame(VideoFrame)` 帧到即画(切后台满帧、隐藏 video 也能录);无该 API 回退 `setInterval`。`#screenVideo` 仅取帧源、离屏隐藏。
 - **录屏隐藏摄像头气泡**:`startScreenRecording` 设 `camWrap.style.visibility='hidden'`(仍解码可 drawImage,不被整屏录到 → 避免双重人脸),`stopRecording` 恢复。
@@ -79,7 +80,9 @@ python3 -m http.server 8000
 - [ ] 真机：幻灯片面板悬停两张幻灯片之间/最前，确认「+」热区清晰可点；点击后在中间插入空白幻灯片，原有内容和编号顺延正确，且新幻灯片自动进入可编辑视图
 
 ## 文件地图
-- `index.html` — **全部应用（单文件，当前主版本）**。2026-07-04 起=原 `index-v2.html`（UI 视觉升级定稿版，已用户真机验收），改动主要在这
+- `index.html` — 根路径轻量入口；自动跳转到 `whiteboard-pro.html`，不承载白板业务代码
+- `whiteboard.html` — 独立运行的纯 HTML 白板应用
+- `whiteboard-pro.html` — 根入口当前指向的独立白板应用
 - `index-old.html` — 2026-07-04 前的旧稳定版（原 `index.html`），仅作历史备用，**勿在其上开发**
 - `backups/` — 历史归档，**均为非活跃文件，勿在其上开发**：`index-stable-2026-07-02.html`（定稿前稳定版备份，内容同 `index-old.html`）、`demo-paper-unselected-2026-07-02.html` / `demo-console-unselected-2026-07-02.html`（未选中的换肤方案）
 - `docs/PROJECT_PLAN.md` — 需求/功能清单/设计决策/测试清单/里程碑（单一产品文档）
@@ -108,6 +111,10 @@ python3 -m http.server 8000
 
 | 日期 | 变更内容 |
 |------|---------|
+| 2026-07-14 | 调整站点入口结构：保留两个可独立运行的白板 HTML 文件，新建轻量 `index.html` 处理根路径跳转，并明确不在仓库文档记录文件的商业版本归属；why：支持两份应用独立演进，同时避免公开内部版本映射信息 |
+| 2026-07-13 | 按人物视角修正女生 14 张彩铅贴纸的辫子可见性：正脸/近正脸显示左右两个低辫子，侧脸/转头/低头按遮挡只显示可见一侧，并保持原有情绪、衣服及综合组不变；why：修复新版整组固定为单辫、与真实人物视角不符的问题 |
+| 2026-07-12 | 整体重绘女生 14 张彩铅情绪贴纸：改为自然中长发侧马尾与独立女性脸型，按情绪设计不同嘴型/眼型，并保留低落三道漫画竖线；素材改为透明高质量 WebP 内联，综合第一版不变；why：修复部分女生看起来像“男生短发加辫子”的不自然角色设计，同时控制单 HTML 体积 |
+| 2026-07-12 | 移除整个屏幕裁剪页底部绿色「确认区域并开始录制」重复按钮，只保留右上录制条的红色主按钮并更新操作提示；why：建立唯一明确的下一步操作，同时避免按钮被浏览器共享条或 macOS Dock 挤压遮挡 |
 | 2026-07-12 | 记录用户真机基本验收：Chrome 标签页/窗口自动录制及停止分享完成页暂未发现问题；why：让后续接手者区分已经真机跑通的主流程与仍需继续观察的细项 |
 | 2026-07-12 | 按共享来源简化录屏流程：Chrome 标签页/窗口分享后自动开始录制，只有整个屏幕保留绿色区域裁剪；why：浏览器分享后会自动切到目标标签页或窗口，用户无法意识到还需返回白板做第二次确认 |
 | 2026-07-12 | 修复 Chrome 标签页/窗口停止分享后不弹录制完成页：裁剪页强化“尚未开始/确认开始”提示，setup 阶段停止分享会解释无视频；真正录制后的停止增加 requestData、一次性收尾和 onstop 超时兜底；why：兼容用户从 Chrome 分享条停止录制，并避免误把“已分享”理解成“已开始白板录制” |

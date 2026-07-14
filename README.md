@@ -1,3 +1,5 @@
+> Purpose / 目的：说明白板录制工具的功能与运行方式。　Audience / 目标读者：使用者与开发者。　How to read / 如何阅读：按语言阅读功能、运行与浏览器支持章节。
+
 # Whiteboard Recorder / 白板录制工具
 
 [English](#english) · [中文](#中文)
@@ -34,7 +36,7 @@ A pure front-end whiteboard recording tool. Draw and write freehand on an infini
 
 ### Running
 
-Features that don't need the camera (drawing, teleprompter) work by **just double-clicking `index.html`**.
+Features that do not need the camera (drawing, teleprompter) can run directly from a standalone application HTML file. The root `index.html` handles the default site entry.
 
 But **camera / microphone / recording** require a "secure context": most browsers block camera access under `file://` (double-click). To record, use localhost or https:
 
@@ -87,7 +89,7 @@ You can also deploy to any static host (GitHub Pages / Vercel / Netlify) for bui
 
 ### 运行
 
-绘图、提词器等不需要摄像头的功能，**双击 `index.html` 即可使用**。
+绘图、提词器等不需要摄像头的功能，可以直接从独立应用 HTML 文件运行；根 `index.html` 负责站点默认入口。
 
 但**摄像头 / 麦克风 / 录制**需要「安全上下文」：多数浏览器会拦截 `file://`（双击打开）下的摄像头权限。要录制，请用 localhost 或 https：
 
@@ -95,7 +97,7 @@ You can also deploy to any static host (GitHub Pages / Vercel / Netlify) for bui
 cd WhiteBoard
 python3 -m http.server 8000
 ```
-浏览器打开 <http://localhost:8000>，按提示授权摄像头与麦克风即可。
+浏览器打开 <http://localhost:8000>，再按提示授权摄像头与麦克风即可。
 
 也可部署到任意静态托管（GitHub Pages / Vercel / Netlify），自带 https。
 
@@ -114,6 +116,7 @@ python3 -m http.server 8000
 
 | Date / 日期 | Changes / 变更内容 |
 |------|---------|
+| 2026-07-14 | Updated the default site-entry instructions without documenting internal commercial edition mapping / 更新默认站点入口说明，但不记录内部商业版本映射 |
 | 2026-06-29 | English-first bilingual README / 双语 README 改为英文在前 |
 | 2026-06-29 | Bilingual README (zh/en); removed the excalicord reference / 双语 README；移除 excalicord 引用 |
 | 2026-06-29 | Synced actual features and fixed inaccurate descriptions / 同步实际功能并修正不准确描述 |
