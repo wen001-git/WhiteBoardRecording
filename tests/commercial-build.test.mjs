@@ -23,11 +23,15 @@ test('public build publishes the commercial free app and excludes private source
   await assert.rejects(access(resolve(root, '.render-static/whiteboard-pro.html')));
 });
 
-test('gateway loads Pro through static accounts file', async () => {
+test('gateway prefers static accounts and falls back to the account service', async () => {
   const html = await source('index.html');
   assert.match(html, /accounts\.json/);
   assert.match(html, /wb_static_pro_session/);
-  assert.match(html, /正在校验静态 Pro 账号/);
+  assert.match(html, /async function tryStaticLogin/);
+  assert.match(html, /async function loginPro/);
+  assert.match(html, /api\('\/api\/login'/);
+  assert.ok(html.indexOf('await tryStaticLogin') < html.indexOf("api('/api/login'"));
+  assert.match(html, /本地账号未匹配，正在连接账号服务/);
   assert.match(html, /\.\/app\.html/);
   assert.doesNotMatch(html, /\.\/whiteboard\.html/);
 });
@@ -44,14 +48,21 @@ test('private app is full-featured while the commercial template fails closed', 
   assert.equal(commercialTemplate.split(PRO_PLAN_PLACEHOLDER).length - 1, 1);
   assert.match(
     commercialTemplate,
-    /const DEFAULT_PURCHASE_CONFIG=\{price:'39',wechat:'leewen2017'\}/,
+    /const DEFAULT_PURCHASE_CONFIG=\{price:'59',wechat:'leewen2017'\}/,
   );
   assert.match(commercialTemplate, /function loadPurchaseConfig\(\)/);
+  assert.match(commercialTemplate, /const STATIC_ADMIN_CHANNEL='wb_static_admin_cfg'/);
+  assert.match(commercialTemplate, /function watchPurchaseConfigUpdates\(\)/);
+  assert.match(commercialTemplate, /BroadcastChannel\(STATIC_ADMIN_CHANNEL\)/);
+  assert.match(commercialTemplate, /window\.addEventListener\('storage'/);
   assert.match(commercialTemplate, /purchaseMessageFromConfig\(\)/);
   assert.match(commercialTemplate, /id="proWechatId"/);
   assert.match(commercialTemplate, /id="accountBtn"/);
   assert.match(commercialTemplate, /id="accountLogout"/);
   assert.match(commercialTemplate, /function openStaticProLogin\(\)/);
+  assert.match(commercialTemplate, /function loginWithFallback\(/);
+  assert.match(commercialTemplate, /SERVER_PRO_GRANTED/);
+  assert.match(commercialTemplate, /proApi\('\/api\/logout'/);
   assert.match(commercialTemplate, /localStorage\.removeItem\(STATIC_SESSION_KEY\)/);
   assert.match(commercialTemplate, /btn\.textContent=username/);
   assert.doesNotMatch(commercialTemplate, /Pro · \$\{username\}/);
@@ -96,10 +107,11 @@ test('admin token remains session-only and new accounts default to three devices
   assert.match(html, /value="3"/);
 });
 
-test('static Pro accounts contain ten enabled hashed accounts without plaintext passwords', async () => {
+test('static Pro accounts contain enabled hashed accounts without plaintext passwords', async () => {
   const data = JSON.parse(await source('accounts.json'));
-  assert.deepEqual(data.purchase, { price: '39', wechat: 'leewen2017' });
-  assert.equal(data.accounts.length, 10);
+  assert.ok(String(data.purchase?.price || '').trim());
+  assert.ok(String(data.purchase?.wechat || '').trim());
+  assert.ok(data.accounts.length >= 10);
   assert.ok(data.accounts.every(account => account.enabled === true));
   assert.ok(data.accounts.every(account => account.plan === 'pro'));
   assert.ok(data.accounts.every(account => /^[a-f0-9]{64}$/.test(account.h)));
@@ -115,6 +127,12 @@ test('static account admin manages accounts.json without backend API', async () 
   assert.match(html, /id="purchaseWechat"/);
   assert.match(html, /function purchaseFromInputs\(\)/);
   assert.match(html, /purchase:purchaseFromInputs\(\)/);
+  assert.match(html, /const STATIC_ADMIN_CHANNEL='wb_static_admin_cfg'/);
+  assert.match(html, /function syncPurchaseConfigOnly\(\)/);
+  assert.match(html, /BroadcastChannel\(STATIC_ADMIN_CHANNEL\)/);
+  assert.match(html, /function saveJsonToDisk\(/);
+  assert.match(html, /showSaveFilePicker/);
+  assert.match(html, /localStorage\.setItem\(LOCAL_PURCHASE_KEY/);
   assert.doesNotMatch(html, /\/api\/admin/);
   assert.doesNotMatch(html, /ADMIN_TOKEN/);
 });

@@ -41,13 +41,13 @@
   <div class="card">
     <h2>配置（价格 · 微信号）</h2>
     <div class="grid">
-      <div class="field"><label for="purchasePrice">价格（元）</label><input id="purchasePrice" value="39" inputmode="decimal"></div>
+      <div class="field"><label for="purchasePrice">价格（元）</label><input id="purchasePrice" value="59" inputmode="decimal"></div>
       <div class="field"><label for="purchaseWechat">作者微信号</label><input id="purchaseWechat" value="leewen2017"></div>
     </div>
     <div class="btn-row">
-      <button class="accent" id="savePurchaseBtn">应用到 accounts.json 输出</button>
+      <button class="accent" id="savePurchaseBtn">保存配置到 accounts.json</button>
     </div>
-    <p class="hint">配置会写入 <code>accounts.json</code> 的 <code>purchase</code> 字段；白板会读取同目录 <code>accounts.json</code> 更新付费提示。</p>
+    <p class="hint">配置会写入本机缓存供离线白板立即读取；Chrome/Edge 会让你选择保存 <code>accounts.json</code>，不支持时会下载新文件。</p>
   </div>
 
   <div class="tabs">
@@ -137,8 +137,11 @@ student002:MyPass-002"></textarea>
 <script>
 const ACCOUNT_URL=(document.querySelector('meta[name="x-account-url"]')||{}).content||'./accounts.json';
 const DEFAULT_SALT='wb-static-pro-salt-v1';
-const DEFAULT_PURCHASE={price:'39',wechat:'leewen2017'};
+const DEFAULT_PURCHASE={price:'59',wechat:'leewen2017'};
 const DEFAULT_EMPTY={version:1,app:'whiteboard-recording',salt:DEFAULT_SALT,purchase:{...DEFAULT_PURCHASE},accounts:[]};
+const LOCAL_ACCOUNTS_KEY='wb_static_accounts_json';
+const LOCAL_PURCHASE_KEY='wb_static_purchase_config';
+const STATIC_ADMIN_CHANNEL='wb_static_admin_cfg';
 const statusEl=document.getElementById('status');
 const plainList=document.getElementById('plainList');
 const existingJson=document.getElementById('existingJson');
@@ -165,6 +168,38 @@ function syncPurchaseInputs(purchase){
   purchasePrice.value=next.price;
   purchaseWechat.value=next.wechat;
 }
+function saveLocalStaticConfig(data){
+  const normalized={...data,purchase:normalizePurchase(data)};
+  try{
+    localStorage.setItem(LOCAL_PURCHASE_KEY,JSON.stringify(normalized.purchase));
+    localStorage.setItem(LOCAL_ACCOUNTS_KEY,JSON.stringify(normalized));
+  }catch(_error){}
+  broadcastStaticConfig(normalized.purchase);
+}
+function broadcastStaticConfig(purchase){
+  try{
+    if(typeof BroadcastChannel==='undefined')return;
+    const channel=new BroadcastChannel(STATIC_ADMIN_CHANNEL);
+    channel.postMessage({type:'purchase-update',purchase:normalizePurchase(purchase)});
+    setTimeout(()=>channel.close(),500);
+  }catch(_error){}
+}
+function readLocalStaticConfig(){
+  try{
+    const raw=localStorage.getItem(LOCAL_ACCOUNTS_KEY);
+    return raw?JSON.parse(raw):null;
+  }catch(_error){return null}
+}
+function baseDataForConfigSync(){
+  try{return parseJsonInput()}catch(_error){}
+  const local=readLocalStaticConfig();
+  return local&&Array.isArray(local.accounts)?local:structuredClone(DEFAULT_EMPTY);
+}
+function syncPurchaseConfigOnly(){
+  const data={...baseDataForConfigSync(),purchase:purchaseFromInputs()};
+  saveLocalStaticConfig(data);
+  status('配置已同步到本机缓存；白板页会立即更新付费提示');
+}
 async function sha256Hex(text){
   if(!crypto.subtle)throw new Error('当前浏览器不支持 crypto.subtle，请通过 localhost 或 https 打开。');
   const bytes=new TextEncoder().encode(text);
@@ -182,6 +217,7 @@ function setOutput(data){
   jsonOut.textContent=JSON.stringify(normalized,null,2);
   jsonOut.classList.remove('empty');
   syncPurchaseInputs(normalized.purchase);
+  saveLocalStaticConfig(normalized);
   renderAccounts(normalized);
 }
 function renderAccounts(data=parseJsonInput()){
@@ -243,10 +279,12 @@ async function loadExisting(){
     renderAccounts(normalized);
     status(`已读取 ${ACCOUNT_URL}`);
   }catch(error){
-    existingJson.value=JSON.stringify(DEFAULT_EMPTY,null,2);
-    syncPurchaseInputs(DEFAULT_EMPTY.purchase);
-    renderAccounts(DEFAULT_EMPTY);
-    status(`未能读取 ${ACCOUNT_URL}，已使用空模板`,true);
+    const local=readLocalStaticConfig();
+    const fallback=local&&Array.isArray(local.accounts)?{...local,purchase:normalizePurchase(local)}:DEFAULT_EMPTY;
+    existingJson.value=JSON.stringify(fallback,null,2);
+    syncPurchaseInputs(fallback.purchase);
+    renderAccounts(fallback);
+    status(local?`未能读取 ${ACCOUNT_URL}，已使用本机缓存`:`未能读取 ${ACCOUNT_URL}，已使用空模板`,true);
   }
 }
 function download(filename,text,type='application/json'){
@@ -255,6 +293,29 @@ function download(filename,text,type='application/json'){
   const a=document.createElement('a');
   a.href=url;a.download=filename;a.click();
   setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+async function saveJsonToDisk(text){
+  if(window.showSaveFilePicker){
+    const handle=await window.showSaveFilePicker({
+      suggestedName:'accounts.json',
+      types:[{description:'JSON 文件',accept:{'application/json':['.json']}}]
+    });
+    const writable=await handle.createWritable();
+    await writable.write(text);
+    await writable.close();
+    return 'file';
+  }
+  download('accounts.json',text);
+  return 'download';
+}
+function dataForPurchaseSave(){
+  const data={...parseJsonInput(),purchase:purchaseFromInputs()};
+  if((data.accounts||[]).length)return data;
+  const local=readLocalStaticConfig();
+  if(local&&Array.isArray(local.accounts)&&local.accounts.length){
+    return {...local,purchase:data.purchase};
+  }
+  return data;
 }
 async function copyText(text){
   await navigator.clipboard.writeText(text);
@@ -298,14 +359,25 @@ document.getElementById('formatExistingBtn').onclick=()=>{
   try{const data=parseJsonInput();existingJson.value=JSON.stringify(data,null,2);syncPurchaseInputs(data.purchase);renderAccounts(data);status('已格式化 JSON');}
   catch(error){status('JSON 格式不正确',true)}
 };
-document.getElementById('savePurchaseBtn').onclick=()=>{
+document.getElementById('savePurchaseBtn').onclick=async()=>{
   try{
-    const data={...parseJsonInput(),purchase:purchaseFromInputs()};
+    const data=dataForPurchaseSave();
     existingJson.value=JSON.stringify(data,null,2);
     setOutput(data);
-    status('已更新价格和微信号到 accounts.json 输出');
-  }catch(error){status('JSON 格式不正确，无法更新配置',true)}
+    const mode=await saveJsonToDisk(jsonOut.textContent);
+    status(mode==='file'
+      ? '已保存 accounts.json，并同步到本机缓存；切回或刷新白板后立即生效'
+      : '已同步到本机缓存并下载 accounts.json；如需上线，请把下载文件替换到项目同目录');
+  }catch(error){
+    if(error&&error.name==='AbortError'){
+      status('已同步到本机缓存；未选择保存 accounts.json 文件',true);
+      return;
+    }
+    status('JSON 格式不正确，无法更新配置',true);
+  }
 };
+purchasePrice.addEventListener('input',syncPurchaseConfigOnly);
+purchaseWechat.addEventListener('input',syncPurchaseConfigOnly);
 document.getElementById('loadFileBtn').onclick=()=>document.getElementById('fileInput').click();
 document.getElementById('fileInput').onchange=async event=>{
   const file=event.target.files[0];if(!file)return;

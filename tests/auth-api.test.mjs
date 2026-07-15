@@ -199,6 +199,17 @@ test('protected app requires a valid session', async () => {
   assert.match(allowed.response.headers.get('cache-control'), /no-store/);
 });
 
+test('logout clears the server session cookie', async () => {
+  const login = await request('/api/login', {
+    method: 'POST',
+    body: { username: 'tester', password: 'tester-pass-123', deviceId: 'tester-device-0001' }
+  });
+  assert.equal(login.response.status, 200);
+  const logout = await request('/api/logout', { method: 'POST', cookie: login.cookie });
+  assert.equal(logout.response.status, 200);
+  assert.match(logout.response.headers.get('set-cookie') || '', /Max-Age=0/i);
+});
+
 test('password reset and device reset invalidate old sessions', async () => {
   const account = await store.getAccountByUsername('tester');
   const login = await request('/api/login', {
