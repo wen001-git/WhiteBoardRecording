@@ -56,8 +56,10 @@
   </dialog>
 
   <script>
-    const LOCAL_API_HOSTS=new Set(['localhost','127.0.0.1']);
-    function resolveApiBase(){
+const LOCAL_API_HOSTS=new Set(['localhost','127.0.0.1']);
+const RENDER_API='https://whiteboardrecording.onrender.com';
+const LOCAL_ADMIN_URL='http://localhost:8000/account-admin.html';
+function resolveApiBase(){
       const isLocal=LOCAL_API_HOSTS.has(location.hostname);
       const fallback=isLocal?'http://localhost:8787':'https://auth.record.leewen.work';
       if(!isLocal)return fallback;
@@ -84,12 +86,21 @@
     function status(message,error=false){statusEl.textContent=message;statusEl.classList.toggle('error',error)}
     function escapeHtml(value){return String(value??'').replace(/[&<>'"]/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]))}
     function formatDate(value){if(!value)return '尚未登录';try{return new Intl.DateTimeFormat('zh-CN',{dateStyle:'medium',timeStyle:'short'}).format(new Date(value))}catch{return String(value)}}
-    async function request(path,options={}){
-      const token=adminToken.value.trim();
-      if(!token)throw new Error('请输入管理令牌');
-      sessionStorage.setItem(TOKEN_KEY,token);
-      const response=await fetch(apiBase.value.replace(/\/$/,'')+path,{...options,headers:{'content-type':'application/json','authorization':`Bearer ${token}`,...(options.headers||{})}});
-      const data=await response.json().catch(()=>({}));
+async function request(path,options={}){
+  if(location.protocol==='file:'){
+    throw new Error(`当前通过 file:// 打开，浏览器会阻止跨域管理请求。请在项目目录运行 python3 -m http.server 8000，再打开 ${LOCAL_ADMIN_URL}`);
+  }
+  const token=adminToken.value.trim();
+  if(!token)throw new Error('请输入管理令牌');
+  sessionStorage.setItem(TOKEN_KEY,token);
+  const base=apiBase.value.trim().replace(/\/$/,'');
+  let response;
+  try{
+    response=await fetch(base+path,{...options,headers:{'content-type':'application/json','authorization':`Bearer ${token}`,...(options.headers||{})}});
+  }catch(_error){
+    throw new Error(`无法连接账号服务 ${base}。请先访问 ${base}/health 检查连接；若自定义域名尚未生效，可暂时把 API 地址改为 ${RENDER_API}`);
+  }
+  const data=await response.json().catch(()=>({}));
       if(!response.ok)throw new Error(data.message||`请求失败 (${response.status})`);
       return data;
     }
@@ -149,7 +160,11 @@
       event.preventDefault();
       try{await request(`/api/admin/accounts/${passwordAccountId}/password`,{method:'POST',body:JSON.stringify({password:document.getElementById('resetPassword').value})});passwordDialog.close();status('密码已修改，旧登录已失效')}catch(error){status(error.message,true)}
     });
-    if(adminToken.value)loadAccounts();
+if(location.protocol==='file:'){
+  status(`当前通过 file:// 打开，无法安全调用账号服务。请运行 python3 -m http.server 8000，再打开 ${LOCAL_ADMIN_URL}`,true);
+}else if(adminToken.value){
+  loadAccounts();
+}
   </script>
 </body>
 </html>
