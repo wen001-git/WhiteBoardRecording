@@ -1,0 +1,44 @@
+services:
+  - type: web
+    name: whiteboard-recording
+    runtime: static
+    buildCommand: npm run build:static
+    staticPublishPath: ./.render-static
+    headers:
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: no-referrer
+      - path: /*
+        name: Permissions-Policy
+        value: camera=(self), microphone=(self), display-capture=(self)
+
+  - type: web
+    name: whiteboard-auth
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: AUTH_SECRET
+        generateValue: true
+      - key: ADMIN_TOKEN
+        sync: false
+      - key: ALLOWED_ORIGINS
+        value: https://record.leewen.work,http://localhost:8000
+      - key: COOKIE_DOMAIN
+        value: .record.leewen.work
+      - key: COOKIE_SECURE
+        value: "1"
+      - key: SESSION_DAYS
+        value: "30"
+      - key: PRO_APP_PATH
+        value: ./whiteboard-pro.html

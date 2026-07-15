@@ -3,3 +3,10 @@ Thumbs.db
 *.log
 archieve/
 archive/
+node_modules/
+.env
+.env.*
+!.env.example
+!.env.local.example
+.render-static/
+coverage/

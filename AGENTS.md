@@ -3,19 +3,29 @@
 # AGENTS.md — 白板录制工具
 
 ## 一句话定位
-仿 [excalicord.com](https://excalicord.com/) 的**纯前端单 HTML** 白板录制工具：无限白板画画/写字 + 角落摄像头 + 提词器 + 一键录制导出 mp4。**无后端**。
+白板录制工具：核心编辑器保持可独立运行的单 HTML，实现无限白板、幻灯片、角落摄像头、提词器和录制导出；商业化边界由轻量 Node 账号服务与 Neon 持久数据库承载。
 
 ## 运行 / 测试方式
 ```bash
 cd /Users/Zhuanz/Claude/WhiteBoard
+npm install
+npm test
+npm run build:static
+
+# 仅测试静态入口/白板
 python3 -m http.server 8000
 # 浏览器打开 http://localhost:8000
+
+# 测试账号 API（先按 .env.example 配置环境变量）
+npm start
 ```
 > ⚠️ 摄像头/麦克风需要安全上下文（https 或 localhost）。直接 `file://` 双击会被多数浏览器拦摄像头，务必走 localhost 或部署到静态托管。
 
 ## 硬约束
-- `whiteboard.html` 与 `whiteboard-pro.html` 均保持为**独立单 HTML 应用**，HTML/CSS/JS 全内联，零构建、零依赖；根 `index.html` 只负责入口跳转。
-- 现阶段**不引入后端、不引入框架**。
+- 白板编辑器继续保持为**独立单 HTML 应用**，HTML/CSS/JS 全内联、无前端构建依赖；账号服务不得侵入绘图/录制核心。
+- 账号与设备授权只通过 `server/` 下的 Node API 和 Neon 实现；不得把账号、密码、数据库连接串、Cookie 密钥或管理令牌写入 Git。
+- 公共 Static Site 必须由 `npm run build:static` 生成发布白名单，不能直接发布仓库根目录；受保护应用不能出现在公共发布目录。
+- 仓库文档不记录独立 HTML 文件的商业版本归属。
 - 录制有两种来源：① 录白板(合成白板+摄像头) ② 录屏幕(`getDisplayMedia` + 取景框裁剪 + 角落摄像头 + 麦克风/系统声音)。两者都合成进**一个**视频。
 - 导出 **mp4**：原生 `MediaRecorder` 支持则直接录 mp4；否则录 webm + 按需懒加载 ffmpeg.wasm 转 mp4（仅此一处可联网拉 CDN）。
 - 提词器是独立 DOM 浮层，**不能进录像**。
@@ -29,7 +39,7 @@ python3 -m http.server 8000
 - **Git/GitHub**：GitHub remote 使用 SSH URL，不用 HTTPS；只有用户明确要求时才提交/推送。
 
 ## 当前状态
-- **入口结构调整(2026-07-14)**：新的轻量 `index.html` 使用 `location.replace('./whiteboard-pro.html')`（兼有 meta refresh 与普通链接回退）处理根路径入口；`whiteboard.html` 与 `whiteboard-pro.html` 均为可独立运行的应用文件。两份应用目前同源并共享现有 localStorage；正式加入账号体系时应设置独立存储命名空间或显式迁移。仓库文档不记录各独立文件的商业版本归属。
+- **商业化 MVP(2026-07-14)**：已完成静态登录/购买入口、统一 entitlement 层、30 秒录制限制与多水印、最多 3 张幻灯片、整屏裁剪/动态流动线条/幻灯片笔迹/完整贴纸分组等权限控制；已完成 Node + Neon 账号/设备服务、受保护应用响应和管理后台。账号默认 3 台设备，测试账号可设为 1 台；密码、停用、清空设备都会使旧会话失效。公共发布使用白名单构建，受保护内容不进入 Static Site。18 项自动测试已通过。
 - `whiteboard.html` 与初始 `whiteboard-pro.html` 已实现 M0~M3 + 迭代二（手绘风格 + 录制比例/背景/取景框）+ 迭代三（绘图样式面板、摄像头可拖拽缩放、更细真实手绘线条、完整录制设置）+ 贴图功能 + 指针选择/Delete 删除对象 + 菱形/直线工具 + 丰富文本样式 + 对象缩放/旋转（各自为独立单文件应用）。
 - 迭代三录制设置已补齐并接入真实合成：比例含 `Custom` 自定义；背景含分类筛选、随机壁纸、离线程序纹理/渐变/纯色/无；白卡片支持圆角半径与画布边距；摄像头支持录制开关、大小、圆形/方形；麦克风下拉由 `populateDevices()` 填充；录制光标高亮支持开关和颜色。
 - `drawRecFrame()` 已读取上述 `recConfig` 字段，导出画面会同步设置面板中的背景、白卡片边距/圆角、摄像头形状/大小/开关、光标高亮；提词器仍不入录像。
@@ -63,6 +73,10 @@ python3 -m http.server 8000
 - **定稿版提升为主版本 + 部署上线(2026-07-04)**:用户真机验收满意后，`git mv index.html index-old.html && git mv index-v2.html index.html`——**上面所有历史记录里提到的 `index-v2.html` 现在就是 `index.html`**（旧稳定版归档为 `index-old.html`，内容同 `backups/index-stable-2026-07-02.html`）。部署到 Render（Static Site，Publish Directory=仓库根，零构建）：根路径 `/` 现在服务的是新版内容，`index-old.html` 仍可通过显式路径访问。https 环境顺带解决了摄像头/屏幕录制需要安全上下文的限制（不再依赖 localhost）。
 
 ## 下一步 TODO
+- [ ] Render Web Service 补齐 `ALLOWED_ORIGINS=https://record.leewen.work,http://localhost:8000`，确认 Node / Oregon / Free / `/health`，首次部署后访问健康检查。
+- [ ] 配置 `auth.record.leewen.work` 到账号服务、`record.leewen.work` 到 Static Site；在自定义域名生效后验证 Secure Cookie 登录。
+- [ ] 用管理后台创建一个 1 台设备测试账号和一个默认 3 台设备账号，真机验证超限、停用、改密、清空设备及重新登录。
+- [ ] 真机验收免费权限：25 秒提醒、30 秒自动完成、多水印、第四张幻灯片及各受限功能统一弹出购买窗口；再用授权账号验证限制全部解除。
 - [ ] 真机：图片按钮选择 PNG/JPG、剪贴板粘贴图片、单击放置、撤销/重做、橡皮擦删除、录制导出包含图片
 - [ ] 真机：指针工具点击形状/线条/文字/图片 → 选中框出现 → Delete/Backspace 删除 → 撤销/重做恢复
 - [ ] 真机：文字工具切换字体/字号/左中右对齐/透明度后新建中英文文字；已选中文字可拖动移动，双击/Enter 重新编辑；确认选中框不压字，撤销/重做正常，录制导出中文字透明度一致
@@ -80,9 +94,11 @@ python3 -m http.server 8000
 - [ ] 真机：幻灯片面板悬停两张幻灯片之间/最前，确认「+」热区清晰可点；点击后在中间插入空白幻灯片，原有内容和编号顺延正确，且新幻灯片自动进入可编辑视图
 
 ## 文件地图
-- `index.html` — 根路径轻量入口；自动跳转到 `whiteboard-pro.html`，不承载白板业务代码
-- `whiteboard.html` — 独立运行的纯 HTML 白板应用
-- `whiteboard-pro.html` — 根入口当前指向的独立白板应用
+- 根目录 HTML — 登录/购买入口、管理页与可独立运行的白板应用；不要在文档中标注各应用文件的商业版本归属。
+- `server/` — Node 账号 API、Neon schema、密码/会话/设备授权。
+- `scripts/build-static.mjs` — Static Site 发布白名单构建，产物目录 `.render-static/` 不提交。
+- `tests/` — 账号 API、设备限制、权限、发布白名单和内联 JS 自动测试。
+- `render.yaml` / `.env.example` — Render Blueprint 与无密钥环境变量模板。
 - `index-old.html` — 2026-07-04 前的旧稳定版（原 `index.html`），仅作历史备用，**勿在其上开发**
 - `backups/` — 历史归档，**均为非活跃文件，勿在其上开发**：`index-stable-2026-07-02.html`（定稿前稳定版备份，内容同 `index-old.html`）、`demo-paper-unselected-2026-07-02.html` / `demo-console-unselected-2026-07-02.html`（未选中的换肤方案）
 - `docs/PROJECT_PLAN.md` — 需求/功能清单/设计决策/测试清单/里程碑（单一产品文档）
@@ -111,6 +127,7 @@ python3 -m http.server 8000
 
 | 日期 | 变更内容 |
 |------|---------|
+| 2026-07-14 | 完成商业化 MVP：新增静态登录/购买入口、统一免费权限与水印、Node + Neon 账号设备授权、管理后台、受保护应用响应及 Static Site 发布白名单，并以 18 项自动测试覆盖核心安全和权限路径；why：在保留独立 HTML 编辑器的同时建立可人工售卖、默认 3 台设备的最小付费闭环 |
 | 2026-07-14 | 调整站点入口结构：保留两个可独立运行的白板 HTML 文件，新建轻量 `index.html` 处理根路径跳转，并明确不在仓库文档记录文件的商业版本归属；why：支持两份应用独立演进，同时避免公开内部版本映射信息 |
 | 2026-07-13 | 按人物视角修正女生 14 张彩铅贴纸的辫子可见性：正脸/近正脸显示左右两个低辫子，侧脸/转头/低头按遮挡只显示可见一侧，并保持原有情绪、衣服及综合组不变；why：修复新版整组固定为单辫、与真实人物视角不符的问题 |
 | 2026-07-12 | 整体重绘女生 14 张彩铅情绪贴纸：改为自然中长发侧马尾与独立女性脸型，按情绪设计不同嘴型/眼型，并保留低落三道漫画竖线；素材改为透明高质量 WebP 内联，综合第一版不变；why：修复部分女生看起来像“男生短发加辫子”的不自然角色设计，同时控制单 HTML 体积 |

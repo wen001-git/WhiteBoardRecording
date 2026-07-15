@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>白板录制工具 - 账号管理</title>
+  <style>
+    :root{--ink:#1e1e1e;--muted:#77736d;--line:#e7e3dc;--soft:#f5f4f8;--accent:#5b57d6;--good:#16803c;--danger:#c8322b}
+    *{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink);background:#f7f6f3}
+    body{padding:24px}.page{width:min(1120px,100%);margin:auto}.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:22px}.topbar h1{font-size:25px;margin:0}.topbar p{margin:5px 0 0;color:var(--muted);font-size:13px}.status{min-height:22px;color:var(--muted);font-size:13px}.status.error{color:var(--danger)}
+    .panel{background:#fff;border:1px solid var(--line);box-shadow:0 10px 34px rgba(35,31,46,.08);padding:20px;margin-bottom:18px}.panel h2{font-size:16px;margin:0 0 16px}.grid{display:grid;grid-template-columns:2fr 2fr 1fr auto;gap:12px;align-items:end}.field{display:grid;gap:6px}.field label{font-size:12px;font-weight:700;color:#58544f}.field input{height:42px;border:1px solid #d8d4ce;border-radius:6px;padding:0 11px;font:inherit;min-width:0}.field input:focus{outline:0;border-color:var(--accent);box-shadow:0 0 0 3px rgba(91,87,214,.12)}
+    button{font:inherit;font-weight:700;cursor:pointer;border-radius:6px;height:40px;padding:0 14px;border:1px solid var(--line);background:#fff;color:var(--ink)}button:hover{background:#f7f6fa}button:disabled{opacity:.45;cursor:not-allowed}.primary{background:var(--ink);border-color:var(--ink);color:#fff}.danger{color:var(--danger)}.compact{height:34px;padding:0 10px;font-size:12px}.token-row{display:grid;grid-template-columns:minmax(260px,1fr) minmax(220px,1fr) auto;gap:12px;align-items:end}
+    .accounts{background:#fff;border:1px solid var(--line);box-shadow:0 10px 34px rgba(35,31,46,.08)}.accounts-head,.account-main{display:grid;grid-template-columns:minmax(150px,1.2fr) 110px 120px minmax(180px,1.3fr) auto;gap:12px;align-items:center}.accounts-head{padding:11px 16px;background:#f3f1ed;color:var(--muted);font-size:12px;font-weight:700}.account{border-top:1px solid var(--line)}.account:first-of-type{border-top:0}.account-main{padding:15px 16px}.username{font-weight:800}.meta{font-size:11px;color:var(--muted);margin-top:4px}.badge{display:inline-flex;align-items:center;gap:6px;font-size:12px}.dot{width:8px;height:8px;border-radius:50%;background:var(--good)}.off .dot{background:#aaa}.actions{display:flex;gap:7px;justify-content:flex-end;flex-wrap:wrap}.device-limit{width:70px;height:34px;border:1px solid var(--line);border-radius:5px;padding:0 7px}.devices{display:none;background:#fbfaf8;border-top:1px solid var(--line);padding:12px 16px}.account.open .devices{display:block}.device{display:grid;grid-template-columns:minmax(150px,1fr) minmax(240px,2fr) 150px;gap:12px;padding:8px 0;border-top:1px solid #eeeae4;font-size:12px}.device:first-child{border-top:0}.empty{padding:40px;text-align:center;color:var(--muted)}
+    dialog{border:0;padding:0;width:min(440px,calc(100% - 28px));box-shadow:0 20px 80px rgba(0,0,0,.25)}dialog::backdrop{background:rgba(30,30,30,.46)}.dialog-body{padding:24px}.dialog-body h2{margin:0 0 17px;font-size:19px}.dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+    @media(max-width:820px){body{padding:8px}.grid,.token-row{grid-template-columns:1fr}.accounts-head{display:none}.account-main{grid-template-columns:1fr 1fr}.account-main>:first-child,.account-main>.actions{grid-column:1/-1}.actions{justify-content:flex-start}.device{grid-template-columns:1fr}.topbar{align-items:flex-start;flex-direction:column}}
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <div><h1>账号管理</h1><p>创建 Pro 账号、控制设备数量并处理设备解绑。</p></div>
+      <div class="status" id="status" aria-live="polite"></div>
+    </header>
+
+    <section class="panel">
+      <h2>连接账号服务</h2>
+      <div class="token-row">
+        <div class="field"><label for="apiBase">API 地址</label><input id="apiBase" spellcheck="false"></div>
+        <div class="field"><label for="adminToken">管理令牌（仅保留在当前标签页）</label><input id="adminToken" type="password" autocomplete="off"></div>
+        <button class="primary" id="connectBtn">连接</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>创建账号</h2>
+      <form class="grid" id="createForm">
+        <div class="field"><label for="newUsername">账号</label><input id="newUsername" required maxlength="80" autocomplete="off"></div>
+        <div class="field"><label for="newPassword">初始密码（至少 8 位）</label><input id="newPassword" type="password" required minlength="8" autocomplete="new-password"></div>
+        <div class="field"><label for="newLimit">设备上限</label><input id="newLimit" type="number" min="1" max="20" value="3" required></div>
+        <button class="primary" type="submit">创建账号</button>
+      </form>
+    </section>
+
+    <section class="accounts" aria-label="账号列表">
+      <div class="accounts-head"><span>账号</span><span>状态</span><span>设备上限</span><span>最近登录</span><span>操作</span></div>
+      <div id="accountList"><div class="empty">请输入管理令牌并连接账号服务</div></div>
+    </section>
+  </main>
+
+  <dialog id="passwordDialog">
+    <form class="dialog-body" id="passwordForm" method="dialog">
+      <h2>修改账号密码</h2>
+      <div class="field"><label for="resetPassword">新密码（至少 8 位）</label><input id="resetPassword" type="password" minlength="8" required autocomplete="new-password"></div>
+      <div class="dialog-actions"><button type="button" id="cancelPassword">取消</button><button class="primary" value="confirm">确认修改</button></div>
+    </form>
+  </dialog>
+
+  <script>
+    const LOCAL_API_HOSTS=new Set(['localhost','127.0.0.1']);
+    function resolveApiBase(){
+      const isLocal=LOCAL_API_HOSTS.has(location.hostname);
+      const fallback=isLocal?'http://localhost:8787':'https://auth.record.leewen.work';
+      if(!isLocal)return fallback;
+      try{
+        const override=new URLSearchParams(location.search).get('api');
+        if(!override)return fallback;
+        const target=new URL(override);
+        if((target.protocol==='http:'||target.protocol==='https:')&&LOCAL_API_HOSTS.has(target.hostname))return target.origin;
+      }catch(_error){}
+      return fallback;
+    }
+    const DEFAULT_API=resolveApiBase();
+    const TOKEN_KEY='wb_admin_token';
+    const apiBase=document.getElementById('apiBase');
+    const adminToken=document.getElementById('adminToken');
+    const statusEl=document.getElementById('status');
+    const accountList=document.getElementById('accountList');
+    const passwordDialog=document.getElementById('passwordDialog');
+    let accounts=[];
+    let passwordAccountId=null;
+    apiBase.value=DEFAULT_API;
+    adminToken.value=sessionStorage.getItem(TOKEN_KEY)||'';
+
+    function status(message,error=false){statusEl.textContent=message;statusEl.classList.toggle('error',error)}
+    function escapeHtml(value){return String(value??'').replace(/[&<>'"]/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]))}
+    function formatDate(value){if(!value)return '尚未登录';try{return new Intl.DateTimeFormat('zh-CN',{dateStyle:'medium',timeStyle:'short'}).format(new Date(value))}catch{return String(value)}}
+    async function request(path,options={}){
+      const token=adminToken.value.trim();
+      if(!token)throw new Error('请输入管理令牌');
+      sessionStorage.setItem(TOKEN_KEY,token);
+      const response=await fetch(apiBase.value.replace(/\/$/,'')+path,{...options,headers:{'content-type':'application/json','authorization':`Bearer ${token}`,...(options.headers||{})}});
+      const data=await response.json().catch(()=>({}));
+      if(!response.ok)throw new Error(data.message||`请求失败 (${response.status})`);
+      return data;
+    }
+    function render(){
+      if(!accounts.length){accountList.innerHTML='<div class="empty">还没有账号，可以先创建一个测试账号</div>';return}
+      accountList.innerHTML=accounts.map(account=>`<article class="account" data-id="${account.id}">
+        <div class="account-main">
+          <div><div class="username">${escapeHtml(account.username)}</div><div class="meta">创建于 ${formatDate(account.createdAt)}</div></div>
+          <div class="badge ${account.enabled?'':'off'}"><i class="dot"></i>${account.enabled?'已启用':'已停用'}</div>
+          <div><input class="device-limit" type="number" min="1" max="20" value="${account.maxDevices}" aria-label="设备上限"></div>
+          <div>${formatDate(account.lastLoginAt)}<div class="meta">已绑定 ${account.devices.length} 台设备</div></div>
+          <div class="actions">
+            <button class="compact" data-action="devices">设备</button>
+            <button class="compact" data-action="password">改密码</button>
+            <button class="compact ${account.enabled?'danger':''}" data-action="toggle">${account.enabled?'停用':'启用'}</button>
+          </div>
+        </div>
+        <div class="devices">${account.devices.length?account.devices.map(device=>`<div class="device"><span>${escapeHtml(device.deviceName||'未命名设备')}</span><span title="${escapeHtml(device.userAgent)}">${escapeHtml(device.userAgent||device.deviceId)}</span><span>${formatDate(device.lastSeenAt)}</span></div>`).join(''):'<div class="meta">暂无绑定设备</div>'}
+          ${account.devices.length?'<div class="actions" style="margin-top:10px"><button class="compact danger" data-action="clear">清空全部设备</button></div>':''}
+        </div>
+      </article>`).join('');
+    }
+    async function loadAccounts(){
+      status('正在连接账号服务，休眠唤醒可能需要约 30–60 秒…');
+      try{const data=await request('/api/admin/accounts');accounts=data.accounts||[];render();status(`已加载 ${accounts.length} 个账号`)}catch(error){status(error.message,true)}
+    }
+    document.getElementById('connectBtn').onclick=loadAccounts;
+    document.getElementById('createForm').addEventListener('submit',async event=>{
+      event.preventDefault();
+      try{
+        status('正在创建账号…');
+        await request('/api/admin/accounts',{method:'POST',body:JSON.stringify({username:document.getElementById('newUsername').value,password:document.getElementById('newPassword').value,maxDevices:Number(document.getElementById('newLimit').value)})});
+        event.target.reset();document.getElementById('newLimit').value=3;await loadAccounts();status('账号创建成功');
+      }catch(error){status(error.message,true)}
+    });
+    accountList.addEventListener('change',async event=>{
+      if(!event.target.classList.contains('device-limit'))return;
+      const account=accounts.find(item=>item.id===Number(event.target.closest('.account').dataset.id));
+      try{await request(`/api/admin/accounts/${account.id}`,{method:'PATCH',body:JSON.stringify({maxDevices:Number(event.target.value)})});await loadAccounts();status('设备上限已更新')}catch(error){event.target.value=account.maxDevices;status(error.message,true)}
+    });
+    accountList.addEventListener('click',async event=>{
+      const button=event.target.closest('[data-action]');if(!button)return;
+      const row=button.closest('.account');const id=Number(row.dataset.id);const account=accounts.find(item=>item.id===id);const action=button.dataset.action;
+      if(action==='devices'){row.classList.toggle('open');return}
+      if(action==='password'){passwordAccountId=id;document.getElementById('resetPassword').value='';passwordDialog.showModal();return}
+      try{
+        if(action==='toggle')await request(`/api/admin/accounts/${id}`,{method:'PATCH',body:JSON.stringify({enabled:!account.enabled})});
+        if(action==='clear'){
+          if(!confirm(`确认清空“${account.username}”绑定的全部设备？旧登录会立即失效。`)) return;
+          await request(`/api/admin/accounts/${id}/devices`,{method:'POST',body:'{}'});
+        }
+        await loadAccounts();status(action==='clear'?'设备已清空':'账号状态已更新');
+      }catch(error){status(error.message,true)}
+    });
+    document.getElementById('cancelPassword').onclick=()=>passwordDialog.close();
+    document.getElementById('passwordForm').addEventListener('submit',async event=>{
+      event.preventDefault();
+      try{await request(`/api/admin/accounts/${passwordAccountId}/password`,{method:'POST',body:JSON.stringify({password:document.getElementById('resetPassword').value})});passwordDialog.close();status('密码已修改，旧登录已失效')}catch(error){status(error.message,true)}
+    });
+    if(adminToken.value)loadAccounts();
+  </script>
+</body>
+</html>
