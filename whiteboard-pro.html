@@ -1035,10 +1035,10 @@ function wireAccountEntry(){
   if(IS_PRO){
     const username=STATIC_PRO_SESSION?.username||'Pro';
     btn.classList.add('pro');
-    btn.textContent=username==='Pro'?'Pro':`Pro · ${username}`;
+    btn.textContent=username;
     btn.title=`Pro 账号：${username}`;
     btn.setAttribute('aria-label',`Pro 账号：${username}`);
-    if(name) name.textContent=`Pro · ${username}`;
+    if(name) name.textContent=username;
     btn.addEventListener('click',e=>{
       e.stopPropagation();
       const next=!menu?.classList.contains('show');

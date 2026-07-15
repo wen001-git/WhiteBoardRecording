@@ -54,6 +54,8 @@ test('private app is full-featured while the commercial template fails closed', 
   assert.match(commercialTemplate, /id="accountLogout"/);
   assert.match(commercialTemplate, /function openStaticProLogin\(\)/);
   assert.match(commercialTemplate, /localStorage\.removeItem\(STATIC_SESSION_KEY\)/);
+  assert.match(commercialTemplate, /btn\.textContent=username/);
+  assert.doesNotMatch(commercialTemplate, /Pro · \$\{username\}/);
   for (const html of [privateApp, commercialTemplate]) {
     assert.match(html, /function requirePro\(feature\)/);
     assert.match(html, /微信扫码加好友 → 付款 → 获取 Pro 账号/);
