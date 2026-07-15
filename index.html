@@ -35,7 +35,7 @@
     </section>
     <section class="login" id="loginPanel">
       <h2>登录 Pro</h2>
-      <div class="sub">已购买的用户可在这里登录。账号服务休眠时，首次启动可能需要约 30–60 秒。</div>
+      <div class="sub">已购买的用户可在这里登录。当前使用静态账号文件校验，不限制设备数量。</div>
       <div class="session" id="sessionBox"></div>
       <form id="loginForm">
         <div class="field"><label for="username">账号</label><input id="username" autocomplete="username" required></div>
@@ -47,49 +47,69 @@
     </section>
   </main>
   <script>
-    const LOCAL_API_HOSTS=new Set(['localhost','127.0.0.1']);
-    function resolveApiBase(){
-      const isLocal=LOCAL_API_HOSTS.has(location.hostname);
-      const fallback=isLocal?'http://localhost:8787':'https://auth.record.leewen.work';
-      if(!isLocal)return fallback;
-      try{
-        const override=new URLSearchParams(location.search).get('api');
-        if(!override)return fallback;
-        const target=new URL(override);
-        if((target.protocol==='http:'||target.protocol==='https:')&&LOCAL_API_HOSTS.has(target.hostname))return target.origin;
-      }catch(_error){}
-      return fallback;
-    }
-    const API_BASE=resolveApiBase();
-    const DEVICE_KEY='wb_pro_device_id';
-    function deviceId(){let id=localStorage.getItem(DEVICE_KEY);if(!id){id='wb-'+crypto.randomUUID().replaceAll('-','');localStorage.setItem(DEVICE_KEY,id)}return id}
+    const STATIC_ACCOUNTS_URL='./accounts.json';
+    const STATIC_SESSION_KEY='wb_static_pro_session';
+    const STATIC_SESSION_DAYS=365;
     function setStatus(message,error=false){const el=document.getElementById('status');el.textContent=message;el.classList.toggle('error',error)}
-    async function api(path,options={}){return fetch(API_BASE+path,{credentials:'include',...options,headers:{'content-type':'application/json',...(options.headers||{})}})}
+    function normalizeUsername(value){return String(value||'').trim().toLowerCase()}
+    function staticSession(){
+      try{
+        const session=JSON.parse(localStorage.getItem(STATIC_SESSION_KEY)||'null');
+        if(session&&session.plan==='pro'&&session.expiresAt>Date.now())return session;
+      }catch(_error){}
+      localStorage.removeItem(STATIC_SESSION_KEY);return null;
+    }
+    async function sha256Hex(text){
+      if(!crypto.subtle)throw new Error('当前浏览器不支持安全哈希，请使用 Chrome/Edge/Firefox 并通过 localhost 或 https 打开。');
+      const bytes=new TextEncoder().encode(text);
+      const digest=await crypto.subtle.digest('SHA-256',bytes);
+      return [...new Uint8Array(digest)].map(byte=>byte.toString(16).padStart(2,'0')).join('');
+    }
+    async function loadAccounts(){
+      let response;
+      try{response=await fetch(STATIC_ACCOUNTS_URL,{cache:'no-store'});}
+      catch(_error){throw new Error('无法读取 accounts.json。请用 localhost/https 打开，或确认 accounts.json 已和 index.html 放在同一目录。');}
+      if(!response.ok)throw new Error('未找到 accounts.json，无法校验静态 Pro 账号。');
+      return response.json();
+    }
+    async function staticLogin(username,password){
+      const data=await loadAccounts();
+      const user=normalizeUsername(username);
+      const account=(data.accounts||[]).find(item=>normalizeUsername(item.u)===user&&item.enabled!==false);
+      if(!account)throw new Error('账号或密码不正确');
+      const hash=await sha256Hex(`${data.salt}:${user}:${password}`);
+      if(hash!==account.h)throw new Error('账号或密码不正确');
+      const session={username:account.u,plan:account.plan||'pro',source:'static',expiresAt:Date.now()+STATIC_SESSION_DAYS*86400000};
+      localStorage.setItem(STATIC_SESSION_KEY,JSON.stringify(session));
+      return session;
+    }
+    async function staticAppPath(){
+      if(location.protocol==='file:')return './whiteboard-pro.html';
+      try{
+        const response=await fetch('./app.html',{method:'HEAD',cache:'no-store'});
+        if(response.ok)return './app.html';
+      }catch(_error){}
+      return './whiteboard-pro.html';
+    }
     async function openPro(){
-      setStatus('正在加载 Pro 白板…');
-      const response=await api('/api/app');
-      if(!response.ok)throw new Error(response.status===401?'登录已失效，请重新登录':'未能加载 Pro 白板');
-      const html=await response.text();
-      document.open();document.write(html);document.close();
+      setStatus('正在打开 Pro 白板…');
+      location.href=await staticAppPath();
     }
     async function checkSession(){
-      setStatus('正在启动账号服务，首次可能需要约 30–60 秒…');
-      try{
-        const response=await api('/api/session');
-        if(!response.ok){setStatus('未登录。你仍可直接使用免费版。');return}
-        const data=await response.json();
-        const box=document.getElementById('sessionBox');box.textContent=`已登录：${data.username}`;box.classList.add('show');
+      const session=staticSession();
+      if(session){
+        const box=document.getElementById('sessionBox');box.textContent=`已登录：${session.username}`;box.classList.add('show');
         document.getElementById('loginBtn').textContent='打开 Pro';setStatus('账号验证成功。');
-      }catch(error){setStatus('账号服务正在启动或暂时不可用，可先使用免费版。',true)}
+      }else{setStatus('未登录。你仍可直接使用免费版。')}
     }
-    document.getElementById('freeBtn').onclick=()=>location.href='./app.html';
+    document.getElementById('freeBtn').onclick=async()=>{location.href=await staticAppPath()};
     document.getElementById('focusLoginBtn').onclick=()=>document.getElementById('username').focus();
     document.getElementById('loginForm').addEventListener('submit',async event=>{
       event.preventDefault();const button=document.getElementById('loginBtn');button.disabled=true;
       try{
-        setStatus('正在启动账号服务并验证账号，首次可能需要约 30–60 秒…');
-        const response=await api('/api/login',{method:'POST',body:JSON.stringify({username:document.getElementById('username').value,password:document.getElementById('password').value,deviceId:deviceId(),deviceName:navigator.platform||'浏览器设备'})});
-        const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.message||'登录失败');await openPro();
+        setStatus('正在校验静态 Pro 账号…');
+        await staticLogin(document.getElementById('username').value,document.getElementById('password').value);
+        await openPro();
       }catch(error){setStatus(error.message||'登录失败',true);button.disabled=false}
     });
     checkSession();

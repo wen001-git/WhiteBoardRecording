@@ -10,3 +10,4 @@ node_modules/
 !.env.local.example
 .render-static/
 coverage/
+docs/STATIC_PRO_ACCOUNTS.md

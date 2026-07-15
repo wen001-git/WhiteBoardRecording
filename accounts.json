@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "app": "whiteboard-recording",
+  "salt": "wb-static-pro-salt-v1",
+  "accounts": [
+    {
+      "u": "wbpro001",
+      "plan": "pro",
+      "enabled": true,
+      "h": "af96971dcd03821b665ad287504a38e7e667d2ff23226f8637d0ed948bfdace1"
+    },
+    {
+      "u": "wbpro002",
+      "plan": "pro",
+      "enabled": true,
+      "h": "85b78460bf95e20162e71da0cfbbb30bb2348d968e85382e2def342891cc2d6e"
+    },
+    {
+      "u": "wbpro003",
+      "plan": "pro",
+      "enabled": true,
+      "h": "bcb1df8d2ec6790a5a74f2568990853ae96f204209d1c3f4a830393b3f272026"
+    },
+    {
+      "u": "wbpro004",
+      "plan": "pro",
+      "enabled": true,
+      "h": "5761580a9a3c9275a820942d77bdcd8874b4786cd50ae810a865a084b0b298ad"
+    },
+    {
+      "u": "wbpro005",
+      "plan": "pro",
+      "enabled": true,
+      "h": "146786fb40c71d50bc659c9cfaff133e4c07fa2ef8c37acd9cae29a06f5af8e9"
+    },
+    {
+      "u": "wbpro006",
+      "plan": "pro",
+      "enabled": true,
+      "h": "0c9856f7c0a6d2565f15f5fa6d33cebe3069c3deeb71c7b6e0b7813f1122225f"
+    },
+    {
+      "u": "wbpro007",
+      "plan": "pro",
+      "enabled": true,
+      "h": "64155d25a4382a165ae0721d68aec18147e2da72e2199009a81e3bfe83759a23"
+    },
+    {
+      "u": "wbpro008",
+      "plan": "pro",
+      "enabled": true,
+      "h": "e94f3c932f92620317f665eaeb8f7e606809f3d29de7c57a87c36e6fc244d36d"
+    },
+    {
+      "u": "wbpro009",
+      "plan": "pro",
+      "enabled": true,
+      "h": "1fc6a6997af7af4526cfb85485b6208911264c3e521142c31ef85e9ca3255411"
+    },
+    {
+      "u": "wbpro010",
+      "plan": "pro",
+      "enabled": true,
+      "h": "f84544aa2f4ad693fbcd4ce68df17f6e37b0748395b86b69dedc95bbb18d7b0b"
+    }
+  ]
+}

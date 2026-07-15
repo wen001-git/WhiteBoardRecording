@@ -900,7 +900,16 @@
  * ========================================================================= */
 
 /* ----------------------------- PLAN / ENTITLEMENTS --------------------- */
-const APP_PLAN=(document.querySelector('meta[name="whiteboard-plan"]')||{}).content||'free';
+const STATIC_SESSION_KEY='wb_static_pro_session';
+function staticProSessionActive(){
+  try{
+    const session=JSON.parse(localStorage.getItem(STATIC_SESSION_KEY)||'null');
+    if(session&&session.plan==='pro'&&session.expiresAt>Date.now())return true;
+  }catch(_error){}
+  localStorage.removeItem(STATIC_SESSION_KEY);
+  return false;
+}
+const APP_PLAN=staticProSessionActive()?'pro':((document.querySelector('meta[name="whiteboard-plan"]')||{}).content||'free');
 const IS_PRO=APP_PLAN==='pro';
 const LOCAL_API_HOSTS=new Set(['localhost','127.0.0.1']);
 function resolveApiBase(){
@@ -932,6 +941,26 @@ function proDeviceId(){
   let id=localStorage.getItem(PRO_DEVICE_KEY);
   if(!id){ id='wb-'+crypto.randomUUID().replaceAll('-',''); localStorage.setItem(PRO_DEVICE_KEY,id); }
   return id;
+}
+async function staticSha256Hex(text){
+  if(!crypto.subtle)throw new Error('当前浏览器不支持安全哈希，请使用 Chrome/Edge/Firefox 并通过 localhost 或 https 打开。');
+  const bytes=new TextEncoder().encode(text);
+  const digest=await crypto.subtle.digest('SHA-256',bytes);
+  return [...new Uint8Array(digest)].map(byte=>byte.toString(16).padStart(2,'0')).join('');
+}
+function normalizeStaticUsername(value){return String(value||'').trim().toLowerCase();}
+async function staticProLogin(username,password){
+  let response;
+  try{response=await fetch('./accounts.json',{cache:'no-store'});}
+  catch(_error){throw new Error('无法读取 accounts.json。请用 localhost/https 打开，或确认 accounts.json 已和白板文件放在同一目录。');}
+  if(!response.ok)throw new Error('未找到 accounts.json，无法校验静态 Pro 账号。');
+  const data=await response.json();
+  const user=normalizeStaticUsername(username);
+  const account=(data.accounts||[]).find(item=>normalizeStaticUsername(item.u)===user&&item.enabled!==false);
+  if(!account)throw new Error('账号或密码不正确');
+  const hash=await staticSha256Hex(`${data.salt}:${user}:${password}`);
+  if(hash!==account.h)throw new Error('账号或密码不正确');
+  localStorage.setItem(STATIC_SESSION_KEY,JSON.stringify({username:account.u,plan:account.plan||'pro',source:'static',expiresAt:Date.now()+365*86400000}));
 }
 function showPlanToast(message,timeout=3200){
   const el=document.getElementById('proLimitToast'); if(!el) return;
@@ -979,13 +1008,11 @@ function wireUpgradeModal(){
   document.getElementById('proLoginForm')?.addEventListener('submit',async e=>{
     e.preventDefault();
     const status=document.getElementById('proLoginStatus'), submit=e.currentTarget.querySelector('button');
-    status.textContent='正在启动账号服务并验证，首次可能需要约 30–60 秒…'; status.classList.remove('error'); submit.disabled=true;
+    status.textContent='正在校验静态 Pro 账号…'; status.classList.remove('error'); submit.disabled=true;
     try{
-      const response=await proApi('/api/login',{method:'POST',body:JSON.stringify({username:document.getElementById('proUsername').value,password:document.getElementById('proPassword').value,deviceId:proDeviceId(),deviceName:navigator.platform||'浏览器设备'})});
-      const data=await response.json().catch(()=>({}));
-      if(!response.ok) throw new Error(data.message||'登录失败');
-      status.textContent='登录成功，正在打开 Pro…';
-      await loadProtectedProApp();
+      await staticProLogin(document.getElementById('proUsername').value,document.getElementById('proPassword').value);
+      status.textContent='登录成功，正在切换 Pro…';
+      location.reload();
     }catch(error){ status.textContent=error.message||'登录失败'; status.classList.add('error'); submit.disabled=false; }
   });
 }

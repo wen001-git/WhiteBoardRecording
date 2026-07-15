@@ -16,20 +16,20 @@ async function source(name) {
 test('public build publishes the commercial free app and excludes private source apps', async () => {
   await execFileAsync(process.execPath, [resolve(root, 'scripts/build-static.mjs')], { cwd: root });
   const files = (await readdir(resolve(root, '.render-static'))).sort();
-  assert.deepEqual(files, ['account-admin.html', 'app.html', 'index.html']);
+  assert.deepEqual(files, ['account-admin.html', 'account-admin1.html', 'accounts.json', 'app.html', 'index.html']);
   assert.equal(await source('.render-static/app.html'), await source('whiteboard-pro.html'));
+  assert.equal(await source('.render-static/accounts.json'), await source('accounts.json'));
   await assert.rejects(access(resolve(root, '.render-static/whiteboard.html')));
   await assert.rejects(access(resolve(root, '.render-static/whiteboard-pro.html')));
 });
 
-test('gateway loads Pro only through the authenticated API', async () => {
+test('gateway loads Pro through static accounts file', async () => {
   const html = await source('index.html');
-  assert.match(html, /\/api\/login/);
-  assert.match(html, /\/api\/app/);
-  assert.match(html, /正在启动账号服务/);
+  assert.match(html, /accounts\.json/);
+  assert.match(html, /wb_static_pro_session/);
+  assert.match(html, /正在校验静态 Pro 账号/);
   assert.match(html, /\.\/app\.html/);
   assert.doesNotMatch(html, /\.\/whiteboard\.html/);
-  assert.doesNotMatch(html, /whiteboard-pro\.html/);
 });
 
 test('private app is full-featured while the commercial template fails closed', async () => {
@@ -58,7 +58,7 @@ test('private app is full-featured while the commercial template fails closed', 
 });
 
 test('localhost API override is accepted only for local pages and local targets', async () => {
-  for (const file of ['index.html', 'whiteboard.html', 'whiteboard-pro.html', 'account-admin.html']) {
+  for (const file of ['whiteboard.html', 'whiteboard-pro.html', 'account-admin.html']) {
     const html = await source(file);
     assert.match(html, /LOCAL_API_HOSTS=new Set\(\['localhost','127\.0\.0\.1'\]\)/);
     assert.match(html, /new URLSearchParams\(location\.search\)\.get\('api'\)/);
@@ -89,6 +89,24 @@ test('admin token remains session-only and new accounts default to three devices
   assert.match(html, /value="3"/);
 });
 
+test('static Pro accounts contain ten enabled hashed accounts without plaintext passwords', async () => {
+  const data = JSON.parse(await source('accounts.json'));
+  assert.equal(data.accounts.length, 10);
+  assert.ok(data.accounts.every(account => account.enabled === true));
+  assert.ok(data.accounts.every(account => account.plan === 'pro'));
+  assert.ok(data.accounts.every(account => /^[a-f0-9]{64}$/.test(account.h)));
+  assert.doesNotMatch(await source('accounts.json'), /WbPro-/);
+});
+
+test('static account admin manages accounts.json without backend API', async () => {
+  const html = await source('account-admin1.html');
+  assert.match(html, /accounts\.json/);
+  assert.match(html, /wb-static-pro-salt-v1/);
+  assert.match(html, /SHA-256\(salt:usernameLowercase:password\)/);
+  assert.doesNotMatch(html, /\/api\/admin/);
+  assert.doesNotMatch(html, /ADMIN_TOKEN/);
+});
+
 test('Render blueprint has one protected Node service in Oregon', async () => {
   const yaml = await source('render.yaml');
   assert.match(yaml, /name: whiteboard-auth/);
@@ -101,7 +119,7 @@ test('Render blueprint has one protected Node service in Oregon', async () => {
 });
 
 test('inline JavaScript in shipped HTML parses successfully', async () => {
-  for (const file of ['index.html', 'whiteboard.html', 'whiteboard-pro.html', 'account-admin.html']) {
+  for (const file of ['index.html', 'whiteboard.html', 'whiteboard-pro.html', 'account-admin.html', 'account-admin1.html']) {
     const html = await source(file);
     const scripts = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)].map(match => match[1]);
     assert.ok(scripts.length > 0, `${file} should contain inline JavaScript`);
