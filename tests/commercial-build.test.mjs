@@ -82,6 +82,8 @@ test('all agreed free limits are enforced before protected actions', async () =>
   assert.match(html, /免费录制将在 30 秒时自动结束/);
   assert.match(html, /curElapsed\(\)\s*>=\s*30000/);
   assert.match(html, /drawPlanWatermarks/);
+  assert.match(html, /record\.leewen\.work/);
+  assert.doesNotMatch(html, /白板录制工具  免费版/);
 });
 
 test('admin token remains session-only and new accounts default to three devices', async () => {

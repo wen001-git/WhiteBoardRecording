@@ -39,8 +39,8 @@ npm start
 - **Git/GitHub**：GitHub remote 使用 SSH URL，不用 HTTPS；只有用户明确要求时才提交/推送。
 
 ## 当前状态
-- **商业化 MVP(2026-07-14)**：已完成静态登录/购买入口、统一 entitlement 层、30 秒录制限制与多水印、最多 3 张幻灯片、整屏裁剪/动态流动线条/幻灯片笔迹/完整贴纸分组等权限控制；已完成 Node + Neon 账号/设备服务、受保护应用响应和管理后台。账号默认 3 台设备，测试账号可设为 1 台；密码、停用、清空设备都会使旧会话失效。公共发布使用白名单构建，受保护内容不进入 Static Site。18 项自动测试已通过。
-- **静态 Pro 账号临时方案(2026-07-15)**：按用户要求新增独立于 Neon/Node 的 `accounts.json` 静态登录链路；`index.html` 与 `whiteboard-pro.html` 可用 hash 账号登录解锁 Pro 且不限制设备数；`whiteboard-pro.html` 右上角系统控制区有账户入口，免费态点「登录」打开现有 Pro 登录弹窗，Pro 态显示账号并可清除 `wb_static_pro_session` 退出；新增 `account-admin1.html` 用于生成/合并/验证 `accounts.json`，不改 `account-admin.html` 后端管理页。10 个初始 Pro 账号已写入 `accounts.json`，明文清单保存在 `docs/STATIC_PRO_ACCOUNTS.md`。
+- **商业化 MVP(2026-07-14)**：已完成静态登录/购买入口、统一 entitlement 层、30 秒录制限制与右上/右下角轻水印、最多 3 张幻灯片、整屏裁剪/动态流动线条/幻灯片笔迹/完整贴纸分组等权限控制；已完成 Node + Neon 账号/设备服务、受保护应用响应和管理后台。账号默认 3 台设备，测试账号可设为 1 台；密码、停用、清空设备都会使旧会话失效。公共发布使用白名单构建，受保护内容不进入 Static Site。18 项自动测试已通过。
+- **静态 Pro 账号临时方案(2026-07-15)**：按用户要求新增独立于 Neon/Node 的 `accounts.json` 静态登录链路；`index.html` 与 `whiteboard-pro.html` 可用 hash 账号登录解锁 Pro 且不限制设备数；`whiteboard-pro.html` 右下角有独立浮动账户入口，免费态点「登录」打开现有 Pro 登录弹窗，Pro 态显示账号并可清除 `wb_static_pro_session` 退出，避免继续挤压右上录制控制区；新增 `account-admin1.html` 用于生成/合并/验证 `accounts.json`，不改 `account-admin.html` 后端管理页。10 个初始 Pro 账号已写入 `accounts.json`，明文清单保存在 `docs/STATIC_PRO_ACCOUNTS.md`。
 - `whiteboard.html` 与初始 `whiteboard-pro.html` 已实现 M0~M3 + 迭代二（手绘风格 + 录制比例/背景/取景框）+ 迭代三（绘图样式面板、摄像头可拖拽缩放、更细真实手绘线条、完整录制设置）+ 贴图功能 + 指针选择/Delete 删除对象 + 菱形/直线工具 + 丰富文本样式 + 对象缩放/旋转（各自为独立单文件应用）。
 - 迭代三录制设置已补齐并接入真实合成：比例含 `Custom` 自定义；背景含分类筛选、随机壁纸、离线程序纹理/渐变/纯色/无；白卡片支持圆角半径与画布边距；摄像头支持录制开关、大小、圆形/方形；麦克风下拉由 `populateDevices()` 填充；录制光标高亮支持开关和颜色。
 - `drawRecFrame()` 已读取上述 `recConfig` 字段，导出画面会同步设置面板中的背景、白卡片边距/圆角、摄像头形状/大小/开关、光标高亮；提词器仍不入录像。
@@ -77,7 +77,7 @@ npm start
 - [ ] Render Web Service 补齐 `ALLOWED_ORIGINS=https://record.leewen.work,http://localhost:8000`，确认 Node / Oregon / Free / `/health`，首次部署后访问健康检查。
 - [ ] 配置 `auth.record.leewen.work` 到账号服务、`record.leewen.work` 到 Static Site；在自定义域名生效后验证 Secure Cookie 登录。
 - [ ] 用管理后台创建一个 1 台设备测试账号和一个默认 3 台设备账号，真机验证超限、停用、改密、清空设备及重新登录。
-- [ ] 真机验收免费权限：25 秒提醒、30 秒自动完成、多水印、第四张幻灯片及各受限功能统一弹出购买窗口；再用授权账号验证限制全部解除。
+- [ ] 真机验收免费权限：25 秒提醒、30 秒自动完成、右上/右下角轻水印、第四张幻灯片及各受限功能统一弹出购买窗口；再用授权账号验证限制全部解除。
 - [ ] 真机：图片按钮选择 PNG/JPG、剪贴板粘贴图片、单击放置、撤销/重做、橡皮擦删除、录制导出包含图片
 - [ ] 真机：指针工具点击形状/线条/文字/图片 → 选中框出现 → Delete/Backspace 删除 → 撤销/重做恢复
 - [ ] 真机：文字工具切换字体/字号/左中右对齐/透明度后新建中英文文字；已选中文字可拖动移动，双击/Enter 重新编辑；确认选中框不压字，撤销/重做正常，录制导出中文字透明度一致

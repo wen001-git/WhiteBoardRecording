@@ -142,11 +142,11 @@
   .recbtn.media-toggle.off .media-dot{background:#aaa;}
   .recbtn.media-toggle.busy{opacity:.7;cursor:wait;}
   .media-dot{position:absolute;right:8px;bottom:8px;width:8px;height:8px;border-radius:50%;background:#aaa;border:2px solid var(--panel);}
-  .account-wrap{position:relative;display:flex;align-items:center;}
+  .account-wrap{position:fixed;right:22px;bottom:24px;z-index:31;display:flex;align-items:center;}
   .recbtn.account-btn{background:#f0eff5;color:var(--ink);min-width:64px;justify-content:center;padding:9px 13px;}
   .recbtn.account-btn.pro{background:#edeafd;color:var(--accent);}
   .recbtn.account-btn:hover{background:#e7e6ee;}
-  .account-menu{position:absolute;top:calc(100% + 8px);right:0;min-width:184px;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 14px 40px rgba(0,0,0,.16);padding:10px;display:none;z-index:70;}
+  .account-menu{position:absolute;bottom:calc(100% + 8px);right:0;min-width:184px;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 14px 40px rgba(0,0,0,.16);padding:10px;display:none;z-index:70;}
   .account-menu.show{display:block;}
   .account-name{font-size:13px;font-weight:750;color:var(--ink);margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .account-menu button{width:100%;height:36px;border:0;border-radius:8px;background:#f0eff5;color:var(--ink);font-weight:700;cursor:pointer;}
@@ -168,9 +168,10 @@
     .recbar{gap:6px;padding:0;}
     .recbar .recbtn{padding:8px 12px;}
     .recbar #recSettings,.recbar .recbtn.media-toggle{width:40px;height:40px;padding:0;justify-content:center;}
-    .recbar .recbtn.account-btn{min-width:40px;width:40px;height:40px;padding:0;font-size:0;}
-    .recbar .recbtn.account-btn::before{content:"Pro";font-size:12px;font-weight:800;}
-    .recbar .recbtn.account-btn:not(.pro)::before{content:"登录";font-size:11px;}
+    .account-wrap{right:18px;bottom:18px;}
+    .account-wrap .recbtn.account-btn{min-width:40px;width:40px;height:40px;padding:0;font-size:0;}
+    .account-wrap .recbtn.account-btn::before{content:"Pro";font-size:12px;font-weight:800;}
+    .account-wrap .recbtn.account-btn:not(.pro)::before{content:"登录";font-size:11px;}
     .recbar .recbtn.media-toggle svg{width:20px;height:20px;}
   }
 
@@ -702,13 +703,6 @@
     <span class="media-dot"></span>
     <span class="sr-only" id="mediaToggleText">摄像头/麦克风 关</span>
   </button>
-  <div class="account-wrap" id="accountWrap">
-    <button class="recbtn account-btn" id="accountBtn" type="button" aria-haspopup="menu" aria-expanded="false">登录</button>
-    <div class="account-menu" id="accountMenu" role="menu">
-      <div class="account-name" id="accountName">Pro</div>
-      <button id="accountLogout" type="button" role="menuitem">退出登录</button>
-    </div>
-  </div>
   <span class="timer" id="timer">00:00</span>
   <button class="recbtn primary-green" id="recStart"><span class="rec-dot"></span> 录制</button>
   <button class="recbtn ghost hidden" id="recCancel">✕ 取消</button>
@@ -716,6 +710,13 @@
   <button class="recbtn warn hidden" id="recPause">暂停</button>
   <button class="recbtn stop hidden" id="recStop">停止</button>
   <button class="recbtn ghost hidden" id="selfCheckBtn" title="打开/关闭画中画小窗，查看摄像头入镜画面（切到其他 App 也可见）">📷 自检</button>
+</div>
+<div class="account-wrap" id="accountWrap">
+  <button class="recbtn account-btn" id="accountBtn" type="button" aria-haspopup="menu" aria-expanded="false">登录</button>
+  <div class="account-menu" id="accountMenu" role="menu">
+    <div class="account-name" id="accountName">Pro</div>
+    <button id="accountLogout" type="button" role="menuitem">退出登录</button>
+  </div>
 </div>
 
 <!-- 缩放条 -->
@@ -11889,17 +11890,22 @@ function drawRecFrame(){
 
 function drawPlanWatermarks(ctx,W,H){
   if(IS_PRO) return;
-  const label='白板录制工具  免费版';
-  const size=Math.max(18,Math.round(Math.min(W,H)*.032));
+  const label='record.leewen.work';
+  const size=Math.max(14,Math.round(Math.min(W,H)*.022));
+  const pad=Math.max(18,Math.round(Math.min(W,H)*.035));
   ctx.save();
-  ctx.translate(W/2,H/2); ctx.rotate(-Math.PI/7);
-  ctx.font=`700 ${size}px system-ui,sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillStyle='rgba(48,45,65,.16)';
-  const stepX=Math.max(260,size*11), stepY=Math.max(150,size*5.5);
-  for(let y=-H*1.2;y<=H*1.2;y+=stepY){
-    const offset=(Math.round(y/stepY)&1)?stepX/2:0;
-    for(let x=-W*1.2;x<=W*1.2;x+=stepX) ctx.fillText(label,x+offset,y);
-  }
+  ctx.font=`600 ${size}px system-ui,sans-serif`;
+  ctx.textAlign='right';
+  ctx.lineJoin='round';
+  ctx.lineWidth=Math.max(2,size*.12);
+  ctx.strokeStyle='rgba(255,255,255,.72)';
+  ctx.fillStyle='rgba(48,45,65,.34)';
+  ctx.textBaseline='top';
+  ctx.strokeText(label,W-pad,pad);
+  ctx.fillText(label,W-pad,pad);
+  ctx.textBaseline='bottom';
+  ctx.strokeText(label,W-pad,H-pad);
+  ctx.fillText(label,W-pad,H-pad);
   ctx.restore();
 }
 
