@@ -50,6 +50,7 @@ test('private app is full-featured while the commercial template fails closed', 
     commercialTemplate,
     /const DEFAULT_PURCHASE_CONFIG=\{price:'59',wechat:'leewen2017'\}/,
   );
+  assert.match(commercialTemplate, /data&&data\.purchase\?data\.purchase:data\|\|\{\}/);
   assert.match(commercialTemplate, /function loadPurchaseConfig\(\)/);
   assert.match(commercialTemplate, /const STATIC_ADMIN_CHANNEL='wb_static_admin_cfg'/);
   assert.match(commercialTemplate, /function watchPurchaseConfigUpdates\(\)/);
