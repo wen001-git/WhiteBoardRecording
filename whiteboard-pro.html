@@ -957,7 +957,7 @@ const DEFAULT_PURCHASE_CONFIG={price:'59',wechat:'leewen2017'};
 let purchaseConfig={...DEFAULT_PURCHASE_CONFIG};
 let purchaseConfigChannel=null;
 function normalizePurchaseConfig(data){
-  const raw=data&&data.purchase?data.purchase:{};
+  const raw=data&&data.purchase?data.purchase:data||{};
   return {
     price:String(raw.price??DEFAULT_PURCHASE_CONFIG.price).trim()||DEFAULT_PURCHASE_CONFIG.price,
     wechat:String(raw.wechat??DEFAULT_PURCHASE_CONFIG.wechat).trim()||DEFAULT_PURCHASE_CONFIG.wechat
