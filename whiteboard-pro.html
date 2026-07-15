@@ -452,7 +452,7 @@
         </div>
         <form class="pro-login-form" id="proLoginForm">
           <input id="proUsername" autocomplete="username" placeholder="Pro 账号" required>
-          <input id="proPassword" type="password" autocomplete="current-password" placeholder="密码" minlength="8" required>
+          <input id="proPassword" type="password" autocomplete="current-password" placeholder="密码" minlength="4" required>
           <button type="submit">登录并打开 Pro</button>
           <div class="pro-login-status" id="proLoginStatus" aria-live="polite"></div>
         </form>
@@ -1015,7 +1015,7 @@ function watchPurchaseConfigUpdates(){
   }catch(_error){}
 }
 async function loadPurchaseConfig(){
-  if(location.protocol==='file:'&&applyLocalPurchaseConfig())return;
+  if(applyLocalPurchaseConfig())return;
   try{
     const response=await fetch('./accounts.json',{cache:'no-store'});
     if(!response.ok)throw new Error(`HTTP ${response.status}`);
@@ -1047,7 +1047,7 @@ async function staticSha256Hex(text){
 function normalizeStaticUsername(value){return String(value||'').trim().toLowerCase();}
 async function loadStaticAccountsData(){
   const local=readLocalJson(LOCAL_ACCOUNTS_KEY);
-  if(location.protocol==='file:'&&local&&Array.isArray(local.accounts)&&local.salt)return local;
+  if(local&&Array.isArray(local.accounts)&&local.salt)return local;
   try{
     const response=await fetch('./accounts.json',{cache:'no-store'});
     if(response.ok){

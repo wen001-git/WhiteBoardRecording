@@ -41,7 +41,8 @@ npm start
 ## 当前状态
 - **商业化 MVP(2026-07-14)**：已完成静态登录/购买入口、统一 entitlement 层、30 秒录制限制与右上/右下角轻水印、最多 3 张幻灯片、整屏裁剪/动态流动线条/幻灯片笔迹/完整贴纸分组等权限控制；已完成 Node + Neon 账号/设备服务、受保护应用响应和管理后台。账号默认 3 台设备，测试账号可设为 1 台；密码、停用、清空设备都会使旧会话失效。公共发布使用白名单构建，受保护内容不进入 Static Site。18 项自动测试已通过。
 - **本地优先、Neon 兜底登录(2026-07-15)**：`index.html` 与 `whiteboard-pro.html` 登录时先读取同目录 `accounts.json`（读取失败可回退管理工具写入的本机缓存）；静态账号通过即写入 365 天 `wb_static_pro_session` 并放行，不请求后端；账号不存在、停用或密码不匹配时才请求 Node `/api/login` 由 Neon 校验。Neon 成功继续使用 HttpOnly Cookie 和服务端 `/api/app` Pro 标记，页面启动无静态会话时才检查 `/api/session`；白板账户入口会按来源清除静态会话或调用 `/api/logout`。针对性自动测试覆盖静态短路、三种兜底、服务端错误不提权、会话恢复和退出 Cookie。
-- **静态 Pro 账号临时方案(2026-07-15)**：按用户要求新增独立于 Neon/Node 的 `accounts.json` 静态登录链路；`index.html` 与 `whiteboard-pro.html` 可用 hash 账号登录解锁 Pro 且不限制设备数；`whiteboard-pro.html` 右下角有独立浮动账户入口，免费态点「登录」打开现有 Pro 登录弹窗，Pro 态显示账号并可清除 `wb_static_pro_session` 退出，避免继续挤压右上录制控制区；新增 `account-admin1.html` 用于生成/合并/验证 `accounts.json`，并统一维护 `purchase.price` / `purchase.wechat` 供白板付费提示读取。离线本机即时生效采用 `localStorage` + `BroadcastChannel('wb_static_admin_cfg')` 同步到已打开的白板页；Chrome/Edge 可另存/替换 `accounts.json`，不支持时下载文件手动替换；线上/GitHub 部署仍由白板读取同目录 `accounts.json` 生效。不改 `account-admin.html` 后端管理页。当前 11 个 Pro 账号已写入 `accounts.json`，明文清单保存在 `docs/STATIC_PRO_ACCOUNTS.md`。
+- **密码最小长度统一(2026-07-15)**：所有登录入口、静态/后端账号管理页与 Node 管理 API 统一为至少 4 位（后端上限 128 位）；`account-admin1.html` 手动合并会拒绝少于 4 位的密码。针对性验证共 20 项通过，覆盖 4 位密码创建/登录成功、3 位密码被拒绝及发布入口无残留 8 位限制。
+- **静态 Pro 账号临时方案(2026-07-15)**：按用户要求新增独立于 Neon/Node 的 `accounts.json` 静态登录链路；`index.html` 与 `whiteboard-pro.html` 可用 hash 账号登录解锁 Pro 且不限制设备数；`whiteboard-pro.html` 右下角有独立浮动账户入口，免费态点「登录」打开现有 Pro 登录弹窗，Pro 态显示账号并可清除 `wb_static_pro_session` 退出，避免继续挤压右上录制控制区；新增 `account-admin1.html` 用于生成/合并/验证 `accounts.json`，并统一维护 `purchase.price` / `purchase.wechat` 供白板付费提示读取。离线本机即时生效采用 `localStorage` + `BroadcastChannel('wb_static_admin_cfg')` 同步到已打开的白板页；Chrome/Edge 可绑定/选择并覆盖本地 `accounts.json`，不支持时下载文件手动替换；线上/GitHub 部署仍由白板读取同目录 `accounts.json` 生效。不改 `account-admin.html` 后端管理页。当前 11 个 Pro 账号已写入 `accounts.json`，明文清单保存在 `docs/STATIC_PRO_ACCOUNTS.md`。
 - `whiteboard.html` 与初始 `whiteboard-pro.html` 已实现 M0~M3 + 迭代二（手绘风格 + 录制比例/背景/取景框）+ 迭代三（绘图样式面板、摄像头可拖拽缩放、更细真实手绘线条、完整录制设置）+ 贴图功能 + 指针选择/Delete 删除对象 + 菱形/直线工具 + 丰富文本样式 + 对象缩放/旋转（各自为独立单文件应用）。
 - 迭代三录制设置已补齐并接入真实合成：比例含 `Custom` 自定义；背景含分类筛选、随机壁纸、离线程序纹理/渐变/纯色/无；白卡片支持圆角半径与画布边距；摄像头支持录制开关、大小、圆形/方形；麦克风下拉由 `populateDevices()` 填充；录制光标高亮支持开关和颜色。
 - `drawRecFrame()` 已读取上述 `recConfig` 字段，导出画面会同步设置面板中的背景、白卡片边距/圆角、摄像头形状/大小/开关、光标高亮；提词器仍不入录像。
@@ -97,7 +98,7 @@ npm start
 
 ## 文件地图
 - 根目录 HTML — 登录/购买入口、管理页与可独立运行的白板应用；不要在文档中标注各应用文件的商业版本归属。
-- `accounts.json` / `account-admin1.html` — 临时静态 Pro 账号文件与本地生成工具；只保存哈希，顶层 `purchase.price/wechat` 供线上/GitHub 部署读取。本地离线即时预览通过 `localStorage` + `BroadcastChannel('wb_static_admin_cfg')` 同步价格和微信号；需要发布时仍要保存/替换并提交 `accounts.json`。明文账号清单在 `docs/STATIC_PRO_ACCOUNTS.md`，正式付费后应迁回后端账号体系。
+- `accounts.json` / `account-admin1.html` — 临时静态 Pro 账号文件与本地生成工具；只保存哈希，顶层 `purchase.price/wechat` 供线上/GitHub 部署读取。本地离线即时预览通过 `localStorage` + `BroadcastChannel('wb_static_admin_cfg')` 同步价格和微信号；支持 File System Access API 的浏览器可绑定/选择并覆盖本地 `accounts.json`，不支持时下载后手动替换；需要发布时仍要提交 `accounts.json`。明文账号清单在 `docs/STATIC_PRO_ACCOUNTS.md`，正式付费后应迁回后端账号体系。
 - `server/` — Node 账号 API、Neon schema、密码/会话/设备授权。
 - `scripts/build-static.mjs` — Static Site 发布白名单构建，产物目录 `.render-static/` 不提交。
 - `tests/` — 账号 API、设备限制、权限、发布白名单和内联 JS 自动测试。
@@ -130,7 +131,8 @@ npm start
 
 | 日期 | 变更内容 |
 |------|---------|
-| 2026-07-15 | 完善静态购买提示配置：`account-admin1.html` 修改价格/微信号会写入本机缓存并通过 `BroadcastChannel` 通知白板页即时刷新，同时保留保存/下载 `accounts.json` 供线上发布；why：静态网页不能无权限直接写 GitHub 或任意本地文件，但用户需要离线测试时配置立刻生效 |
+| 2026-07-15 | 将全系统密码最小长度从 8 位统一降为 4 位：同步登录入口、静态/后端管理页、Node 创建与改密校验及提示文案，并新增 4 位通过/3 位拒绝的自动测试；why：账号发放只需保留 4 位最低限制，避免浏览器与后端规则不一致 |
+| 2026-07-15 | 完善静态购买提示配置：`account-admin1.html` 修改价格/微信号会写入本机缓存并通过 `BroadcastChannel` 通知白板页即时刷新，支持绑定/选择并覆盖本地 `accounts.json`，不支持时下载文件；why：静态网页不能无权限直接写 GitHub 或任意本地文件，但用户需要离线测试时配置立刻生效 |
 | 2026-07-15 | 登录改为本地 `accounts.json` 优先、Node/Neon 兜底，并补齐服务端会话恢复与按来源退出；why：本地测试无需启动数据库，同时保留正式账号、设备限制和会话失效能力 |
 | 2026-07-15 | 新增静态购买提示配置：`account-admin1.html` 可维护 `accounts.json.purchase.price/wechat`，`whiteboard-pro.html` 离线读取后更新付费弹窗；why：用户需要不用改代码即可统一调整费用和微信号 |
 | 2026-07-15 | 调整测试规则：默认跑与本次改动直接相关的最小测试，不再因小范围改动自动执行全量 `npm test` 或强制浏览器预览；why：降低长测试和浏览器验证带来的等待与 token 成本 |

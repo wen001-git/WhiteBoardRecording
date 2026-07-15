@@ -47,7 +47,7 @@
     <div class="btn-row">
       <button class="accent" id="savePurchaseBtn">保存配置到 accounts.json</button>
     </div>
-    <p class="hint">配置会写入本机缓存供离线白板立即读取；Chrome/Edge 会让你选择保存 <code>accounts.json</code>，不支持时会下载新文件。</p>
+    <p class="hint">配置会写入本机缓存供离线白板立即读取；Chrome/Edge 会让你选择并覆盖同目录 <code>accounts.json</code>，不支持时会下载新文件。</p>
   </div>
 
   <div class="tabs">
@@ -70,7 +70,7 @@
         <button class="ghost" id="loadExistingBtn">读取现有 accounts.json</button>
         <button class="accent" id="mergeGeneratedBtn">合并并输出 accounts.json</button>
       </div>
-      <p class="hint">用户名会生成如 <code>wbpro001</code>。密码长度均不少于 8 位，满足当前登录页限制。</p>
+      <p class="hint">用户名会生成如 <code>wbpro001</code>。密码至少 4 位，满足当前登录页限制。</p>
     </div>
 
     <div class="row">
@@ -142,6 +142,7 @@ const DEFAULT_EMPTY={version:1,app:'whiteboard-recording',salt:DEFAULT_SALT,purc
 const LOCAL_ACCOUNTS_KEY='wb_static_accounts_json';
 const LOCAL_PURCHASE_KEY='wb_static_purchase_config';
 const STATIC_ADMIN_CHANNEL='wb_static_admin_cfg';
+const MIN_PASSWORD_LENGTH=4;
 const statusEl=document.getElementById('status');
 const plainList=document.getElementById('plainList');
 const existingJson=document.getElementById('existingJson');
@@ -150,6 +151,7 @@ const accountList=document.getElementById('accountList');
 const purchasePrice=document.getElementById('purchasePrice');
 const purchaseWechat=document.getElementById('purchaseWechat');
 let generatedPlain=[];
+let accountsFileHandle=null;
 function status(message,error=false){statusEl.textContent=message;statusEl.classList.toggle('error',error)}
 function normalizeUsername(value){return String(value||'').trim().toLowerCase()}
 function escapeHtml(value){return String(value??'').replace(/[&<>'"]/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]))}
@@ -256,6 +258,8 @@ async function rowsToAccounts(rows,salt){
   return out;
 }
 async function mergeRows(rows){
+  const invalid=rows.find(row=>String(row.password||'').length<MIN_PASSWORD_LENGTH);
+  if(invalid)throw new Error(`账号 ${invalid.username} 的密码不足 ${MIN_PASSWORD_LENGTH} 位`);
   const base=parseJsonInput();
   const salt=base.salt||DEFAULT_SALT;
   const next=new Map((base.accounts||[]).map(account=>[normalizeUsername(account.u),account]));
@@ -294,15 +298,37 @@ function download(filename,text,type='application/json'){
   a.href=url;a.download=filename;a.click();
   setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
+async function writeJsonToHandle(handle,text){
+  const writable=await handle.createWritable();
+  await writable.write(text);
+  await writable.close();
+}
+async function pickAccountsFileForWrite(){
+  if(!window.showOpenFilePicker)return null;
+  const [handle]=await window.showOpenFilePicker({
+    multiple:false,
+    types:[{description:'accounts.json',accept:{'application/json':['.json']}}],
+  });
+  accountsFileHandle=handle;
+  return handle;
+}
 async function saveJsonToDisk(text){
+  if(accountsFileHandle){
+    await writeJsonToHandle(accountsFileHandle,text);
+    return 'file';
+  }
+  const picked=await pickAccountsFileForWrite();
+  if(picked){
+    await writeJsonToHandle(picked,text);
+    return 'file';
+  }
   if(window.showSaveFilePicker){
     const handle=await window.showSaveFilePicker({
       suggestedName:'accounts.json',
       types:[{description:'JSON 文件',accept:{'application/json':['.json']}}]
     });
-    const writable=await handle.createWritable();
-    await writable.write(text);
-    await writable.close();
+    accountsFileHandle=handle;
+    await writeJsonToHandle(handle,text);
     return 'file';
   }
   download('accounts.json',text);
@@ -378,11 +404,26 @@ document.getElementById('savePurchaseBtn').onclick=async()=>{
 };
 purchasePrice.addEventListener('input',syncPurchaseConfigOnly);
 purchaseWechat.addEventListener('input',syncPurchaseConfigOnly);
-document.getElementById('loadFileBtn').onclick=()=>document.getElementById('fileInput').click();
+document.getElementById('loadFileBtn').onclick=async()=>{
+  if(window.showOpenFilePicker){
+    try{
+      const handle=await pickAccountsFileForWrite();
+      const file=await handle.getFile();
+      existingJson.value=await file.text();
+      document.getElementById('formatExistingBtn').click();
+      status('已读取并绑定本地 accounts.json，之后保存会直接覆盖这个文件');
+      return;
+    }catch(error){
+      if(error&&error.name==='AbortError')return;
+    }
+  }
+  document.getElementById('fileInput').click();
+};
 document.getElementById('fileInput').onchange=async event=>{
   const file=event.target.files[0];if(!file)return;
   existingJson.value=await file.text();
   document.getElementById('formatExistingBtn').click();
+  status('已读取本地 JSON；当前浏览器不支持直接覆盖时，保存会下载新版 accounts.json');
 };
 document.getElementById('copyPlainBtn').onclick=async()=>{await copyText(plainList.value);status('已复制明文账号清单')};
 document.getElementById('downloadPlainBtn').onclick=()=>download(`whiteboard-pro-accounts-${new Date().toISOString().slice(0,10)}.txt`,plainList.value,'text/plain');

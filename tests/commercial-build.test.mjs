@@ -106,6 +106,15 @@ test('admin token remains session-only and new accounts default to three devices
   assert.match(html, /sessionStorage\.setItem\(TOKEN_KEY/);
   assert.doesNotMatch(html, /localStorage\.[^(]*\([^)]*wb_admin_token/);
   assert.match(html, /value="3"/);
+  assert.equal((html.match(/minlength="4"/g) || []).length, 2);
+});
+
+test('all shipped password inputs use the four-character minimum', async () => {
+  for (const file of ['index.html', 'whiteboard.html', 'whiteboard-pro.html']) {
+    const html = await source(file);
+    assert.match(html, /type="password"[^>]*minlength="4"/);
+    assert.doesNotMatch(html, /minlength="8"/);
+  }
 });
 
 test('static Pro accounts contain enabled hashed accounts without plaintext passwords', async () => {
@@ -132,7 +141,11 @@ test('static account admin manages accounts.json without backend API', async () 
   assert.match(html, /function syncPurchaseConfigOnly\(\)/);
   assert.match(html, /BroadcastChannel\(STATIC_ADMIN_CHANNEL\)/);
   assert.match(html, /function saveJsonToDisk\(/);
+  assert.match(html, /showOpenFilePicker/);
   assert.match(html, /showSaveFilePicker/);
+  assert.match(html, /accountsFileHandle/);
+  assert.match(html, /const MIN_PASSWORD_LENGTH=4/);
+  assert.match(html, /密码至少 4 位/);
   assert.match(html, /localStorage\.setItem\(LOCAL_PURCHASE_KEY/);
   assert.doesNotMatch(html, /\/api\/admin/);
   assert.doesNotMatch(html, /ADMIN_TOKEN/);

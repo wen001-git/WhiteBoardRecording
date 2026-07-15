@@ -150,6 +150,20 @@ test('admin creates default three-device and one-device test accounts', async ()
   assert.equal(unauthorized.response.status, 401);
 });
 
+test('admin accepts four-character passwords and rejects shorter passwords', async () => {
+  const accepted = await request('/api/admin/accounts', { method: 'POST', admin: true, body: { username: 'four-char-user', password: 'a1B!' } });
+  assert.equal(accepted.response.status, 201);
+  const login = await request('/api/login', {
+    method: 'POST',
+    body: { username: 'four-char-user', password: 'a1B!', deviceId: 'four-char-device-0001' }
+  });
+  assert.equal(login.response.status, 200);
+
+  const rejected = await request('/api/admin/accounts', { method: 'POST', admin: true, body: { username: 'short-user', password: 'a1!' } });
+  assert.equal(rejected.response.status, 400);
+  assert.match(rejected.data.message, /至少 4 位/);
+});
+
 test('login binds devices and rejects the fourth device', async () => {
   let lastCookie = '';
   for (let index = 1; index <= 3; index += 1) {

@@ -4,6 +4,8 @@ import { injectProGrant } from './pro-app.mjs';
 
 const COOKIE_NAME = 'wb_pro_session';
 const MAX_BODY = 64 * 1024;
+const MIN_PASSWORD_LENGTH = 4;
+const MAX_PASSWORD_LENGTH = 128;
 
 function publicAccount(account) {
   return {
@@ -62,7 +64,7 @@ function validateDeviceId(value) {
 
 function validatePassword(value) {
   const password = String(value || '');
-  return password.length >= 8 && password.length <= 128 ? password : '';
+  return password.length >= MIN_PASSWORD_LENGTH && password.length <= MAX_PASSWORD_LENGTH ? password : '';
 }
 
 export function createApp(options) {
@@ -185,7 +187,7 @@ export function createApp(options) {
           const username = String(body.username || '').trim();
           const password = validatePassword(body.password);
           const maxDevices = Math.max(1, Math.min(20, Number(body.maxDevices || 3)));
-          if (!username || username.length > 80 || !password) return sendJson(res, 400, { ok: false, code: 'INVALID_INPUT', message: '账号不能为空，密码至少 8 位' }, cors);
+          if (!username || username.length > 80 || !password) return sendJson(res, 400, { ok: false, code: 'INVALID_INPUT', message: '账号不能为空，密码至少 4 位' }, cors);
           try {
             const account = await store.createAccount({ username, password, maxDevices });
             return sendJson(res, 201, { ok: true, account: publicAccount(account) }, cors);
@@ -210,7 +212,7 @@ export function createApp(options) {
           if (req.method === 'POST' && action === 'password') {
             const body = await readJson(req);
             const password = validatePassword(body.password);
-            if (!password) return sendJson(res, 400, { ok: false, code: 'INVALID_PASSWORD', message: '新密码至少 8 位' }, cors);
+            if (!password) return sendJson(res, 400, { ok: false, code: 'INVALID_PASSWORD', message: '新密码至少 4 位' }, cors);
             const account = await store.resetPassword(id, password);
             if (!account) return sendJson(res, 404, { ok: false, code: 'NOT_FOUND', message: '账号不存在' }, cors);
             return sendJson(res, 200, { ok: true }, cors);
