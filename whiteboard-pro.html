@@ -142,6 +142,15 @@
   .recbtn.media-toggle.off .media-dot{background:#aaa;}
   .recbtn.media-toggle.busy{opacity:.7;cursor:wait;}
   .media-dot{position:absolute;right:8px;bottom:8px;width:8px;height:8px;border-radius:50%;background:#aaa;border:2px solid var(--panel);}
+  .account-wrap{position:relative;display:flex;align-items:center;}
+  .recbtn.account-btn{background:#f0eff5;color:var(--ink);min-width:64px;justify-content:center;padding:9px 13px;}
+  .recbtn.account-btn.pro{background:#edeafd;color:var(--accent);}
+  .recbtn.account-btn:hover{background:#e7e6ee;}
+  .account-menu{position:absolute;top:calc(100% + 8px);right:0;min-width:184px;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 14px 40px rgba(0,0,0,.16);padding:10px;display:none;z-index:70;}
+  .account-menu.show{display:block;}
+  .account-name{font-size:13px;font-weight:750;color:var(--ink);margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .account-menu button{width:100%;height:36px;border:0;border-radius:8px;background:#f0eff5;color:var(--ink);font-weight:700;cursor:pointer;}
+  .account-menu button:hover{background:#e7e6ee;}
   .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
   .recbtn[disabled]{opacity:.45;cursor:not-allowed;}
   .rec-dot{width:10px;height:10px;border-radius:50%;background:#fff;}
@@ -159,6 +168,9 @@
     .recbar{gap:6px;padding:0;}
     .recbar .recbtn{padding:8px 12px;}
     .recbar #recSettings,.recbar .recbtn.media-toggle{width:40px;height:40px;padding:0;justify-content:center;}
+    .recbar .recbtn.account-btn{min-width:40px;width:40px;height:40px;padding:0;font-size:0;}
+    .recbar .recbtn.account-btn::before{content:"Pro";font-size:12px;font-weight:800;}
+    .recbar .recbtn.account-btn:not(.pro)::before{content:"登录";font-size:11px;}
     .recbar .recbtn.media-toggle svg{width:20px;height:20px;}
   }
 
@@ -690,6 +702,13 @@
     <span class="media-dot"></span>
     <span class="sr-only" id="mediaToggleText">摄像头/麦克风 关</span>
   </button>
+  <div class="account-wrap" id="accountWrap">
+    <button class="recbtn account-btn" id="accountBtn" type="button" aria-haspopup="menu" aria-expanded="false">登录</button>
+    <div class="account-menu" id="accountMenu" role="menu">
+      <div class="account-name" id="accountName">Pro</div>
+      <button id="accountLogout" type="button" role="menuitem">退出登录</button>
+    </div>
+  </div>
   <span class="timer" id="timer">00:00</span>
   <button class="recbtn primary-green" id="recStart"><span class="rec-dot"></span> 录制</button>
   <button class="recbtn ghost hidden" id="recCancel">✕ 取消</button>
@@ -901,15 +920,16 @@
 
 /* ----------------------------- PLAN / ENTITLEMENTS --------------------- */
 const STATIC_SESSION_KEY='wb_static_pro_session';
-function staticProSessionActive(){
+function getStaticProSession(){
   try{
     const session=JSON.parse(localStorage.getItem(STATIC_SESSION_KEY)||'null');
-    if(session&&session.plan==='pro'&&session.expiresAt>Date.now())return true;
+    if(session&&session.plan==='pro'&&session.expiresAt>Date.now())return session;
   }catch(_error){}
   localStorage.removeItem(STATIC_SESSION_KEY);
-  return false;
+  return null;
 }
-const APP_PLAN=staticProSessionActive()?'pro':((document.querySelector('meta[name="whiteboard-plan"]')||{}).content||'free');
+const STATIC_PRO_SESSION=getStaticProSession();
+const APP_PLAN=STATIC_PRO_SESSION?'pro':((document.querySelector('meta[name="whiteboard-plan"]')||{}).content||'free');
 const IS_PRO=APP_PLAN==='pro';
 const LOCAL_API_HOSTS=new Set(['localhost','127.0.0.1']);
 function resolveApiBase(){
@@ -992,6 +1012,53 @@ async function loadProtectedProApp(){
   const html=await response.text();
   document.open(); document.write(html); document.close();
 }
+function openStaticProLogin(){
+  if(IS_PRO) return;
+  const overlay=document.getElementById('proUpgradeOverlay');
+  const reason=document.getElementById('proUpgradeReason');
+  const status=document.getElementById('proLoginStatus');
+  if(reason) reason.textContent='登录 Pro 账号后解锁完整功能。';
+  if(status){ status.textContent=''; status.classList.remove('error'); }
+  overlay?.classList.add('show');
+  document.getElementById('proLoginForm')?.classList.add('show');
+  setTimeout(()=>document.getElementById('proUsername')?.focus(),0);
+}
+function wireAccountEntry(){
+  const wrap=document.getElementById('accountWrap');
+  const btn=document.getElementById('accountBtn');
+  const menu=document.getElementById('accountMenu');
+  const name=document.getElementById('accountName');
+  const logout=document.getElementById('accountLogout');
+  if(!wrap||!btn) return;
+  const closeMenu=()=>{menu?.classList.remove('show'); btn.setAttribute('aria-expanded','false');};
+  if(IS_PRO){
+    const username=STATIC_PRO_SESSION?.username||'Pro';
+    btn.classList.add('pro');
+    btn.textContent=username==='Pro'?'Pro':`Pro · ${username}`;
+    btn.title=`Pro 账号：${username}`;
+    btn.setAttribute('aria-label',`Pro 账号：${username}`);
+    if(name) name.textContent=`Pro · ${username}`;
+    btn.addEventListener('click',e=>{
+      e.stopPropagation();
+      const next=!menu?.classList.contains('show');
+      menu?.classList.toggle('show',next);
+      btn.setAttribute('aria-expanded',String(next));
+    });
+    logout?.addEventListener('click',()=>{
+      localStorage.removeItem(STATIC_SESSION_KEY);
+      closeMenu();
+      location.reload();
+    });
+    document.addEventListener('pointerdown',e=>{ if(!wrap.contains(e.target)) closeMenu(); });
+    document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeMenu(); });
+  }else{
+    btn.textContent='登录';
+    btn.title='登录 Pro';
+    btn.setAttribute('aria-label','登录 Pro');
+    menu?.remove();
+    btn.addEventListener('click',openStaticProLogin);
+  }
+}
 function wireUpgradeModal(){
   const overlay=document.getElementById('proUpgradeOverlay');
   const close=()=>overlay&&overlay.classList.remove('show');
@@ -1001,10 +1068,7 @@ function wireUpgradeModal(){
   document.getElementById('proUpgradeClose')?.addEventListener('click',close);
   document.getElementById('proContinue')?.addEventListener('click',close);
   overlay?.addEventListener('pointerdown',e=>{ if(e.target===overlay) close(); });
-  document.getElementById('proLoginOpen')?.addEventListener('click',()=>{
-    document.getElementById('proLoginForm')?.classList.add('show');
-    document.getElementById('proUsername')?.focus();
-  });
+  document.getElementById('proLoginOpen')?.addEventListener('click',openStaticProLogin);
   document.getElementById('proLoginForm')?.addEventListener('submit',async e=>{
     e.preventDefault();
     const status=document.getElementById('proLoginStatus'), submit=e.currentTarget.querySelector('button');
@@ -1017,6 +1081,7 @@ function wireUpgradeModal(){
   });
 }
 wireUpgradeModal();
+wireAccountEntry();
 
 /* ----------------------------- STATE ----------------------------------- */
 const COLORS = ['#1e1e1e','#e03131','#2f9e44','#1971c2','#f08c00','#ffffff'];
