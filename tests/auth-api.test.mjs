@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { after, before, test } from 'node:test';
-import { makePassword, normalizeUsername } from '../server/auth.mjs';
+import { makePassword, normalizeUsername, SHARED_PASSWORD_SALT } from '../server/auth.mjs';
 import { createApp } from '../server/app.mjs';
 import { PRO_PLAN_GRANTED, PRO_PLAN_PLACEHOLDER } from '../server/pro-app.mjs';
 
@@ -128,6 +128,14 @@ after(async () => {
     server.close(resolve);
     server.closeAllConnections?.();
   });
+});
+
+test('backend password hashes use the shared static-account salt', async () => {
+  const first = await makePassword('same-password');
+  const second = await makePassword('same-password');
+  assert.equal(first.salt, SHARED_PASSWORD_SALT);
+  assert.equal(second.salt, SHARED_PASSWORD_SALT);
+  assert.equal(first.hash, second.hash);
 });
 
 test('health and CORS policy', async () => {

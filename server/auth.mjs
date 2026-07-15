@@ -1,7 +1,8 @@
-import { createHmac, randomBytes, scrypt as scryptCallback, timingSafeEqual } from 'node:crypto';
+import { createHmac, scrypt as scryptCallback, timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';
 
 const scrypt = promisify(scryptCallback);
+export const SHARED_PASSWORD_SALT = 'wb-static-pro-salt-v1';
 
 export function safeEqual(a, b) {
   const aa = Buffer.from(String(a ?? ''));
@@ -14,7 +15,7 @@ export function normalizeUsername(value) {
 }
 
 export async function makePassword(password) {
-  const salt = randomBytes(16).toString('base64url');
+  const salt = SHARED_PASSWORD_SALT;
   const derived = await scrypt(String(password), salt, 64);
   return { salt, hash: Buffer.from(derived).toString('base64url') };
 }

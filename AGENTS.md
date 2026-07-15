@@ -42,6 +42,9 @@ npm start
 - **商业化 MVP(2026-07-14)**：已完成静态登录/购买入口、统一 entitlement 层、30 秒录制限制与右上/右下角轻水印、最多 3 张幻灯片、整屏裁剪/动态流动线条/幻灯片笔迹/完整贴纸分组等权限控制；已完成 Node + Neon 账号/设备服务、受保护应用响应和管理后台。账号默认 3 台设备，测试账号可设为 1 台；密码、停用、清空设备都会使旧会话失效。公共发布使用白名单构建，受保护内容不进入 Static Site。18 项自动测试已通过。
 - **本地优先、Neon 兜底登录(2026-07-15)**：`index.html` 与 `whiteboard-pro.html` 登录时先读取同目录 `accounts.json`（读取失败可回退管理工具写入的本机缓存）；静态账号通过即写入 365 天 `wb_static_pro_session` 并放行，不请求后端；账号不存在、停用或密码不匹配时才请求 Node `/api/login` 由 Neon 校验。Neon 成功继续使用 HttpOnly Cookie 和服务端 `/api/app` Pro 标记，页面启动无静态会话时才检查 `/api/session`；白板账户入口会按来源清除静态会话或调用 `/api/logout`。针对性自动测试覆盖静态短路、三种兜底、服务端错误不提权、会话恢复和退出 Cookie。
 - **密码最小长度统一(2026-07-15)**：所有登录入口、静态/后端账号管理页与 Node 管理 API 统一为至少 4 位（后端上限 128 位）；`account-admin1.html` 手动合并会拒绝少于 4 位的密码。针对性验证共 20 项通过，覆盖 4 位密码创建/登录成功、3 位密码被拒绝及发布入口无残留 8 位限制。
+- **静态账号单条哈希(2026-07-15)**：`account-admin1.html` 新增「单条哈希」标签，可输入单个用户名、至少 4 位明文密码和盐值，按 WhiteBoard 的 `SHA-256(salt:usernameLowercase:password)` 公式生成并单独复制 64 位 `h`；该操作只计算、不合并或改写 `accounts.json`，输入变化后旧哈希会立即失效。
+- **账号盐值统一(2026-07-15)**：静态账号和 Node/Neon 后端新建/改密账号统一使用 `wb-static-pro-salt-v1`；静态链路仍用 `SHA-256(salt:usernameLowercase:password)`，后端仍用 scrypt，因此仅盐值统一、哈希格式不同。后端验证继续读取数据库已存 salt 以兼容旧账号；旧账号重设一次密码后即切换为统一盐。`account-admin1.html` 生成页会实时显示当前 `accounts.json.salt` 并说明两套算法共用同一盐值。
+- **现有 Neon 账号迁移(2026-07-16)**：Neon 当前仅有 `admin` 一个账号，已按用户确认强制重置密码并用 scrypt 重算哈希，`password_salt` 已更新为 `wb-static-pro-salt-v1`；数据库回读验证新密码通过，`session_version` 从 5 增至 6，旧登录会话已失效。`wbpro001`–`wbpro010` 仍是静态账号，未写入 Neon。
 - **静态 Pro 账号临时方案(2026-07-15)**：按用户要求新增独立于 Neon/Node 的 `accounts.json` 静态登录链路；`index.html` 与 `whiteboard-pro.html` 可用 hash 账号登录解锁 Pro 且不限制设备数；`whiteboard-pro.html` 右下角有独立浮动账户入口，免费态点「登录」打开现有 Pro 登录弹窗，Pro 态显示账号并可清除 `wb_static_pro_session` 退出，避免继续挤压右上录制控制区；新增 `account-admin1.html` 用于生成/合并/验证 `accounts.json`，并统一维护 `purchase.price` / `purchase.wechat` 供白板付费提示读取。离线本机即时生效采用 `localStorage` + `BroadcastChannel('wb_static_admin_cfg')` 同步到已打开的白板页；Chrome/Edge 可绑定/选择并覆盖本地 `accounts.json`，不支持时下载文件手动替换；线上/GitHub 部署仍由白板读取同目录 `accounts.json` 生效。不改 `account-admin.html` 后端管理页。当前 11 个 Pro 账号已写入 `accounts.json`，明文清单保存在 `docs/STATIC_PRO_ACCOUNTS.md`。
 - `whiteboard.html` 与初始 `whiteboard-pro.html` 已实现 M0~M3 + 迭代二（手绘风格 + 录制比例/背景/取景框）+ 迭代三（绘图样式面板、摄像头可拖拽缩放、更细真实手绘线条、完整录制设置）+ 贴图功能 + 指针选择/Delete 删除对象 + 菱形/直线工具 + 丰富文本样式 + 对象缩放/旋转（各自为独立单文件应用）。
 - 迭代三录制设置已补齐并接入真实合成：比例含 `Custom` 自定义；背景含分类筛选、随机壁纸、离线程序纹理/渐变/纯色/无；白卡片支持圆角半径与画布边距；摄像头支持录制开关、大小、圆形/方形；麦克风下拉由 `populateDevices()` 填充；录制光标高亮支持开关和颜色。
@@ -131,6 +134,9 @@ npm start
 
 | 日期 | 变更内容 |
 |------|---------|
+| 2026-07-16 | 完成现有 Neon `admin` 账号盐值迁移：按用户确认强制重置密码并以共享盐重算 scrypt 哈希，回读验证通过且递增会话版本使旧登录失效；why：让现有后端账号立即与新建/改密账号使用同一盐值，而非等待下次改密 |
+| 2026-07-15 | 将静态账号与 Node/Neon 后端新建/改密账号的盐值统一为 `wb-static-pro-salt-v1`，生成页实时展示并说明两边算法不同但盐值相同；后端验证保留读取旧 salt 的兼容路径；why：按用户要求简化账号盐值规则，同时避免已有后端账号立即失效 |
+| 2026-07-15 | 参考 PoemGraph 账号工具为 `account-admin1.html` 新增「单条哈希」：输入单个用户名/密码/盐值后按 WhiteBoard 专用公式生成并复制纯 64 位 `h`，明确提示不会自动修改 accounts.json，输入变化即作废旧结果；why：方便按需创建或替换单个静态账号，避免必须走批量合并且反馈位置不明显 |
 | 2026-07-15 | 将全系统密码最小长度从 8 位统一降为 4 位：同步登录入口、静态/后端管理页、Node 创建与改密校验及提示文案，并新增 4 位通过/3 位拒绝的自动测试；why：账号发放只需保留 4 位最低限制，避免浏览器与后端规则不一致 |
 | 2026-07-15 | 完善静态购买提示配置：`account-admin1.html` 修改价格/微信号会写入本机缓存并通过 `BroadcastChannel` 通知白板页即时刷新，支持绑定/选择并覆盖本地 `accounts.json`，不支持时下载文件；why：静态网页不能无权限直接写 GitHub 或任意本地文件，但用户需要离线测试时配置立刻生效 |
 | 2026-07-15 | 登录改为本地 `accounts.json` 优先、Node/Neon 兜底，并补齐服务端会话恢复与按来源退出；why：本地测试无需启动数据库，同时保留正式账号、设备限制和会话失效能力 |

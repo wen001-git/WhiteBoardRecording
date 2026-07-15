@@ -14,12 +14,12 @@
     :root{--ink:#1e1e1e;--muted:#77736d;--line:#e7e3dc;--soft:#f6f4f0;--accent:#5b57d6;--accent-soft:#e7e5ff;--good:#16803c;--danger:#c8322b}
     *{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink);background:#f7f6f3}
     body{padding:24px}.page{width:min(1120px,100%);margin:auto}.topbar{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px}.topbar h1{font-size:25px;margin:0 0 6px}.topbar p{margin:0;color:var(--muted);font-size:13px;line-height:1.6}.status{min-height:22px;color:var(--muted);font-size:13px;text-align:right}.status.error{color:var(--danger)}
-    .warn{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;padding:13px 15px;border-radius:10px;margin-bottom:16px;font-size:13px;line-height:1.65}.warn b{color:#7c2d12}
-    .tabs{display:flex;gap:6px;border-bottom:1px solid var(--line);margin-bottom:18px}.tab{height:42px;border:0;background:transparent;color:var(--muted);font:inherit;font-weight:700;padding:0 16px;cursor:pointer;border-bottom:2px solid transparent}.tab.on{color:var(--accent);border-bottom-color:var(--accent)}
+    .warn{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;padding:13px 15px;border-radius:10px;margin-bottom:16px;font-size:13px;line-height:1.65}.warn b{color:#7c2d12}.salt-note{margin:0 0 15px;padding:12px 14px;border:1px solid #d8d5ff;border-radius:8px;background:#f4f3ff;color:#353172;font-size:13px;line-height:1.65}.salt-note code{display:inline-block;margin:0 4px;padding:2px 7px;border-radius:5px;background:#fff;border:1px solid #d8d5ff;color:#29258a;font-weight:800;word-break:break-all}
+    .tabs{display:flex;flex-wrap:wrap;gap:6px;border-bottom:1px solid var(--line);margin-bottom:18px}.tab{height:42px;border:0;background:transparent;color:var(--muted);font:inherit;font-weight:700;padding:0 16px;cursor:pointer;border-bottom:2px solid transparent}.tab.on{color:var(--accent);border-bottom-color:var(--accent)}
     .panel{display:none}.panel.on{display:block}.card{background:#fff;border:1px solid var(--line);box-shadow:0 10px 34px rgba(35,31,46,.08);padding:20px;margin-bottom:16px;border-radius:10px}.card h2{font-size:16px;margin:0 0 14px}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.field{display:grid;gap:6px}.field label{font-size:12px;font-weight:800;color:#58544f}.field input,.field select,textarea{border:1px solid #d8d4ce;border-radius:8px;padding:10px 11px;font:inherit;background:#fff;color:var(--ink);outline:none}.field input,.field select{height:42px}.field input:focus,.field select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(91,87,214,.12)}
     textarea{width:100%;min-height:142px;resize:vertical;font-family:ui-monospace,"SF Mono",Consolas,monospace;font-size:12px;line-height:1.55;white-space:pre;overflow:auto}.row{display:grid;grid-template-columns:1fr 1fr;gap:14px}.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
     button{font:inherit;font-weight:800;cursor:pointer;border-radius:8px;height:40px;padding:0 14px;border:1px solid var(--line);background:#fff;color:var(--ink)}button:hover{background:#f7f6fa}button:disabled{opacity:.45;cursor:not-allowed}.primary{background:var(--ink);border-color:var(--ink);color:#fff}.accent{background:var(--accent);border-color:var(--accent);color:#fff}.danger{color:var(--danger)}.ghost{background:#fff}.pill{display:inline-flex;align-items:center;gap:6px;background:var(--accent-soft);color:#29258a;border-radius:999px;padding:3px 9px;font-size:12px;font-weight:800}
-    .out{font-family:ui-monospace,"SF Mono",Consolas,monospace;font-size:12px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:12px;white-space:pre;overflow:auto;min-height:180px;max-height:390px;line-height:1.5}.out.empty{color:var(--muted);font-family:inherit;white-space:normal}.account-list{display:grid;gap:8px}.account-row{display:grid;grid-template-columns:minmax(120px,.8fr) minmax(180px,1fr) auto;gap:10px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:9px 11px;background:#fff}.account-row code{font-family:ui-monospace,"SF Mono",Consolas,monospace}.ok{color:var(--good)}.bad{color:var(--danger)}.hint{color:var(--muted);font-size:12px;line-height:1.6;margin-top:9px}
+    .out{font-family:ui-monospace,"SF Mono",Consolas,monospace;font-size:12px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:12px;white-space:pre;overflow:auto;min-height:180px;max-height:390px;line-height:1.5}.out.empty{color:var(--muted);font-family:inherit;white-space:normal}.out.compact{min-height:52px;white-space:pre-wrap;word-break:break-all}.account-list{display:grid;gap:8px}.account-row{display:grid;grid-template-columns:minmax(120px,.8fr) minmax(180px,1fr) auto;gap:10px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:9px 11px;background:#fff}.account-row code{font-family:ui-monospace,"SF Mono",Consolas,monospace}.ok{color:var(--good)}.bad{color:var(--danger)}.hint{color:var(--muted);font-size:12px;line-height:1.6;margin-top:9px}
     @media(max-width:820px){body{padding:10px}.topbar{display:block}.status{text-align:left;margin-top:8px}.grid,.row{grid-template-columns:1fr}.account-row{grid-template-columns:1fr}}
   </style>
 </head>
@@ -53,12 +53,17 @@
   <div class="tabs">
     <button class="tab on" data-tab="generate">生成账号</button>
     <button class="tab" data-tab="manual">手动合并</button>
+    <button class="tab" data-tab="single">单条哈希</button>
     <button class="tab" data-tab="verify">验证账号</button>
   </div>
 
   <section class="panel on" data-panel="generate">
     <div class="card">
       <h2>一键生成 Pro 账号</h2>
+      <div class="salt-note">
+        <b>本页静态账号统一盐值：</b><code id="generateSaltValue">wb-static-pro-salt-v1</code><br>
+        该值实时读取自当前 <code>accounts.json</code> 的顶层 <code>salt</code> 字段。「生成账号」只先生成明文；点击“合并并输出”时，生成账号和手动合并都会用这个盐值计算哈希。静态账号与新建/改密后的 Node/Neon 后端账号统一使用此盐值；两边哈希算法不同，但盐值相同。
+      </div>
       <div class="grid">
         <div class="field"><label for="genCount">生成数量</label><input id="genCount" type="number" min="1" max="50" value="10"></div>
         <div class="field"><label for="genPrefix">用户名前缀</label><input id="genPrefix" value="wbpro"></div>
@@ -117,6 +122,26 @@ student002:MyPass-002"></textarea>
     </div>
   </section>
 
+  <section class="panel" data-panel="single">
+    <div class="card">
+      <h2>生成单个账号哈希</h2>
+      <div class="grid">
+        <div class="field"><label for="singleUsername">用户名</label><input id="singleUsername" placeholder="如 admin" autocomplete="off"></div>
+        <div class="field"><label for="singlePassword">明文密码（至少 4 位）</label><input id="singlePassword" type="password" placeholder="如 2009" minlength="4" autocomplete="new-password"></div>
+        <div class="field"><label for="singleSalt">盐值（默认同步 accounts.json）</label><input id="singleSalt" value="wb-static-pro-salt-v1" spellcheck="false"></div>
+        <div class="field"><label>&nbsp;</label><button class="primary" id="singleHashBtn" type="button">生成哈希</button></div>
+      </div>
+      <p class="hint">按 <code>SHA-256(salt:usernameLowercase:password)</code> 生成；这里只计算一条哈希，不会合并、保存或改写 <code>accounts.json</code>。</p>
+      <div class="field" style="margin-top:14px">
+        <label for="singleHashOutput">哈希值（粘贴到该账号的 <code>h</code> 字段）</label>
+        <div class="out compact empty" id="singleHashOutput" role="status" aria-live="polite">等待输入用户名和密码…</div>
+      </div>
+      <div class="btn-row">
+        <button id="copySingleHashBtn" type="button" disabled>复制哈希</button>
+      </div>
+    </div>
+  </section>
+
   <section class="panel" data-panel="verify">
     <div class="card">
       <h2>验证某个账号密码</h2>
@@ -150,9 +175,21 @@ const jsonOut=document.getElementById('jsonOut');
 const accountList=document.getElementById('accountList');
 const purchasePrice=document.getElementById('purchasePrice');
 const purchaseWechat=document.getElementById('purchaseWechat');
+const generateSaltValue=document.getElementById('generateSaltValue');
+const singleHashOutput=document.getElementById('singleHashOutput');
+const copySingleHashBtn=document.getElementById('copySingleHashBtn');
 let generatedPlain=[];
 let accountsFileHandle=null;
+let singleHashValue='';
 function status(message,error=false){statusEl.textContent=message;statusEl.classList.toggle('error',error)}
+function resetSingleHashResult(message='输入已修改，请重新生成哈希。'){
+  if(!singleHashValue)return;
+  singleHashValue='';
+  singleHashOutput.textContent=message;
+  singleHashOutput.className='out compact empty';
+  copySingleHashBtn.disabled=true;
+  copySingleHashBtn.textContent='复制哈希';
+}
 function normalizeUsername(value){return String(value||'').trim().toLowerCase()}
 function escapeHtml(value){return String(value??'').replace(/[&<>'"]/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]))}
 function normalizePurchase(value){
@@ -169,6 +206,15 @@ function syncPurchaseInputs(purchase){
   const next=normalizePurchase(purchase);
   purchasePrice.value=next.price;
   purchaseWechat.value=next.wechat;
+}
+function syncStaticSaltInfo(data){
+  const salt=String(data&&data.salt||DEFAULT_SALT).trim()||DEFAULT_SALT;
+  generateSaltValue.textContent=salt;
+  const singleSalt=document.getElementById('singleSalt');
+  if(singleSalt.value!==salt){
+    singleSalt.value=salt;
+    resetSingleHashResult('accounts.json 盐值已变化，请重新生成哈希。');
+  }
 }
 function saveLocalStaticConfig(data){
   const normalized={...data,purchase:normalizePurchase(data)};
@@ -219,6 +265,7 @@ function setOutput(data){
   jsonOut.textContent=JSON.stringify(normalized,null,2);
   jsonOut.classList.remove('empty');
   syncPurchaseInputs(normalized.purchase);
+  syncStaticSaltInfo(normalized);
   saveLocalStaticConfig(normalized);
   renderAccounts(normalized);
 }
@@ -280,6 +327,7 @@ async function loadExisting(){
     const normalized=parseJsonInput();
     existingJson.value=JSON.stringify(normalized,null,2);
     syncPurchaseInputs(normalized.purchase);
+    syncStaticSaltInfo(normalized);
     renderAccounts(normalized);
     status(`已读取 ${ACCOUNT_URL}`);
   }catch(error){
@@ -287,6 +335,7 @@ async function loadExisting(){
     const fallback=local&&Array.isArray(local.accounts)?{...local,purchase:normalizePurchase(local)}:DEFAULT_EMPTY;
     existingJson.value=JSON.stringify(fallback,null,2);
     syncPurchaseInputs(fallback.purchase);
+    syncStaticSaltInfo(fallback);
     renderAccounts(fallback);
     status(local?`未能读取 ${ACCOUNT_URL}，已使用本机缓存`:`未能读取 ${ACCOUNT_URL}，已使用空模板`,true);
   }
@@ -380,11 +429,58 @@ document.getElementById('manualMergeBtn').onclick=async()=>{
     status(`已手动合并 ${rows.length} 个账号`);
   }catch(error){status(error.message,true)}
 };
+document.getElementById('singleHashBtn').onclick=async()=>{
+  const username=document.getElementById('singleUsername').value.trim();
+  const user=normalizeUsername(username);
+  const password=document.getElementById('singlePassword').value;
+  const salt=document.getElementById('singleSalt').value.trim();
+  singleHashValue='';
+  copySingleHashBtn.disabled=true;
+  if(!username||!password||!salt){
+    singleHashOutput.textContent='用户名、密码和盐值都要填写。';
+    singleHashOutput.className='out compact bad';
+    status('单条哈希生成失败：请填写完整信息',true);
+    return;
+  }
+  if(password.length<MIN_PASSWORD_LENGTH){
+    singleHashOutput.textContent=`密码至少需要 ${MIN_PASSWORD_LENGTH} 位。`;
+    singleHashOutput.className='out compact bad';
+    status(`单条哈希生成失败：密码至少 ${MIN_PASSWORD_LENGTH} 位`,true);
+    return;
+  }
+  try{
+    singleHashValue=await sha256Hex(`${salt}:${user}:${password}`);
+    singleHashOutput.textContent=singleHashValue;
+    singleHashOutput.className='out compact';
+    copySingleHashBtn.disabled=false;
+    status(`已为账号 ${username} 生成单条哈希；尚未修改 accounts.json`);
+  }catch(error){
+    singleHashOutput.textContent=error.message||'哈希生成失败';
+    singleHashOutput.className='out compact bad';
+    status(error.message||'哈希生成失败',true);
+  }
+};
+copySingleHashBtn.onclick=async()=>{
+  if(!singleHashValue)return;
+  try{
+    await copyText(singleHashValue);
+    copySingleHashBtn.textContent='已复制哈希';
+    status('已复制 64 位哈希，可粘贴到 accounts.json 的 h 字段');
+    setTimeout(()=>{copySingleHashBtn.textContent='复制哈希'},1500);
+  }catch(error){status('复制失败，请手动选择哈希文本复制',true)}
+};
+['singleUsername','singlePassword','singleSalt'].forEach(id=>{
+  document.getElementById(id).addEventListener('input',()=>resetSingleHashResult());
+});
 document.getElementById('loadExistingBtn').onclick=loadExisting;
 document.getElementById('formatExistingBtn').onclick=()=>{
-  try{const data=parseJsonInput();existingJson.value=JSON.stringify(data,null,2);syncPurchaseInputs(data.purchase);renderAccounts(data);status('已格式化 JSON');}
+  try{const data=parseJsonInput();existingJson.value=JSON.stringify(data,null,2);syncPurchaseInputs(data.purchase);syncStaticSaltInfo(data);renderAccounts(data);status('已格式化 JSON');}
   catch(error){status('JSON 格式不正确',true)}
 };
+existingJson.addEventListener('input',()=>{
+  try{syncStaticSaltInfo(parseJsonInput())}
+  catch(_error){generateSaltValue.textContent='当前 JSON 格式不正确'}
+});
 document.getElementById('savePurchaseBtn').onclick=async()=>{
   try{
     const data=dataForPurchaseSave();

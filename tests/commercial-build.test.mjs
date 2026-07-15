@@ -146,6 +146,18 @@ test('static account admin manages accounts.json without backend API', async () 
   assert.match(html, /accountsFileHandle/);
   assert.match(html, /const MIN_PASSWORD_LENGTH=4/);
   assert.match(html, /密码至少 4 位/);
+  assert.match(html, /data-tab="single"/);
+  assert.match(html, /id="singleUsername"/);
+  assert.match(html, /id="singlePassword"[^>]*minlength="4"/);
+  assert.match(html, /id="singleSalt"[^>]*value="wb-static-pro-salt-v1"/);
+  assert.match(html, /id="singleHashOutput"/);
+  assert.match(html, /id="copySingleHashBtn"/);
+  assert.match(html, /sha256Hex\(`\$\{salt\}:\$\{user\}:\$\{password\}`\)/);
+  assert.match(html, /尚未修改 accounts\.json/);
+  assert.match(html, /id="generateSaltValue"/);
+  assert.match(html, /本页静态账号统一盐值/);
+  assert.match(html, /Node\/Neon 后端账号统一使用此盐值/);
+  assert.match(html, /function syncStaticSaltInfo\(data\)/);
   assert.match(html, /localStorage\.setItem\(LOCAL_PURCHASE_KEY/);
   assert.doesNotMatch(html, /\/api\/admin/);
   assert.doesNotMatch(html, /ADMIN_TOKEN/);
