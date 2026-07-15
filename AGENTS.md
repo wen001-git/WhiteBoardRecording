@@ -40,7 +40,7 @@ npm start
 
 ## 当前状态
 - **商业化 MVP(2026-07-14)**：已完成静态登录/购买入口、统一 entitlement 层、30 秒录制限制与右上/右下角轻水印、最多 3 张幻灯片、整屏裁剪/动态流动线条/幻灯片笔迹/完整贴纸分组等权限控制；已完成 Node + Neon 账号/设备服务、受保护应用响应和管理后台。账号默认 3 台设备，测试账号可设为 1 台；密码、停用、清空设备都会使旧会话失效。公共发布使用白名单构建，受保护内容不进入 Static Site。18 项自动测试已通过。
-- **静态 Pro 账号临时方案(2026-07-15)**：按用户要求新增独立于 Neon/Node 的 `accounts.json` 静态登录链路；`index.html` 与 `whiteboard-pro.html` 可用 hash 账号登录解锁 Pro 且不限制设备数；`whiteboard-pro.html` 右下角有独立浮动账户入口，免费态点「登录」打开现有 Pro 登录弹窗，Pro 态显示账号并可清除 `wb_static_pro_session` 退出，避免继续挤压右上录制控制区；新增 `account-admin1.html` 用于生成/合并/验证 `accounts.json`，不改 `account-admin.html` 后端管理页。10 个初始 Pro 账号已写入 `accounts.json`，明文清单保存在 `docs/STATIC_PRO_ACCOUNTS.md`。
+- **静态 Pro 账号临时方案(2026-07-15)**：按用户要求新增独立于 Neon/Node 的 `accounts.json` 静态登录链路；`index.html` 与 `whiteboard-pro.html` 可用 hash 账号登录解锁 Pro 且不限制设备数；`whiteboard-pro.html` 右下角有独立浮动账户入口，免费态点「登录」打开现有 Pro 登录弹窗，Pro 态显示账号并可清除 `wb_static_pro_session` 退出，避免继续挤压右上录制控制区；新增 `account-admin1.html` 用于生成/合并/验证 `accounts.json`，并统一维护 `purchase.price` / `purchase.wechat` 供白板离线读取并更新付费提示语；不改 `account-admin.html` 后端管理页。10 个初始 Pro 账号已写入 `accounts.json`，明文清单保存在 `docs/STATIC_PRO_ACCOUNTS.md`。
 - `whiteboard.html` 与初始 `whiteboard-pro.html` 已实现 M0~M3 + 迭代二（手绘风格 + 录制比例/背景/取景框）+ 迭代三（绘图样式面板、摄像头可拖拽缩放、更细真实手绘线条、完整录制设置）+ 贴图功能 + 指针选择/Delete 删除对象 + 菱形/直线工具 + 丰富文本样式 + 对象缩放/旋转（各自为独立单文件应用）。
 - 迭代三录制设置已补齐并接入真实合成：比例含 `Custom` 自定义；背景含分类筛选、随机壁纸、离线程序纹理/渐变/纯色/无；白卡片支持圆角半径与画布边距；摄像头支持录制开关、大小、圆形/方形；麦克风下拉由 `populateDevices()` 填充；录制光标高亮支持开关和颜色。
 - `drawRecFrame()` 已读取上述 `recConfig` 字段，导出画面会同步设置面板中的背景、白卡片边距/圆角、摄像头形状/大小/开关、光标高亮；提词器仍不入录像。
@@ -96,7 +96,7 @@ npm start
 
 ## 文件地图
 - 根目录 HTML — 登录/购买入口、管理页与可独立运行的白板应用；不要在文档中标注各应用文件的商业版本归属。
-- `accounts.json` / `account-admin1.html` — 临时静态 Pro 账号文件与本地生成工具；只保存哈希，明文账号清单在 `docs/STATIC_PRO_ACCOUNTS.md`，正式付费后应迁回后端账号体系。
+- `accounts.json` / `account-admin1.html` — 临时静态 Pro 账号文件与本地生成工具；只保存哈希，顶层 `purchase.price/wechat` 供白板离线读取并更新付费提示，明文账号清单在 `docs/STATIC_PRO_ACCOUNTS.md`，正式付费后应迁回后端账号体系。
 - `server/` — Node 账号 API、Neon schema、密码/会话/设备授权。
 - `scripts/build-static.mjs` — Static Site 发布白名单构建，产物目录 `.render-static/` 不提交。
 - `tests/` — 账号 API、设备限制、权限、发布白名单和内联 JS 自动测试。

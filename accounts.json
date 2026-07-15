@@ -2,6 +2,10 @@
   "version": 1,
   "app": "whiteboard-recording",
   "salt": "wb-static-pro-salt-v1",
+  "purchase": {
+    "price": "59",
+    "wechat": "leewen2017"
+  },
   "accounts": [
     {
       "u": "wbpro001",

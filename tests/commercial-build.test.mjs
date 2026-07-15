@@ -44,12 +44,11 @@ test('private app is full-featured while the commercial template fails closed', 
   assert.equal(commercialTemplate.split(PRO_PLAN_PLACEHOLDER).length - 1, 1);
   assert.match(
     commercialTemplate,
-    /const PRO_PURCHASE_MESSAGE='创作不易，请加作者微信购买，39元解锁全部功能。'/,
+    /const DEFAULT_PURCHASE_CONFIG=\{price:'39',wechat:'leewen2017'\}/,
   );
-  assert.match(
-    commercialTemplate,
-    /purchaseMessage\.textContent\s*=\s*PRO_PURCHASE_MESSAGE/,
-  );
+  assert.match(commercialTemplate, /function loadPurchaseConfig\(\)/);
+  assert.match(commercialTemplate, /purchaseMessageFromConfig\(\)/);
+  assert.match(commercialTemplate, /id="proWechatId"/);
   assert.match(commercialTemplate, /id="accountBtn"/);
   assert.match(commercialTemplate, /id="accountLogout"/);
   assert.match(commercialTemplate, /function openStaticProLogin\(\)/);
@@ -99,6 +98,7 @@ test('admin token remains session-only and new accounts default to three devices
 
 test('static Pro accounts contain ten enabled hashed accounts without plaintext passwords', async () => {
   const data = JSON.parse(await source('accounts.json'));
+  assert.deepEqual(data.purchase, { price: '39', wechat: 'leewen2017' });
   assert.equal(data.accounts.length, 10);
   assert.ok(data.accounts.every(account => account.enabled === true));
   assert.ok(data.accounts.every(account => account.plan === 'pro'));
@@ -111,6 +111,10 @@ test('static account admin manages accounts.json without backend API', async () 
   assert.match(html, /accounts\.json/);
   assert.match(html, /wb-static-pro-salt-v1/);
   assert.match(html, /SHA-256\(salt:usernameLowercase:password\)/);
+  assert.match(html, /id="purchasePrice"/);
+  assert.match(html, /id="purchaseWechat"/);
+  assert.match(html, /function purchaseFromInputs\(\)/);
+  assert.match(html, /purchase:purchaseFromInputs\(\)/);
   assert.doesNotMatch(html, /\/api\/admin/);
   assert.doesNotMatch(html, /ADMIN_TOKEN/);
 });
