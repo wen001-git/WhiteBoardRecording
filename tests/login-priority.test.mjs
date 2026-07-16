@@ -8,7 +8,7 @@ import vm from 'node:vm';
 const root = resolve(import.meta.dirname, '..');
 const html = await readFile(resolve(root, 'index.html'), 'utf8');
 const inlineScript = html.match(/<script>([\s\S]*?)<\/script>/i)?.[1]
-  .replace(/\s*checkSession\(\);\s*$/, '');
+  .replace(/\s*loadPaywallConfig\(\);\s*checkSession\(\);\s*$/, '');
 
 function response(status, data = {}) {
   return {

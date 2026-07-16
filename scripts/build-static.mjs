@@ -6,6 +6,7 @@ const output = resolve(root, '.render-static');
 const publishFiles = [
   ['index.html', 'index.html'],
   ['accounts.json', 'accounts.json'],
+  ['paywall.json', 'paywall.json'],
   ['whiteboard-pro.html', 'app.html'],
   ['account-admin.html', 'account-admin.html'],
   ['account-admin1.html', 'account-admin1.html'],

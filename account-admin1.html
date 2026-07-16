@@ -1,14 +1,15 @@
 <!DOCTYPE html>
 <!--
   WhiteBoard Static Pro · 账号管理工具
-  仅作者本人使用：生成 accounts.json 哈希，并保存一份明文账号清单用于发给用户。
-  纯前端 SHA-256，不依赖 Neon / Node 后端。
+  仅作者本人使用：生成 accounts.json 哈希、维护独立 paywall.json，并保存明文账号清单用于发给用户。
+  纯前端工具，不依赖 Neon / Node 后端。
 -->
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="x-account-url" content="./accounts.json">
+  <meta name="x-paywall-url" content="./paywall.json">
   <title>白板录制工具 - 静态账号管理</title>
   <style>
     :root{--ink:#1e1e1e;--muted:#77736d;--line:#e7e3dc;--soft:#f6f4f0;--accent:#5b57d6;--accent-soft:#e7e5ff;--good:#16803c;--danger:#c8322b}
@@ -19,7 +20,7 @@
     .panel{display:none}.panel.on{display:block}.card{background:#fff;border:1px solid var(--line);box-shadow:0 10px 34px rgba(35,31,46,.08);padding:20px;margin-bottom:16px;border-radius:10px}.card h2{font-size:16px;margin:0 0 14px}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.field{display:grid;gap:6px}.field label{font-size:12px;font-weight:800;color:#58544f}.field input,.field select,textarea{border:1px solid #d8d4ce;border-radius:8px;padding:10px 11px;font:inherit;background:#fff;color:var(--ink);outline:none}.field input,.field select{height:42px}.field input:focus,.field select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(91,87,214,.12)}
     textarea{width:100%;min-height:142px;resize:vertical;font-family:ui-monospace,"SF Mono",Consolas,monospace;font-size:12px;line-height:1.55;white-space:pre;overflow:auto}.row{display:grid;grid-template-columns:1fr 1fr;gap:14px}.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
     button{font:inherit;font-weight:800;cursor:pointer;border-radius:8px;height:40px;padding:0 14px;border:1px solid var(--line);background:#fff;color:var(--ink)}button:hover{background:#f7f6fa}button:disabled{opacity:.45;cursor:not-allowed}.primary{background:var(--ink);border-color:var(--ink);color:#fff}.accent{background:var(--accent);border-color:var(--accent);color:#fff}.danger{color:var(--danger)}.ghost{background:#fff}.pill{display:inline-flex;align-items:center;gap:6px;background:var(--accent-soft);color:#29258a;border-radius:999px;padding:3px 9px;font-size:12px;font-weight:800}
-    .out{font-family:ui-monospace,"SF Mono",Consolas,monospace;font-size:12px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:12px;white-space:pre;overflow:auto;min-height:180px;max-height:390px;line-height:1.5}.out.empty{color:var(--muted);font-family:inherit;white-space:normal}.out.compact{min-height:52px;white-space:pre-wrap;word-break:break-all}.account-list{display:grid;gap:8px}.account-row{display:grid;grid-template-columns:minmax(120px,.8fr) minmax(180px,1fr) auto;gap:10px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:9px 11px;background:#fff}.account-row code{font-family:ui-monospace,"SF Mono",Consolas,monospace}.ok{color:var(--good)}.bad{color:var(--danger)}.hint{color:var(--muted);font-size:12px;line-height:1.6;margin-top:9px}
+    .out{font-family:ui-monospace,"SF Mono",Consolas,monospace;font-size:12px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:12px;white-space:pre;overflow:auto;min-height:180px;max-height:390px;line-height:1.5}.out.empty{color:var(--muted);font-family:inherit;white-space:normal}.out.compact{min-height:52px;white-space:pre-wrap;word-break:break-all}.account-list{display:grid;gap:8px}.account-row{display:grid;grid-template-columns:minmax(120px,.8fr) minmax(180px,1fr) auto;gap:10px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:9px 11px;background:#fff}.account-row code{font-family:ui-monospace,"SF Mono",Consolas,monospace}.ok{color:var(--good)}.bad{color:var(--danger)}.hint{color:var(--muted);font-size:12px;line-height:1.6;margin-top:9px}.instructions{margin-top:14px;padding:13px 15px;border-left:4px solid #326579;background:#f2f6f7;color:#44515a;font-size:12px;line-height:1.75}.instructions b{color:#244b5b}.instructions ol{margin:7px 0;padding-left:22px}.instructions code{word-break:break-all}
     @media(max-width:820px){body{padding:10px}.topbar{display:block}.status{text-align:left;margin-top:8px}.grid,.row{grid-template-columns:1fr}.account-row{grid-template-columns:1fr}}
   </style>
 </head>
@@ -28,26 +29,39 @@
   <header class="topbar">
     <div>
       <h1>静态账号管理</h1>
-      <p>生成和维护 <code>accounts.json</code>，不连接 Neon / Node 后端。适合临时 Pro 账号、早期售卖和手动发放。</p>
+      <p>分别维护账号哈希 <code>accounts.json</code> 和价格/微信 <code>paywall.json</code>；不连接 Neon / Node 后端。</p>
     </div>
     <div class="status" id="status" aria-live="polite"></div>
   </header>
 
   <div class="warn">
     <b>重要：</b><code>accounts.json</code> 只保存哈希；「明文账号清单」才是发给用户的用户名和密码。
-    如果你的 GitHub 仓库是公开的，不要把明文账号清单提交到仓库。用户登录时只需要 <code>index.html</code>、<code>app.html</code> 和 <code>accounts.json</code>。
+    如果你的 GitHub 仓库是公开的，不要把明文账号清单提交到仓库。<code>accounts.json</code> 绝不保存价格或微信号，购买配置只写入独立的 <code>paywall.json</code>。
   </div>
 
   <div class="card">
-    <h2>配置（价格 · 微信号）</h2>
+    <h2>购买配置（独立 paywall.json）</h2>
     <div class="grid">
       <div class="field"><label for="purchasePrice">价格（元）</label><input id="purchasePrice" value="59" inputmode="decimal"></div>
       <div class="field"><label for="purchaseWechat">作者微信号</label><input id="purchaseWechat" value="leewen2017"></div>
     </div>
     <div class="btn-row">
-      <button class="accent" id="savePurchaseBtn">保存配置到 accounts.json</button>
+      <button class="accent" id="savePurchaseBtn">保存到 paywall.json</button>
+      <button class="ghost" id="pullPurchaseBtn">从 paywall.json 拉取</button>
+      <button class="ghost" id="copyPaywallBtn">复制 paywall JSON</button>
     </div>
-    <p class="hint">配置会写入本机缓存供离线白板立即读取；Chrome/Edge 会让你选择并覆盖同目录 <code>accounts.json</code>，不支持时会下载新文件。</p>
+    <div class="out compact" id="paywallJsonOut">正在读取 paywall.json…</div>
+    <p class="hint">修改输入会立即同步当前浏览器中的白板预览，但不会改动 <code>accounts.json</code>。点击保存后，Chrome/Edge 可选择并覆盖项目根目录的 <code>paywall.json</code>；其他浏览器会下载文件。</p>
+    <div class="instructions">
+      <b>部署到服务器（请逐步完成）：</b>
+      <ol>
+        <li>填写价格和微信号，点击「保存到 paywall.json」。</li>
+        <li>如果浏览器下载了文件，把它覆盖到仓库根目录现有的 <code>paywall.json</code>；不要覆盖 <code>accounts.json</code>。</li>
+        <li>在仓库终端执行：<code>git add paywall.json &amp;&amp; git commit -m "更新价格和微信" &amp;&amp; git push</code>。</li>
+        <li>等待 Render 自动部署约 30 秒，再刷新线上白板检查新价格和微信号。</li>
+      </ol>
+      <b>账号发放：</b>生成或合并账号后，另行下载并部署 <code>accounts.json</code>；发给客户的是「用户名 + 明文密码」，不是哈希值。价格配置和账号配置是两套完全独立的文件。
+    </div>
   </div>
 
   <div class="tabs">
@@ -103,6 +117,7 @@
       <div class="out empty" id="jsonOut">点击「合并并输出 accounts.json」后，这里会显示完整 JSON。</div>
       <div class="btn-row">
         <button id="copyJsonBtn">复制 JSON</button>
+        <button class="accent" id="saveAccountsBtn">保存 accounts.json</button>
         <button id="downloadJsonBtn">下载 accounts.json</button>
       </div>
     </div>
@@ -161,9 +176,10 @@ student002:MyPass-002"></textarea>
 
 <script>
 const ACCOUNT_URL=(document.querySelector('meta[name="x-account-url"]')||{}).content||'./accounts.json';
+const PAYWALL_URL=(document.querySelector('meta[name="x-paywall-url"]')||{}).content||'./paywall.json';
 const DEFAULT_SALT='wb-static-pro-salt-v1';
 const DEFAULT_PURCHASE={price:'59',wechat:'leewen2017'};
-const DEFAULT_EMPTY={version:1,app:'whiteboard-recording',salt:DEFAULT_SALT,purchase:{...DEFAULT_PURCHASE},accounts:[]};
+const DEFAULT_EMPTY={version:1,app:'whiteboard-recording',salt:DEFAULT_SALT,accounts:[]};
 const LOCAL_ACCOUNTS_KEY='wb_static_accounts_json';
 const LOCAL_PURCHASE_KEY='wb_static_purchase_config';
 const STATIC_ADMIN_CHANNEL='wb_static_admin_cfg';
@@ -175,11 +191,13 @@ const jsonOut=document.getElementById('jsonOut');
 const accountList=document.getElementById('accountList');
 const purchasePrice=document.getElementById('purchasePrice');
 const purchaseWechat=document.getElementById('purchaseWechat');
+const paywallJsonOut=document.getElementById('paywallJsonOut');
 const generateSaltValue=document.getElementById('generateSaltValue');
 const singleHashOutput=document.getElementById('singleHashOutput');
 const copySingleHashBtn=document.getElementById('copySingleHashBtn');
 let generatedPlain=[];
 let accountsFileHandle=null;
+let paywallFileHandle=null;
 let singleHashValue='';
 function status(message,error=false){statusEl.textContent=message;statusEl.classList.toggle('error',error)}
 function resetSingleHashResult(message='输入已修改，请重新生成哈希。'){
@@ -193,10 +211,10 @@ function resetSingleHashResult(message='输入已修改，请重新生成哈希�
 function normalizeUsername(value){return String(value||'').trim().toLowerCase()}
 function escapeHtml(value){return String(value??'').replace(/[&<>'"]/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]))}
 function normalizePurchase(value){
-  const raw=value&&value.purchase?value.purchase:value||{};
+  const raw=value||{};
   return {
     price:String(raw.price??DEFAULT_PURCHASE.price).trim()||DEFAULT_PURCHASE.price,
-    wechat:String(raw.wechat??DEFAULT_PURCHASE.wechat).trim()||DEFAULT_PURCHASE.wechat
+    wechat:String(raw.wx??raw.wechat??DEFAULT_PURCHASE.wechat).trim()||DEFAULT_PURCHASE.wechat
   };
 }
 function purchaseFromInputs(){
@@ -216,13 +234,31 @@ function syncStaticSaltInfo(data){
     resetSingleHashResult('accounts.json 盐值已变化，请重新生成哈希。');
   }
 }
-function saveLocalStaticConfig(data){
-  const normalized={...data,purchase:normalizePurchase(data)};
+function normalizeAccounts(data){
+  return {
+    version:data&&data.version||1,
+    app:data&&data.app||'whiteboard-recording',
+    salt:data&&data.salt||DEFAULT_SALT,
+    accounts:Array.isArray(data&&data.accounts)?data.accounts:[]
+  };
+}
+function paywallFromInputs(updatedAt=new Date().toISOString()){
+  const purchase=purchaseFromInputs();
+  return {version:1,price:purchase.price,wx:purchase.wechat,updatedAt};
+}
+function renderPaywallOutput(data=paywallFromInputs()){
+  paywallJsonOut.textContent=JSON.stringify(data,null,2);
+  paywallJsonOut.classList.remove('empty');
+}
+function saveLocalAccounts(data){
   try{
-    localStorage.setItem(LOCAL_PURCHASE_KEY,JSON.stringify(normalized.purchase));
-    localStorage.setItem(LOCAL_ACCOUNTS_KEY,JSON.stringify(normalized));
+    localStorage.setItem(LOCAL_ACCOUNTS_KEY,JSON.stringify(normalizeAccounts(data)));
   }catch(_error){}
-  broadcastStaticConfig(normalized.purchase);
+}
+function saveLocalPurchase(purchase){
+  const normalized=normalizePurchase(purchase);
+  try{localStorage.setItem(LOCAL_PURCHASE_KEY,JSON.stringify(normalized));}catch(_error){}
+  broadcastStaticConfig(normalized);
 }
 function broadcastStaticConfig(purchase){
   try{
@@ -238,15 +274,17 @@ function readLocalStaticConfig(){
     return raw?JSON.parse(raw):null;
   }catch(_error){return null}
 }
-function baseDataForConfigSync(){
-  try{return parseJsonInput()}catch(_error){}
-  const local=readLocalStaticConfig();
-  return local&&Array.isArray(local.accounts)?local:structuredClone(DEFAULT_EMPTY);
+function readLocalPurchase(){
+  try{
+    const raw=localStorage.getItem(LOCAL_PURCHASE_KEY);
+    return raw?JSON.parse(raw):null;
+  }catch(_error){return null}
 }
 function syncPurchaseConfigOnly(){
-  const data={...baseDataForConfigSync(),purchase:purchaseFromInputs()};
-  saveLocalStaticConfig(data);
-  status('配置已同步到本机缓存；白板页会立即更新付费提示');
+  const paywall=paywallFromInputs();
+  saveLocalPurchase(paywall);
+  renderPaywallOutput(paywall);
+  status('购买配置已同步到本机预览；accounts.json 未修改');
 }
 async function sha256Hex(text){
   if(!crypto.subtle)throw new Error('当前浏览器不支持 crypto.subtle，请通过 localhost 或 https 打开。');
@@ -258,15 +296,14 @@ function parseJsonInput(){
   const raw=existingJson.value.trim();
   if(!raw)return structuredClone(DEFAULT_EMPTY);
   const data=JSON.parse(raw);
-  return {version:data.version||1,app:data.app||'whiteboard-recording',salt:data.salt||DEFAULT_SALT,purchase:normalizePurchase(data),accounts:Array.isArray(data.accounts)?data.accounts:[]};
+  return normalizeAccounts(data);
 }
 function setOutput(data){
-  const normalized={...data,purchase:normalizePurchase(data)};
+  const normalized=normalizeAccounts(data);
   jsonOut.textContent=JSON.stringify(normalized,null,2);
   jsonOut.classList.remove('empty');
-  syncPurchaseInputs(normalized.purchase);
   syncStaticSaltInfo(normalized);
-  saveLocalStaticConfig(normalized);
+  saveLocalAccounts(normalized);
   renderAccounts(normalized);
 }
 function renderAccounts(data=parseJsonInput()){
@@ -313,7 +350,7 @@ async function mergeRows(rows){
   for(const account of await rowsToAccounts(rows,salt)){
     next.set(normalizeUsername(account.u),account);
   }
-  const merged={version:base.version||1,app:base.app||'whiteboard-recording',salt,purchase:purchaseFromInputs(),accounts:[...next.values()].sort((a,b)=>String(a.u).localeCompare(String(b.u)))};
+  const merged={version:base.version||1,app:base.app||'whiteboard-recording',salt,accounts:[...next.values()].sort((a,b)=>String(a.u).localeCompare(String(b.u)))};
   existingJson.value=JSON.stringify(merged,null,2);
   setOutput(merged);
   return merged;
@@ -326,18 +363,34 @@ async function loadExisting(){
     existingJson.value=JSON.stringify(data,null,2);
     const normalized=parseJsonInput();
     existingJson.value=JSON.stringify(normalized,null,2);
-    syncPurchaseInputs(normalized.purchase);
     syncStaticSaltInfo(normalized);
     renderAccounts(normalized);
     status(`已读取 ${ACCOUNT_URL}`);
   }catch(error){
     const local=readLocalStaticConfig();
-    const fallback=local&&Array.isArray(local.accounts)?{...local,purchase:normalizePurchase(local)}:DEFAULT_EMPTY;
+    const fallback=local&&Array.isArray(local.accounts)?normalizeAccounts(local):DEFAULT_EMPTY;
     existingJson.value=JSON.stringify(fallback,null,2);
-    syncPurchaseInputs(fallback.purchase);
     syncStaticSaltInfo(fallback);
     renderAccounts(fallback);
     status(local?`未能读取 ${ACCOUNT_URL}，已使用本机缓存`:`未能读取 ${ACCOUNT_URL}，已使用空模板`,true);
+  }
+}
+async function loadPaywall(){
+  try{
+    const response=await fetch(PAYWALL_URL,{cache:'no-store'});
+    if(!response.ok)throw new Error(`HTTP ${response.status}`);
+    const data=await response.json();
+    const purchase=normalizePurchase(data);
+    syncPurchaseInputs(purchase);
+    saveLocalPurchase(purchase);
+    renderPaywallOutput({version:data.version||1,price:purchase.price,wx:purchase.wechat,updatedAt:data.updatedAt||''});
+    status(`已从 ${PAYWALL_URL} 拉取购买配置；accounts.json 未修改`);
+  }catch(_error){
+    const local=readLocalPurchase();
+    const purchase=normalizePurchase(local||DEFAULT_PURCHASE);
+    syncPurchaseInputs(purchase);
+    renderPaywallOutput({version:1,price:purchase.price,wx:purchase.wechat,updatedAt:''});
+    status(local?`未能读取 ${PAYWALL_URL}，已使用本机购买配置`:`未能读取 ${PAYWALL_URL}，已使用默认购买配置`,true);
   }
 }
 function download(filename,text,type='application/json'){
@@ -358,10 +411,11 @@ async function pickAccountsFileForWrite(){
     multiple:false,
     types:[{description:'accounts.json',accept:{'application/json':['.json']}}],
   });
+  if(handle.name&&handle.name!=='accounts.json')throw new Error('请选择项目根目录中的 accounts.json，避免覆盖其他配置文件');
   accountsFileHandle=handle;
   return handle;
 }
-async function saveJsonToDisk(text){
+async function saveAccountsJsonToDisk(text){
   if(accountsFileHandle){
     await writeJsonToHandle(accountsFileHandle,text);
     return 'file';
@@ -383,14 +437,37 @@ async function saveJsonToDisk(text){
   download('accounts.json',text);
   return 'download';
 }
-function dataForPurchaseSave(){
-  const data={...parseJsonInput(),purchase:purchaseFromInputs()};
-  if((data.accounts||[]).length)return data;
-  const local=readLocalStaticConfig();
-  if(local&&Array.isArray(local.accounts)&&local.accounts.length){
-    return {...local,purchase:data.purchase};
+async function pickPaywallFileForWrite(){
+  if(!window.showOpenFilePicker)return null;
+  const [handle]=await window.showOpenFilePicker({
+    multiple:false,
+    types:[{description:'paywall.json',accept:{'application/json':['.json']}}],
+  });
+  if(handle.name&&handle.name!=='paywall.json')throw new Error('请选择项目根目录中的 paywall.json，不能选择 accounts.json');
+  paywallFileHandle=handle;
+  return handle;
+}
+async function savePaywallJsonToDisk(text){
+  if(paywallFileHandle){
+    await writeJsonToHandle(paywallFileHandle,text);
+    return 'file';
   }
-  return data;
+  const picked=await pickPaywallFileForWrite();
+  if(picked){
+    await writeJsonToHandle(picked,text);
+    return 'file';
+  }
+  if(window.showSaveFilePicker){
+    const handle=await window.showSaveFilePicker({
+      suggestedName:'paywall.json',
+      types:[{description:'JSON 文件',accept:{'application/json':['.json']}}]
+    });
+    paywallFileHandle=handle;
+    await writeJsonToHandle(handle,text);
+    return 'file';
+  }
+  download('paywall.json',text);
+  return 'download';
 }
 async function copyText(text){
   await navigator.clipboard.writeText(text);
@@ -474,7 +551,7 @@ copySingleHashBtn.onclick=async()=>{
 });
 document.getElementById('loadExistingBtn').onclick=loadExisting;
 document.getElementById('formatExistingBtn').onclick=()=>{
-  try{const data=parseJsonInput();existingJson.value=JSON.stringify(data,null,2);syncPurchaseInputs(data.purchase);syncStaticSaltInfo(data);renderAccounts(data);status('已格式化 JSON');}
+  try{const data=parseJsonInput();existingJson.value=JSON.stringify(data,null,2);syncStaticSaltInfo(data);renderAccounts(data);status('已格式化 accounts.json（购买配置不会写入此文件）');}
   catch(error){status('JSON 格式不正确',true)}
 };
 existingJson.addEventListener('input',()=>{
@@ -482,21 +559,26 @@ existingJson.addEventListener('input',()=>{
   catch(_error){generateSaltValue.textContent='当前 JSON 格式不正确'}
 });
 document.getElementById('savePurchaseBtn').onclick=async()=>{
+  const paywall=paywallFromInputs();
+  saveLocalPurchase(paywall);
+  renderPaywallOutput(paywall);
   try{
-    const data=dataForPurchaseSave();
-    existingJson.value=JSON.stringify(data,null,2);
-    setOutput(data);
-    const mode=await saveJsonToDisk(jsonOut.textContent);
+    const mode=await savePaywallJsonToDisk(JSON.stringify(paywall,null,2));
     status(mode==='file'
-      ? '已保存 accounts.json，并同步到本机缓存；切回或刷新白板后立即生效'
-      : '已同步到本机缓存并下载 accounts.json；如需上线，请把下载文件替换到项目同目录');
+      ? '已保存 paywall.json；accounts.json 未修改。部署后所有用户会读取新价格和微信号'
+      : '已下载 paywall.json；请覆盖仓库根目录同名文件并 git push，accounts.json 不需要修改');
   }catch(error){
     if(error&&error.name==='AbortError'){
-      status('已同步到本机缓存；未选择保存 accounts.json 文件',true);
+      status('已同步本机购买预览；你取消了 paywall.json 文件保存，accounts.json 未修改',true);
       return;
     }
-    status('JSON 格式不正确，无法更新配置',true);
+    status(error.message||'无法保存 paywall.json',true);
   }
+};
+document.getElementById('pullPurchaseBtn').onclick=loadPaywall;
+document.getElementById('copyPaywallBtn').onclick=async()=>{
+  try{await copyText(paywallJsonOut.textContent);status('已复制 paywall.json 内容');}
+  catch(_error){status('复制失败，请手动选择 JSON 文本复制',true)}
 };
 purchasePrice.addEventListener('input',syncPurchaseConfigOnly);
 purchaseWechat.addEventListener('input',syncPurchaseConfigOnly);
@@ -524,6 +606,19 @@ document.getElementById('fileInput').onchange=async event=>{
 document.getElementById('copyPlainBtn').onclick=async()=>{await copyText(plainList.value);status('已复制明文账号清单')};
 document.getElementById('downloadPlainBtn').onclick=()=>download(`whiteboard-pro-accounts-${new Date().toISOString().slice(0,10)}.txt`,plainList.value,'text/plain');
 document.getElementById('copyJsonBtn').onclick=async()=>{await copyText(jsonOut.textContent);status('已复制 accounts.json')};
+document.getElementById('saveAccountsBtn').onclick=async()=>{
+  try{
+    const data=parseJsonInput();
+    setOutput(data);
+    const mode=await saveAccountsJsonToDisk(jsonOut.textContent);
+    status(mode==='file'
+      ? '已保存 accounts.json；paywall.json 未修改'
+      : '已下载 accounts.json；请覆盖仓库根目录同名文件并 git push，paywall.json 不需要修改');
+  }catch(error){
+    if(error&&error.name==='AbortError')return;
+    status(error.message||'无法保存 accounts.json',true);
+  }
+};
 document.getElementById('downloadJsonBtn').onclick=()=>download('accounts.json',jsonOut.textContent);
 document.getElementById('verifyBtn').onclick=async()=>{
   try{
@@ -538,6 +633,7 @@ document.getElementById('verifyBtn').onclick=async()=>{
   }catch(error){status(error.message,true)}
 };
 loadExisting();
+loadPaywall();
 </script>
 </body>
 </html>

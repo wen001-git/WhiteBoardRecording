@@ -43,13 +43,15 @@
         <button class="primary" id="loginBtn" type="submit">登录并打开 Pro</button>
       </form>
       <div class="status" id="status" aria-live="polite"></div>
-      <div class="buy">还没有账号？微信联系 <b>leewen2017</b></div>
+      <div class="buy">还没有账号？微信联系 <b id="purchaseWechat">leewen2017</b></div>
     </section>
   </main>
   <script>
     const STATIC_ACCOUNTS_URL='./accounts.json';
+    const PAYWALL_URL='./paywall.json';
     const STATIC_SESSION_KEY='wb_static_pro_session';
     const LOCAL_ACCOUNTS_KEY='wb_static_accounts_json';
+    const LOCAL_PURCHASE_KEY='wb_static_purchase_config';
     const STATIC_SESSION_DAYS=365;
     const LOCAL_API_HOSTS=new Set(['localhost','127.0.0.1']);
     function resolveApiBase(){
@@ -71,6 +73,24 @@
     function normalizeUsername(value){return String(value||'').trim().toLowerCase()}
     function deviceId(){let id=localStorage.getItem(DEVICE_KEY);if(!id){id='wb-'+crypto.randomUUID().replaceAll('-','');localStorage.setItem(DEVICE_KEY,id)}return id}
     async function api(path,options={}){return fetch(API_BASE+path,{credentials:'include',...options,headers:{'content-type':'application/json',...(options.headers||{})}})}
+    function normalizePaywall(data){
+      const raw=data||{};
+      return {price:String(raw.price||'59').trim()||'59',wechat:String(raw.wx??raw.wechat??'leewen2017').trim()||'leewen2017'};
+    }
+    function applyPaywall(data){
+      const config=normalizePaywall(data);
+      const wechat=document.getElementById('purchaseWechat');
+      if(wechat)wechat.textContent=config.wechat;
+    }
+    async function loadPaywallConfig(){
+      try{
+        const response=await fetch(PAYWALL_URL,{cache:'no-store'});
+        if(!response.ok)throw new Error(`HTTP ${response.status}`);
+        applyPaywall(await response.json());
+      }catch(_error){
+        try{applyPaywall(JSON.parse(localStorage.getItem(LOCAL_PURCHASE_KEY)||'null')||{});}catch(_ignored){}
+      }
+    }
     function staticSession(){
       try{
         const session=JSON.parse(localStorage.getItem(STATIC_SESSION_KEY)||'null');
@@ -126,13 +146,6 @@
       setStatus('正在打开 Pro 白板…');
       location.href=await staticAppPath();
     }
-    async function openServerPro(){
-      setStatus('正在加载 Pro 白板…');
-      const response=await api('/api/app');
-      if(!response.ok)throw new Error(response.status===401?'登录已失效，请重新登录':'未能加载 Pro 白板');
-      const html=await response.text();
-      document.open();document.write(html);document.close();
-    }
     async function loginPro(username,password){
       const localSession=await tryStaticLogin(username,password);
       if(localSession)return {source:'static',session:localSession};
@@ -169,13 +182,14 @@
       event.preventDefault();const button=document.getElementById('loginBtn');button.disabled=true;
       try{
         if(activeSessionSource==='static'){await openStaticPro();return}
-        if(activeSessionSource==='server'){await openServerPro();return}
+        if(activeSessionSource==='server'){await openStaticPro();return}
         setStatus('正在校验本地 Pro 账号…');
         const result=await loginPro(document.getElementById('username').value,document.getElementById('password').value);
         if(result.source==='static')await openStaticPro();
-        else await openServerPro();
+        else await openStaticPro();
       }catch(error){setStatus(error.message||'登录失败',true);button.disabled=false}
     });
+    loadPaywallConfig();
     checkSession();
   </script>
 </body>

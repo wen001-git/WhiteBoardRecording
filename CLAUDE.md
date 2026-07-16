@@ -1,13 +1,25 @@
-# WhiteBoard 项目 Claude Code 规则
+> 目的：约束 Claude Code 以低 token 方式接手本项目。　目标读者：Claude Code。　如何阅读：会话开始按下列最小读取协议执行；通用项目状态以 `AGENTS.md` 为准。
 
-跨 AI 工具协作规则见仓库根 `AGENTS.md`（Codex/其他工具也读它，勿把 Claude Code 专属规则写进去）；这里只放 Claude Code 专属、不适合放进 AGENTS.md 的规则。
+# WhiteBoard · Claude Code 规则
 
-## Subagent 使用效率
+## 最小读取协议
 
-遵循全局规则（`~/.claude/CLAUDE.md`）。本项目补充：`index.html`（当前主版本，2026-07-04 前叫 `index-v2.html`）/`index-old.html`（旧版归档）是结构清晰的单文件应用，`AGENTS.md` 的「文件地图 / 关键实现备忘」通常已经指到具体函数和行号——**默认先读 `AGENTS.md` + 目标文件的相关区域，几乎不需要 Explore 子代理**；确实要用时限定在真正跨文件/跨目录、范围不确定的探索上。
+1. 会话开始只读仓库根 `AGENTS.md`，不预读 `PROJECT_PLAN.md`、完整 Git 历史或其他文档。
+2. 确定任务后，根据 `AGENTS.md` 的任务路由，只读 `docs/IMPL_NOTES.md` 的一个对应小节。
+3. 使用小节中的文件名和函数名先 `rg`，再用小范围 `sed`/Read；不要完整读取大型单 HTML，也不要输出完整大 diff。
+4. 历史只用 `git log --oneline --stat` 按需查询；先看 `git diff --stat`，再查看目标文件的窄 diff。
+5. 默认直接处理，不启动 Explore/subagent；只有用户明确要求或任务真正跨目录、可并行且范围不确定时才使用。
+6. 默认只跑与改动直接相关的最小测试；跨模块风险、发布前或用户明确要求时才跑全量测试和浏览器验收。
+
+## 状态维护
+
+- 通用状态、硬约束和当前 TODO 写入 `AGENTS.md`；实现陷阱写入 `docs/IMPL_NOTES.md` 对应小节。
+- 小改不更新 `PROJECT_PLAN.md`；只有里程碑或产品决策才更新。
+- 不在本文件重复项目状态或实现细节，避免 Claude Code 自动加载重复上下文。
 
 ## 变更记录
+
 | 日期 | 变更内容 |
-|------|---------|
-| 2026-07-04 | 同步文件改名：定稿版提升为 `index.html`，旧版归档为 `index-old.html` |
-| 2026-07-03 | 初始创建：落实 subagent 使用经济性规则（用户反馈单会话 token 消耗大头来自子代理密集调用），并补充本项目单文件结构下通常无需 Explore 子代理的具体判断依据 |
+|------|----------|
+| 2026-07-16 | 改为 lean-handoff 最小读取协议，禁止默认预读长文档、完整单 HTML 和大型 diff；why：减少 Claude Code 冷启动和探索 token |
+| 2026-07-04 | 初始创建并限制不必要的 subagent 使用；why：本项目主要是结构明确的单文件应用 |

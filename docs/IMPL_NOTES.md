@@ -1,0 +1,125 @@
+> 目的：按子系统保存 WhiteBoard 当前实现入口和不可回退的技术约束。　目标读者：准备修改某一子系统的 AI 或开发者。　如何阅读：先从 `AGENTS.md` 的任务路由进入，只读当前任务对应的小节，再用其中的函数名通过 `rg` 定位源码。
+
+# WhiteBoard 实现备忘（按需读取）
+
+本文不是变更历史，也不要求会话开始时完整读取。历史原因和旧方案使用 `git log --oneline --stat`；产品需求与完整手测清单见 `PROJECT_PLAN.md`。
+
+<a id="auth"></a>
+## Auth — 登录、静态账号、Neon 与付费配置
+
+### 入口与数据流
+
+- `index.html` 和 `whiteboard-pro.html` 都实现“本地静态账号优先、Neon 兜底”。静态校验成功必须直接返回，不调用 `/api/login`。
+- 静态账号来自同目录 `accounts.json`；管理工具本机预览可回退 `localStorage.wb_static_accounts_json`。静态会话键为 `wb_static_pro_session`。
+- 静态哈希公式是 `SHA-256(salt:usernameLowercase:password)`；统一盐为 `wb-static-pro-salt-v1`。Node/Neon 使用相同盐但仍以 scrypt 派生，不能把两种哈希直接互换。
+- 后端入口在 `server/app.mjs`，核心路由为 `/api/login`、`/api/session`、`/api/logout`、`/api/app` 和 `/api/admin/*`；数据库访问在 `server/store.mjs`。密码规则为 4–128 位。
+- 服务端会话使用 HttpOnly Cookie；停用账号、改密或清空设备时会递增 `session_version`，旧会话随即失效。静态账号不经过设备限制。
+
+### Neon 会话与账户 UI
+
+- Neon 登录成功后不再请求 `/api/app` 并 `document.write()` 整份 HTML；入口页进入静态 `app.html`，白板通过 `/api/session` 恢复服务端会话。
+- `grantServerProSession()` 动态更新 `APP_PLAN/IS_PRO/SERVER_PRO_GRANTED`，`renderAccountEntry()` 同步右下角用户名、Pro 样式和退出菜单。不要恢复整页脚本二次执行，否则会再次触发 `screenVideo` 等全局声明冲突。
+- 账户入口只绑定一次事件，点击行为根据当前 `IS_PRO` 决定打开登录或菜单；退出同时清理静态 session 并调用 `/api/logout`，避免两种会话叠加。
+- `/api/app` 仍保留为服务端兼容接口和授权标记测试，但当前静态入口不依赖它加载页面。
+
+### 独立购买配置
+
+- 价格和微信只保存在根目录 `paywall.json`：
+
+  ```json
+  {
+    "version": 1,
+    "price": "59",
+    "wx": "leewen2017",
+    "updatedAt": "ISO-8601 timestamp"
+  }
+  ```
+
+- `accounts.json` 只保留 `version/app/salt/accounts`；白板和入口读取 `paywall.json`，不再从账号文件兼容读取价格或微信。
+- `account-admin1.html` 为两个文件维护独立句柄：账号按钮只保存/下载 `accounts.json`；价格按钮只保存/拉取/下载 `paywall.json`。本机即时预览继续使用 `wb_static_purchase_config` 与 `BroadcastChannel('wb_static_admin_cfg')`。
+- 管理页必须明确说明：浏览器生成 JSON 不会自动更新服务器；线上生效需覆盖仓库同名文件并提交、推送，等待 Render 部署。发给客户的是明文用户名和密码，不是哈希。
+
+### 发布与测试入口
+
+- `scripts/build-static.mjs` 是唯一公共发布入口；新增公共配置时同步更新白名单和 `tests/commercial-build.test.mjs` 的精确文件断言。
+- 登录顺序和会话恢复测试在 `tests/login-priority.test.mjs`；Node 会话/设备规则在 `tests/auth-api.test.mjs`；授权标记在 `tests/pro-app.test.mjs`。
+- 生产域名为 `record.leewen.work`（静态）和 `auth.record.leewen.work`（Node）。跨域请求必须保留 `credentials:'include'`，Render 的 `ALLOWED_ORIGINS`、Cookie domain 和 Secure 配置需成套验证。
+
+<a id="objects"></a>
+## Objects — 对象、文字、图片与绘图样式
+
+### 对象和选择
+
+- 白板内容位于 `state.scene[]`；视图为 `state.view{x,y,scale}`。选择态由 `selectedIndex` 指向对象，`selectObjectAt()` 从顶层向下复用 `hitTest()`。
+- `#selectionBox` 是 DOM 浮层，不写入 canvas，因此不进入录制。移动、四角缩放和顶部旋转点修改对象本身；删除前必须 `pushHistory()`。
+- 缩放/旋转基准使用 `transformBounds()` 的对象本体框，不能使用带 UI padding 的选择框，否则图片和文字尺寸会漂移。
+- 图片对象为 `{type:'image',src,x,y,w,h}`，`src` 是 data URL；`imageCache` 缓存解码结果。导入和粘贴先裁透明/近白空边，再走 `beginPendingImage()` 放置流程。
+
+### 富文本
+
+- 文字对象保存 `fontSize/fontFamily/textAlign/opacity/runs`；形状文字保存对应的 `label*` 字段和 `labelRuns`。
+- `runs` 可覆盖选区级 `color/fontFamily/fontSize`；对齐和透明度始终是整段属性。`applyTextEditingPatch()` 只让可分段属性进入选区逻辑，不能让所有补丁都被选区分支吞掉。
+- DOM selection 的字符偏移必须通过 `serializedInputText(range.cloneContents())` 计算，与 `richTextFromInput()` 对 `<br>`、块元素和零宽字符的处理保持一致；不要改回 `Range.toString()` 或嵌套 span 提取方式。
+- 混合字号的测量和绘制统一走 `normalizedTextRuns()`、`textLineChunks()`、`textLinesLayout()`；整体缩放时同时缩放顶层字号和 `runs[].fontSize`。
+- 编辑中 Enter 插入换行，点击外部提交，Esc 取消；双击文字或选中后 Enter 调 `beginTextEdit()`。编辑框和 canvas 的行高、宽度测量必须保持一致。
+
+### 手绘与动态线条
+
+- 形状使用 `mulberry32(seed)` 和 `roughLine/roughRect/roughEllipse/roughDiamond/roughArrow`，对象创建时保存稳定 seed，重绘不能重新随机。
+- `strokeStyle`、`roughness` 和 `strokeMotion` 相互独立；`strokeMotion:'flow'` 是覆盖层，不替换原线条。
+- 仅在存在 flow 对象时启动动画循环；动画帧调用 `render({skipSave:true})`，避免动画持续触发自动保存。
+
+<a id="slides"></a>
+## Slides — 幻灯片、比例与 DOM 浮层
+
+- 幻灯片数据是 `state.slides[{id,x,y,w,h}]` 与 `state.activeSlide`，属于文档元数据，不在 `state.scene` 中，也不进入普通对象撤销栈。
+- `addSlide()` 通过 `createSlideAtSmartPosition()`：当前视野接近 active slide 时在右侧找空位；用户已移动到远处空白时按当前 viewport 中心创建。
+- `insertSlideAt()` 通过 `createSlideForDeckInsert()` 和 `shiftSlidesAndContents()` 线性插入；后续幻灯片及中心落在其中的对象必须一起右移，保持面板顺序、世界坐标从左到右顺序和录制顺序一致。
+- `selectSlide()` 是选中并对焦的单一入口；setup/recording/paused 时还要同步 `recConfig.frame`。比例修改统一走 `setRecordingRatio()` / `setCustomRecordingRatio()`，已有幻灯片由 `resizeSlidesToRatio()` 保持中心重算。
+- `#slideFramesLayer`、幻灯片序号、`#slideRevealFloatBtn`、`#minimap` 和比例弹层都是 DOM UI，不得写入 canvas。笔迹播放本身由 `drawSlideRevealOverlay()` 画入 board，才能进入录制。
+- 层级约束：录制框之上仍需看见幻灯片边框，笔迹按钮再高一层；但 `applyFrameStyle()` 不能为了 UI 按钮缩短最终取景框。
+- `.slidesList` 必须保持 `overflow-x:hidden`，否则纵向滚动条会引发横向溢出；删除角标负偏移依赖列表 padding，调整窄面板尺寸时需同时验证二者。
+
+<a id="recording"></a>
+## Recording — 媒体、白板录制、录屏与导出
+
+### 白板录制
+
+- `recConfig` 保存比例、背景、白卡片边距/圆角、取景框、摄像头、麦克风和光标效果；状态机为 idle → setup → recording → paused。
+- `drawRecFrame()` 顺序：背景 → 白卡片 → 裁剪后的 board → 摄像头 → 光标高亮。`recCanvas.captureStream(30)` 与 `getRecordingAudioTracks()` 组成最终 MediaStream。
+- `recConfig.showCamera` 只控制成品是否叠加摄像头；硬件占用由 `enableUserMedia()` / `stopUserMedia()` 和 `#mediaToggle` 管理。硬件关闭时不得偷偷重新请求麦克风。
+
+### 录屏
+
+- `getDisplayMedia()` 后读取 `displaySurface`：browser/window 使用完整来源并直接开始；monitor 或未知来源进入冻结预览和独立区域裁剪。
+- `#screenVideo` 离屏隐藏，仅作 fallback 取帧源；Chrome/Edge 优先用 `MediaStreamTrackProcessor` 的 VideoFrame 驱动 `drawScreenFrame()`，避免页面切后台掉帧。
+- 裁剪使用会话级归一化 `screenCropNorm{x,y,w,h}`，不能复用或持久化白板 `recConfig.frame`。`#screenStage/#screenSnap/#screenCropFrame` 都是 DOM，不进入输出。
+- 录屏时页面摄像头气泡设为不可见但保留解码，防止整屏录制出现双重人脸；摄像头帧泵在屏幕源长期不出帧时补合成，避免头像冻结。
+- 停止流程保留 `recStopping/recStopHandled` 一次性守卫、`requestData()` 和 onstop 超时兜底，防止 Chrome “停止分享”丢失完成页或生成两份结果。
+
+### 摄像头效果与导出
+
+- 摄像头位置为四角配置；亮度通过 screen 混合白层实现，不要改回每帧 `ctx.filter`，后者曾导致真实录制卡顿。
+- 美颜通过固定小工作画布、YCbCr 肤色软掩膜和盒式模糊实现，只平滑肤色。设置预览与录制共用 `drawCamBeautified()` 管线。
+- 浏览器原生 MP4 支持时直接录制；否则先录 webm，用户请求转码时才加载 ffmpeg.wasm。提词器始终是独立 DOM 浮层，不得进入 `drawRecFrame()` 或 `drawScreenFrame()`。
+
+<a id="stickers"></a>
+## Stickers — 彩铅人物与图片资源
+
+- 贴纸入口为 `#stickerBtn/#stickerPopover`，数据集中在 `STICKER_GROUPS`；点击后复用 `beginPendingImage()`，因此贴纸与普通图片共享放置、移动、缩放、删除、撤销和录制路径。
+- 男生、女生各有固定角色表情组，综合组保留第一版原创贴纸。女生角色应保持自然中长发和低辫结构：正脸显示两侧低辫，侧脸/转头/低头只显示真实可见的一侧。
+- 素材以内联透明 PNG/WebP 保存，不新增外部运行时文件。优化单 HTML 体积时不得降低透明边缘质量或改变角色一致性。
+- 贴纸弹窗和普通绘图工具的选中态互斥；关闭弹窗时恢复 `state.tool`，选择普通工具时先关闭贴纸弹窗。
+
+## 维护约定
+
+- 这里只写“当前入口 + 当前红线”。功能历史、旧实现、测试过程和截图结论不写入本文。
+- 新增陷阱时放入唯一对应小节并保持简短；若源码已使约束显而易见，则无需重复记录。
+- 修改后检查 `AGENTS.md` 的任务路由仍能定位本页锚点。
+
+## 变更记录
+
+| 日期 | 变更内容 |
+|------|----------|
+| 2026-07-16 | 将 Auth 小节更新为独立 paywall 和动态 Neon 会话的现行实现，保留禁止恢复 `document.write()` 的回归红线；why：让后续接手者直接沿用已修复的数据流 |
+| 2026-07-16 | 从原大型 `AGENTS.md` 提炼五个按需实现小节，保留当前入口和不可回退约束；why：降低每次接手的自动上下文成本，同时避免删除关键工程经验 |

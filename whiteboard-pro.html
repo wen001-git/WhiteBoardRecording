@@ -923,6 +923,7 @@
 const STATIC_SESSION_KEY='wb_static_pro_session';
 const LOCAL_ACCOUNTS_KEY='wb_static_accounts_json';
 const LOCAL_PURCHASE_KEY='wb_static_purchase_config';
+const PAYWALL_URL='./paywall.json';
 const STATIC_ADMIN_CHANNEL='wb_static_admin_cfg';
 function getStaticProSession(){
   try{
@@ -934,9 +935,10 @@ function getStaticProSession(){
 }
 const STATIC_PRO_SESSION=getStaticProSession();
 const PLAN_META=document.querySelector('meta[name="whiteboard-plan"]');
-const APP_PLAN=STATIC_PRO_SESSION?'pro':((PLAN_META||{}).content||'free');
-const IS_PRO=APP_PLAN==='pro';
-const SERVER_PRO_GRANTED=!STATIC_PRO_SESSION&&PLAN_META?.dataset.serverPlanGrant==='verified';
+let APP_PLAN=STATIC_PRO_SESSION?'pro':((PLAN_META||{}).content||'free');
+let IS_PRO=APP_PLAN==='pro';
+let SERVER_PRO_GRANTED=!STATIC_PRO_SESSION&&PLAN_META?.dataset.serverPlanGrant==='verified';
+let SERVER_PRO_SESSION=null;
 const LOCAL_API_HOSTS=new Set(['localhost','127.0.0.1']);
 function resolveApiBase(){
   const isLocal=LOCAL_API_HOSTS.has(location.hostname);
@@ -957,10 +959,10 @@ const DEFAULT_PURCHASE_CONFIG={price:'59',wechat:'leewen2017'};
 let purchaseConfig={...DEFAULT_PURCHASE_CONFIG};
 let purchaseConfigChannel=null;
 function normalizePurchaseConfig(data){
-  const raw=data&&data.purchase?data.purchase:data||{};
+  const raw=data||{};
   return {
     price:String(raw.price??DEFAULT_PURCHASE_CONFIG.price).trim()||DEFAULT_PURCHASE_CONFIG.price,
-    wechat:String(raw.wechat??DEFAULT_PURCHASE_CONFIG.wechat).trim()||DEFAULT_PURCHASE_CONFIG.wechat
+    wechat:String(raw.wx??raw.wechat??DEFAULT_PURCHASE_CONFIG.wechat).trim()||DEFAULT_PURCHASE_CONFIG.wechat
   };
 }
 function purchaseMessageFromConfig(config=purchaseConfig){
@@ -981,9 +983,7 @@ function readLocalJson(key){
 }
 function localPurchaseConfig(){
   const direct=readLocalJson(LOCAL_PURCHASE_KEY);
-  if(direct)return normalizePurchaseConfig(direct);
-  const accounts=readLocalJson(LOCAL_ACCOUNTS_KEY);
-  return accounts?normalizePurchaseConfig(accounts):null;
+  return direct?normalizePurchaseConfig(direct):null;
 }
 function applyLocalPurchaseConfig(){
   const local=localPurchaseConfig();
@@ -997,7 +997,7 @@ function applyPurchaseConfigPayload(data){
 }
 function watchPurchaseConfigUpdates(){
   window.addEventListener('storage',event=>{
-    if(event.key===LOCAL_PURCHASE_KEY||event.key===LOCAL_ACCOUNTS_KEY)applyLocalPurchaseConfig();
+    if(event.key===LOCAL_PURCHASE_KEY)applyLocalPurchaseConfig();
   });
   window.addEventListener('focus',()=>{
     if(location.protocol==='file:')applyLocalPurchaseConfig();
@@ -1015,9 +1015,9 @@ function watchPurchaseConfigUpdates(){
   }catch(_error){}
 }
 async function loadPurchaseConfig(){
-  if(applyLocalPurchaseConfig())return;
+  if(location.protocol==='file:'&&applyLocalPurchaseConfig())return;
   try{
-    const response=await fetch('./accounts.json',{cache:'no-store'});
+    const response=await fetch(PAYWALL_URL,{cache:'no-store'});
     if(!response.ok)throw new Error(`HTTP ${response.status}`);
     applyPurchaseConfigPayload(await response.json());
   }catch(_error){
@@ -1105,15 +1105,49 @@ async function loginWithFallback(username,password,onFallback){
   if(!response.ok)throw new Error(data.message||'账号或密码不正确');
   return {source:'server',session:data};
 }
-async function saveBeforeProLoad(){
-  try{ if(typeof idbSave==='function' && typeof currentDoc==='function') await idbSave(currentDoc()); }catch(e){ console.warn('切换 Pro 前保存失败',e); }
+let accountUi=null;
+function activeProUsername(){
+  return STATIC_PRO_SESSION?.username||SERVER_PRO_SESSION?.username||'Pro';
 }
-async function loadProtectedProApp(){
-  await saveBeforeProLoad();
-  const response=await proApi('/api/app');
-  if(!response.ok) throw new Error(response.status===401?'登录已失效，请重新登录':'暂时无法加载 Pro 白板');
-  const html=await response.text();
-  document.open(); document.write(html); document.close();
+function closeAccountMenu(){
+  if(!accountUi)return;
+  accountUi.menu?.classList.remove('show');
+  accountUi.btn.setAttribute('aria-expanded','false');
+}
+function renderAccountEntry(){
+  if(!accountUi)return;
+  const {btn,menu,name,logout}=accountUi;
+  if(IS_PRO){
+    const username=activeProUsername();
+    btn.classList.add('pro');
+    btn.textContent=username;
+    btn.title=`Pro 账号：${username}`;
+    btn.setAttribute('aria-label',`Pro 账号：${username}`);
+    if(name)name.textContent=username;
+    if(menu)menu.hidden=false;
+    if(logout)logout.disabled=false;
+  }else{
+    btn.classList.remove('pro');
+    btn.textContent='登录';
+    btn.title='登录 Pro';
+    btn.setAttribute('aria-label','登录 Pro');
+    if(menu)menu.hidden=true;
+    closeAccountMenu();
+  }
+}
+function grantServerProSession(session){
+  SERVER_PRO_SESSION=session||{username:'Pro'};
+  SERVER_PRO_GRANTED=true;
+  APP_PLAN='pro';
+  IS_PRO=true;
+  renderAccountEntry();
+}
+async function restoreServerProSession(){
+  if(STATIC_PRO_SESSION)return;
+  try{
+    const response=await proApi('/api/session');
+    if(response.ok)grantServerProSession(await response.json());
+  }catch(_error){}
 }
 function openStaticProLogin(){
   if(IS_PRO) return;
@@ -1133,61 +1167,36 @@ function wireAccountEntry(){
   const name=document.getElementById('accountName');
   const logout=document.getElementById('accountLogout');
   if(!wrap||!btn) return;
-  const closeMenu=()=>{menu?.classList.remove('show'); btn.setAttribute('aria-expanded','false');};
-  if(IS_PRO){
-    let username=STATIC_PRO_SESSION?.username||'Pro';
-    const showUsername=value=>{
-      username=value||'Pro';
-      btn.textContent=username;
-      btn.title=`Pro 账号：${username}`;
-      btn.setAttribute('aria-label',`Pro 账号：${username}`);
-      if(name) name.textContent=username;
-    };
-    btn.classList.add('pro');
-    showUsername(username);
-    if(SERVER_PRO_GRANTED){
-      proApi('/api/session').then(async response=>{
-        if(response.ok)showUsername((await response.json()).username);
-      }).catch(()=>{});
+  accountUi={wrap,btn,menu,name,logout};
+  btn.addEventListener('click',e=>{
+    e.stopPropagation();
+    if(!IS_PRO){openStaticProLogin();return;}
+    const next=!menu?.classList.contains('show');
+    menu?.classList.toggle('show',next);
+    btn.setAttribute('aria-expanded',String(next));
+  });
+  logout?.addEventListener('click',async()=>{
+    const serverOnly=SERVER_PRO_GRANTED&&!STATIC_PRO_SESSION;
+    logout.disabled=true;
+    localStorage.removeItem(STATIC_SESSION_KEY);
+    try{
+      const response=await proApi('/api/logout',{method:'POST'});
+      if(serverOnly&&!response.ok)throw new Error('退出失败');
+    }catch(_error){
+      if(serverOnly){
+        logout.disabled=false;
+        showPlanToast('账号服务暂时无法连接，未能退出登录');
+        return;
+      }
     }
-    btn.addEventListener('click',e=>{
-      e.stopPropagation();
-      const next=!menu?.classList.contains('show');
-      menu?.classList.toggle('show',next);
-      btn.setAttribute('aria-expanded',String(next));
-    });
-    logout?.addEventListener('click',async()=>{
-      if(STATIC_PRO_SESSION){
-        localStorage.removeItem(STATIC_SESSION_KEY);
-        closeMenu();
-        location.reload();
-        return;
-      }
-      if(SERVER_PRO_GRANTED){
-        logout.disabled=true;
-        try{
-          const response=await proApi('/api/logout',{method:'POST'});
-          if(!response.ok)throw new Error('退出失败');
-          closeMenu();
-          location.reload();
-        }catch(_error){
-          logout.disabled=false;
-          showPlanToast('账号服务暂时无法连接，未能退出登录');
-        }
-        return;
-      }
-      closeMenu();
-      location.reload();
-    });
-    document.addEventListener('pointerdown',e=>{ if(!wrap.contains(e.target)) closeMenu(); });
-    document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeMenu(); });
-  }else{
-    btn.textContent='登录';
-    btn.title='登录 Pro';
-    btn.setAttribute('aria-label','登录 Pro');
-    menu?.remove();
-    btn.addEventListener('click',openStaticProLogin);
-  }
+    SERVER_PRO_SESSION=null;
+    SERVER_PRO_GRANTED=false;
+    closeAccountMenu();
+    location.reload();
+  });
+  document.addEventListener('pointerdown',e=>{if(!wrap.contains(e.target))closeAccountMenu();});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')closeAccountMenu();});
+  renderAccountEntry();
 }
 function wireUpgradeModal(){
   const overlay=document.getElementById('proUpgradeOverlay');
@@ -1213,8 +1222,11 @@ function wireUpgradeModal(){
         status.textContent='本地账号登录成功，正在切换 Pro…';
         location.reload();
       }else{
-        status.textContent='账号服务登录成功，正在打开 Pro…';
-        await loadProtectedProApp();
+        grantServerProSession(result.session);
+        status.textContent=`账号服务登录成功：${result.session.username||'Pro'}`;
+        submit.disabled=false;
+        close();
+        showPlanToast(`已登录 Pro：${result.session.username||'Pro'}`);
       }
     }catch(error){ status.textContent=error.message||'登录失败'; status.classList.add('error'); submit.disabled=false; }
   });
@@ -1222,6 +1234,7 @@ function wireUpgradeModal(){
 watchPurchaseConfigUpdates();
 wireUpgradeModal();
 wireAccountEntry();
+restoreServerProSession();
 
 /* ----------------------------- STATE ----------------------------------- */
 const COLORS = ['#1e1e1e','#e03131','#2f9e44','#1971c2','#f08c00','#ffffff'];

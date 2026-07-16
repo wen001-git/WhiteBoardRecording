@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { access, readFile, readdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { promisify } from 'node:util';
@@ -16,9 +17,10 @@ async function source(name) {
 test('public build publishes the commercial free app and excludes private source apps', async () => {
   await execFileAsync(process.execPath, [resolve(root, 'scripts/build-static.mjs')], { cwd: root });
   const files = (await readdir(resolve(root, '.render-static'))).sort();
-  assert.deepEqual(files, ['account-admin.html', 'account-admin1.html', 'accounts.json', 'app.html', 'index.html']);
+  assert.deepEqual(files, ['account-admin.html', 'account-admin1.html', 'accounts.json', 'app.html', 'index.html', 'paywall.json']);
   assert.equal(await source('.render-static/app.html'), await source('whiteboard-pro.html'));
   assert.equal(await source('.render-static/accounts.json'), await source('accounts.json'));
+  assert.equal(await source('.render-static/paywall.json'), await source('paywall.json'));
   await assert.rejects(access(resolve(root, '.render-static/whiteboard.html')));
   await assert.rejects(access(resolve(root, '.render-static/whiteboard-pro.html')));
 });
@@ -34,6 +36,8 @@ test('gateway prefers static accounts and falls back to the account service', as
   assert.match(html, /本地账号未匹配，正在连接账号服务/);
   assert.match(html, /\.\/app\.html/);
   assert.doesNotMatch(html, /\.\/whiteboard\.html/);
+  assert.match(html, /PAYWALL_URL='\.\/paywall\.json'/);
+  assert.doesNotMatch(html, /document\.write/);
 });
 
 test('private app is full-featured while the commercial template fails closed', async () => {
@@ -50,7 +54,9 @@ test('private app is full-featured while the commercial template fails closed', 
     commercialTemplate,
     /const DEFAULT_PURCHASE_CONFIG=\{price:'59',wechat:'leewen2017'\}/,
   );
-  assert.match(commercialTemplate, /data&&data\.purchase\?data\.purchase:data\|\|\{\}/);
+  assert.match(commercialTemplate, /raw\.wx\?\?raw\.wechat/);
+  assert.match(commercialTemplate, /const PAYWALL_URL='\.\/paywall\.json'/);
+  assert.match(commercialTemplate, /fetch\(PAYWALL_URL/);
   assert.match(commercialTemplate, /function loadPurchaseConfig\(\)/);
   assert.match(commercialTemplate, /const STATIC_ADMIN_CHANNEL='wb_static_admin_cfg'/);
   assert.match(commercialTemplate, /function watchPurchaseConfigUpdates\(\)/);
@@ -62,11 +68,15 @@ test('private app is full-featured while the commercial template fails closed', 
   assert.match(commercialTemplate, /id="accountLogout"/);
   assert.match(commercialTemplate, /function openStaticProLogin\(\)/);
   assert.match(commercialTemplate, /function loginWithFallback\(/);
-  assert.match(commercialTemplate, /SERVER_PRO_GRANTED/);
+  assert.match(commercialTemplate, /function grantServerProSession\(session\)/);
+  assert.match(commercialTemplate, /function restoreServerProSession\(\)/);
+  assert.match(commercialTemplate, /function renderAccountEntry\(\)/);
+  assert.match(commercialTemplate, /grantServerProSession\(result\.session\)/);
   assert.match(commercialTemplate, /proApi\('\/api\/logout'/);
   assert.match(commercialTemplate, /localStorage\.removeItem\(STATIC_SESSION_KEY\)/);
   assert.match(commercialTemplate, /btn\.textContent=username/);
   assert.doesNotMatch(commercialTemplate, /Pro · \$\{username\}/);
+  assert.doesNotMatch(commercialTemplate, /document\.write/);
   for (const html of [privateApp, commercialTemplate]) {
     assert.match(html, /function requirePro\(feature\)/);
     assert.match(html, /微信扫码加好友 → 付款 → 获取 Pro 账号/);
@@ -119,13 +129,24 @@ test('all shipped password inputs use the four-character minimum', async () => {
 
 test('static Pro accounts contain enabled hashed accounts without plaintext passwords', async () => {
   const data = JSON.parse(await source('accounts.json'));
-  assert.ok(String(data.purchase?.price || '').trim());
-  assert.ok(String(data.purchase?.wechat || '').trim());
+  assert.equal('purchase' in data, false);
   assert.ok(data.accounts.length >= 10);
   assert.ok(data.accounts.every(account => account.enabled === true));
   assert.ok(data.accounts.every(account => account.plan === 'pro'));
   assert.ok(data.accounts.every(account => /^[a-f0-9]{64}$/.test(account.h)));
   assert.doesNotMatch(await source('accounts.json'), /WbPro-/);
+  const admin = data.accounts.find(account => account.u === 'admin');
+  const expectedAdminHash = createHash('sha256').update(`${data.salt}:admin:window2000!`).digest('hex');
+  assert.equal(admin?.h, expectedAdminHash);
+});
+
+test('paywall configuration is independent from accounts.json', async () => {
+  const data = JSON.parse(await source('paywall.json'));
+  assert.deepEqual(Object.keys(data).sort(), ['price', 'updatedAt', 'version', 'wx']);
+  assert.equal(data.version, 1);
+  assert.equal(data.price, '59');
+  assert.equal(data.wx, 'leewen2017');
+  assert.ok(String(data.updatedAt).trim());
 });
 
 test('static account admin manages accounts.json without backend API', async () => {
@@ -136,11 +157,17 @@ test('static account admin manages accounts.json without backend API', async () 
   assert.match(html, /id="purchasePrice"/);
   assert.match(html, /id="purchaseWechat"/);
   assert.match(html, /function purchaseFromInputs\(\)/);
-  assert.match(html, /purchase:purchaseFromInputs\(\)/);
+  assert.match(html, /id="pullPurchaseBtn"/);
+  assert.match(html, /id="paywallJsonOut"/);
+  assert.match(html, /function paywallFromInputs\(/);
+  assert.match(html, /function savePaywallJsonToDisk\(/);
+  assert.match(html, /function saveAccountsJsonToDisk\(/);
+  assert.match(html, /paywallFileHandle/);
+  assert.match(html, /git add paywall\.json/);
+  assert.doesNotMatch(html, /purchase:purchaseFromInputs\(\)/);
   assert.match(html, /const STATIC_ADMIN_CHANNEL='wb_static_admin_cfg'/);
   assert.match(html, /function syncPurchaseConfigOnly\(\)/);
   assert.match(html, /BroadcastChannel\(STATIC_ADMIN_CHANNEL\)/);
-  assert.match(html, /function saveJsonToDisk\(/);
   assert.match(html, /showOpenFilePicker/);
   assert.match(html, /showSaveFilePicker/);
   assert.match(html, /accountsFileHandle/);
@@ -159,6 +186,7 @@ test('static account admin manages accounts.json without backend API', async () 
   assert.match(html, /Node\/Neon 后端账号统一使用此盐值/);
   assert.match(html, /function syncStaticSaltInfo\(data\)/);
   assert.match(html, /localStorage\.setItem\(LOCAL_PURCHASE_KEY/);
+  assert.match(html, /localStorage\.setItem\(LOCAL_ACCOUNTS_KEY,JSON\.stringify\(normalizeAccounts\(data\)\)\)/);
   assert.doesNotMatch(html, /\/api\/admin/);
   assert.doesNotMatch(html, /ADMIN_TOKEN/);
 });
