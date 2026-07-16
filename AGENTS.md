@@ -39,10 +39,13 @@ npm start                            # 账号 API；需先配置 .env
 - 静态账号与 Node/Neon 共用盐值 `wb-static-pro-salt-v1`；静态用 SHA-256，后端用 scrypt；密码最少 4 位。
 - 付费配置已拆为独立 `paywall.json`（59 元 / `leewen2017`），`accounts.json` 只保存账号；管理页可分别保存、拉取和部署两个文件。
 - Neon 登录不再 `document.write()` 重载白板；当前页会由 `/api/session` 动态提升为 Pro，右下角显示用户名并提供统一退出。
+- 三个用户登录入口（独立登录页、免费版升级弹窗、Pro 模板弹窗）均使用眼睛/斜线眼睛图标显示或隐藏明文密码，并保持悬停提示与无障碍状态同步。
+- 男生、女生与综合彩铅贴纸新增 5 个“惊喜”表情：含同角色无道具版本、发现新事物版本及综合无道具版本，并同步到独立版与 Pro 模板。
+- `file://` 打开两个登录入口时会优先使用本机账号缓存，否则读取已部署的 `https://record.leewen.work/accounts.json`；Render 静态站开放该 JSON 只读跨域，账号 API 允许 `Origin: null` 作为 Neon 兜底。
 
 ## 下一步 TODO
 
-- [ ] 部署后验证 `record.leewen.work`、`auth.record.leewen.work`、Secure Cookie、`/health` 与 Render 环境变量。
+- [ ] 部署后验证 `record.leewen.work` 的 `accounts.json` CORS、`auth.record.leewen.work` 的 `Origin: null`、Secure Cookie、`/health` 与 Render 环境变量。
 - [ ] 真机验证 1/3 台设备限制、停用、改密、清空设备、刷新恢复和退出。
 - [ ] 真机验证 Chrome/Safari 的白板录制、整屏裁剪、摄像头/麦克风/系统声与 MP4 成品。
 
@@ -77,5 +80,6 @@ npm start                            # 账号 API；需先配置 .env
 
 | 日期 | 变更内容 |
 |------|----------|
-| 2026-07-16 | 拆分独立 `paywall.json` 并改为动态恢复 Neon Pro 会话，移除 `document.write()` 整页重载；why：账号与购买配置职责分离，同时修复登录后重复声明和账户按钮不同步 |
-| 2026-07-16 | 将 68 KB 接手文档改为精简索引，并把实现细节迁往按需读取的 `IMPL_NOTES.md`；why：显著降低跨 AI 工具冷启动 token，同时保留当前故障和关键红线 |
+| 2026-07-16 | 为 `file://` 登录增加线上静态账号回退并配套 Render CORS / API 来源白名单；why：让直接打开本地 HTML 时也能像 PoemGraph 一样联网校验已部署账号 |
+| 2026-07-16 | 新增 5 个透明彩铅“惊喜”贴纸并同步两个白板入口；why：补齐发现新事物与无道具惊喜表达，同时保留既有角色一致版本 |
+| 2026-07-16 | 为三个用户登录入口增加眼睛/斜线眼睛密码切换图标及回归测试；why：方便用户核对输入，并以更简洁美观的通用视觉语言保持登录和无障碍状态一致 |

@@ -14,6 +14,9 @@ services:
       - path: /*
         name: Permissions-Policy
         value: camera=(self), microphone=(self), display-capture=(self)
+      - path: /accounts.json
+        name: Access-Control-Allow-Origin
+        value: "*"
 
   - type: web
     name: whiteboard-auth
@@ -33,7 +36,7 @@ services:
       - key: ADMIN_TOKEN
         sync: false
       - key: ALLOWED_ORIGINS
-        value: https://record.leewen.work,http://localhost:8000
+        value: https://record.leewen.work,http://localhost:8000,null
       - key: COOKIE_DOMAIN
         value: .record.leewen.work
       - key: COOKIE_SECURE

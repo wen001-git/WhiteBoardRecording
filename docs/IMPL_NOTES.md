@@ -10,7 +10,7 @@
 ### 入口与数据流
 
 - `index.html` 和 `whiteboard-pro.html` 都实现“本地静态账号优先、Neon 兜底”。静态校验成功必须直接返回，不调用 `/api/login`。
-- 静态账号来自同目录 `accounts.json`；管理工具本机预览可回退 `localStorage.wb_static_accounts_json`。静态会话键为 `wb_static_pro_session`。
+- HTTP(S) 页面优先读取同目录 `accounts.json`；`file://` 页面先用 `localStorage.wb_static_accounts_json`，没有缓存时读取 `https://record.leewen.work/accounts.json`。生产静态站必须为 `/accounts.json` 返回 `Access-Control-Allow-Origin: *`，Node 的 `ALLOWED_ORIGINS` 必须显式包含 `null`，否则本地文件来源仍会被 CORS 拒绝。静态会话键为 `wb_static_pro_session`。
 - 静态哈希公式是 `SHA-256(salt:usernameLowercase:password)`；统一盐为 `wb-static-pro-salt-v1`。Node/Neon 使用相同盐但仍以 scrypt 派生，不能把两种哈希直接互换。
 - 后端入口在 `server/app.mjs`，核心路由为 `/api/login`、`/api/session`、`/api/logout`、`/api/app` 和 `/api/admin/*`；数据库访问在 `server/store.mjs`。密码规则为 4–128 位。
 - 服务端会话使用 HttpOnly Cookie；停用账号、改密或清空设备时会递增 `session_version`，旧会话随即失效。静态账号不经过设备限制。
@@ -121,5 +121,6 @@
 
 | 日期 | 变更内容 |
 |------|----------|
+| 2026-07-16 | 补充 `file://` 登录的数据源与 CORS 配套约束；why：避免只改前端地址却仍被静态站或账号 API 拒绝 |
 | 2026-07-16 | 将 Auth 小节更新为独立 paywall 和动态 Neon 会话的现行实现，保留禁止恢复 `document.write()` 的回归红线；why：让后续接手者直接沿用已修复的数据流 |
 | 2026-07-16 | 从原大型 `AGENTS.md` 提炼五个按需实现小节，保留当前入口和不可回退约束；why：降低每次接手的自动上下文成本，同时避免删除关键工程经验 |

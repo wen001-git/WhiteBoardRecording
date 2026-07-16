@@ -32,7 +32,7 @@ function staticAccounts({ password = 'local-password', enabled = true } = {}) {
   };
 }
 
-function runtime(fetchImpl, initialStorage = {}) {
+function runtime(fetchImpl, initialStorage = {}, locationOverrides = {}) {
   const store = new Map(Object.entries(initialStorage));
   const elements = new Map();
   const element = id => {
@@ -57,7 +57,7 @@ function runtime(fetchImpl, initialStorage = {}) {
     Date,
     JSON,
     navigator: { platform: 'Test' },
-    location: { hostname: 'localhost', protocol: 'http:', search: '', href: '' },
+    location: { hostname: 'localhost', protocol: 'http:', search: '', href: '', ...locationOverrides },
     crypto: { subtle: webcrypto.subtle, randomUUID },
     fetch: fetchImpl,
     localStorage: {
@@ -89,6 +89,32 @@ test('valid static credentials log in without calling the account service', asyn
   assert.equal(result.source, 'static');
   assert.deepEqual(calls, ['./accounts.json']);
   assert.equal(JSON.parse(app.store.get('wb_static_pro_session')).source, 'static');
+});
+
+test('file preview loads the deployed accounts file and still short-circuits the account service', async () => {
+  const calls = [];
+  const accounts = staticAccounts();
+  const app = runtime(async url => {
+    calls.push(String(url));
+    if (url === 'https://record.leewen.work/accounts.json') return response(200, accounts);
+    throw new Error(`unexpected request: ${url}`);
+  }, {}, {
+    hostname: '',
+    protocol: 'file:',
+    href: 'file:///Users/example/WhiteBoard/index.html',
+  });
+
+  const result = await app.auth.loginPro('local-user', 'local-password');
+  assert.equal(result.source, 'static');
+  assert.deepEqual(calls, ['https://record.leewen.work/accounts.json']);
+});
+
+test('both login surfaces use the deployed accounts file for file previews', async () => {
+  const proHtml = await readFile(resolve(root, 'whiteboard-pro.html'), 'utf8');
+  for (const source of [html, proHtml]) {
+    assert.match(source, /FILE_STATIC_ACCOUNTS_URL='https:\/\/record\.leewen\.work\/accounts\.json'/);
+    assert.match(source, /location\.protocol==='file:'\?FILE_STATIC_ACCOUNTS_URL/);
+  }
 });
 
 test('wrong, disabled, or unavailable static credentials fall back to Neon', async t => {

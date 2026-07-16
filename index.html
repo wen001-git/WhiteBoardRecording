@@ -11,7 +11,8 @@
     .intro{padding:54px;display:flex;flex-direction:column;justify-content:center;min-height:560px}.eyebrow{font-size:13px;font-weight:700;color:var(--accent);margin-bottom:14px}.intro h1{font-size:42px;line-height:1.15;margin:0 0 18px;letter-spacing:0}.intro p{color:var(--muted);font-size:17px;line-height:1.8;margin:0 0 32px;max-width:520px}
     .features{display:grid;gap:13px;margin-bottom:34px}.feature{display:flex;align-items:center;gap:10px;font-size:15px}.feature i{width:20px;height:20px;border-radius:50%;background:#e8f7ee;color:#16803c;display:grid;place-items:center;font-style:normal;font-size:12px;font-weight:800}
     button{font:inherit}.primary,.secondary{height:50px;border-radius:8px;padding:0 20px;font-weight:700;cursor:pointer}.primary{border:0;background:var(--ink);color:#fff}.secondary{border:1px solid var(--line);background:#fff;color:var(--ink)}.actions{display:flex;gap:10px;flex-wrap:wrap}
-    .login{border-left:1px solid var(--line);background:#fbfaf8;padding:42px 34px;display:flex;flex-direction:column;justify-content:center}.login h2{font-size:22px;margin:0 0 8px}.login .sub{font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:24px}.field{display:grid;gap:7px;margin-bottom:14px}.field label{font-size:13px;font-weight:700}.field input{height:46px;border:1px solid #d9d5cf;border-radius:7px;padding:0 13px;font-size:15px;outline:none;background:#fff}.field input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(91,87,214,.12)}
+    .login{border-left:1px solid var(--line);background:#fbfaf8;padding:42px 34px;display:flex;flex-direction:column;justify-content:center}.login h2{font-size:22px;margin:0 0 8px}.login .sub{font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:24px}.field{display:grid;gap:7px;margin-bottom:14px}.field label{font-size:13px;font-weight:700}.field input{width:100%;height:46px;border:1px solid #d9d5cf;border-radius:7px;padding:0 13px;font-size:15px;outline:none;background:#fff}.field input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(91,87,214,.12)}
+    .password-field{position:relative}.password-field input{padding-right:52px}.password-toggle{position:absolute;right:5px;top:50%;transform:translateY(-50%);width:36px;height:36px;border:0;background:transparent;color:var(--muted);padding:8px;display:grid;place-items:center;cursor:pointer;border-radius:7px}.password-toggle:hover{background:var(--soft);color:var(--accent)}.password-toggle svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.password-toggle .password-eye-off{display:none}.password-toggle[aria-pressed="true"] .password-eye{display:none}.password-toggle[aria-pressed="true"] .password-eye-off{display:block}
     #loginBtn{width:100%;margin-top:6px}.status{min-height:42px;font-size:13px;line-height:1.55;color:var(--muted);padding-top:12px}.status.error{color:var(--danger)}.session{display:none;padding:13px;background:#eef8f1;color:#176b36;font-size:13px;margin-bottom:14px}.session.show{display:block}
     .buy{font-size:12px;color:var(--muted);text-align:center;margin-top:18px}.buy b{color:var(--ink)}
     @media(max-width:760px){body{padding:5px}.shell{grid-template-columns:1fr}.intro{padding:34px 24px;min-height:auto}.intro h1{font-size:32px}.login{border-left:0;border-top:1px solid var(--line);padding:30px 24px}.actions>*{flex:1}}
@@ -39,7 +40,7 @@
       <div class="session" id="sessionBox"></div>
       <form id="loginForm">
         <div class="field"><label for="username">账号</label><input id="username" autocomplete="username" required></div>
-        <div class="field"><label for="password">密码</label><input id="password" type="password" autocomplete="current-password" required minlength="4"></div>
+        <div class="field"><label for="password">密码</label><div class="password-field"><input id="password" type="password" autocomplete="current-password" required minlength="4"><button class="password-toggle" id="passwordToggle" type="button" data-password-toggle="password" aria-controls="password" aria-label="显示密码" aria-pressed="false" title="显示密码"><svg class="password-eye" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.5"/></svg><svg class="password-eye-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.5"/><path d="m4 4 16 16"/></svg></button></div></div>
         <button class="primary" id="loginBtn" type="submit">登录并打开 Pro</button>
       </form>
       <div class="status" id="status" aria-live="polite"></div>
@@ -48,6 +49,7 @@
   </main>
   <script>
     const STATIC_ACCOUNTS_URL='./accounts.json';
+    const FILE_STATIC_ACCOUNTS_URL='https://record.leewen.work/accounts.json';
     const PAYWALL_URL='./paywall.json';
     const STATIC_SESSION_KEY='wb_static_pro_session';
     const LOCAL_ACCOUNTS_KEY='wb_static_accounts_json';
@@ -69,6 +71,10 @@
     const API_BASE=resolveApiBase();
     const DEVICE_KEY='wb_pro_device_id';
     let activeSessionSource='';
+    function wirePasswordToggle(button,inputId){
+      const input=document.getElementById(inputId);if(!button||!input)return;
+      button.addEventListener('click',()=>{const show=input.type==='password',label=show?'隐藏密码':'显示密码';input.type=show?'text':'password';button.title=label;button.setAttribute('aria-label',label);button.setAttribute('aria-pressed',String(show));});
+    }
     function setStatus(message,error=false){const el=document.getElementById('status');el.textContent=message;el.classList.toggle('error',error)}
     function normalizeUsername(value){return String(value||'').trim().toLowerCase()}
     function deviceId(){let id=localStorage.getItem(DEVICE_KEY);if(!id){id='wb-'+crypto.randomUUID().replaceAll('-','');localStorage.setItem(DEVICE_KEY,id)}return id}
@@ -111,14 +117,17 @@
       }catch(_error){return null}
     }
     async function loadStaticAccountsData(){
+      const local=localAccountsData();
+      if(location.protocol==='file:'&&local)return local;
       try{
-        const response=await fetch(STATIC_ACCOUNTS_URL,{cache:'no-store'});
+        const url=location.protocol==='file:'?FILE_STATIC_ACCOUNTS_URL:STATIC_ACCOUNTS_URL;
+        const response=await fetch(url,{cache:'no-store'});
         if(response.ok){
           const data=await response.json();
           if(data&&Array.isArray(data.accounts)&&data.salt)return data;
         }
       }catch(_error){}
-      return localAccountsData();
+      return local;
     }
     async function tryStaticLogin(username,password){
       let data;
@@ -189,6 +198,7 @@
         else await openStaticPro();
       }catch(error){setStatus(error.message||'登录失败',true);button.disabled=false}
     });
+    wirePasswordToggle(document.getElementById('passwordToggle'),'password');
     loadPaywallConfig();
     checkSession();
   </script>

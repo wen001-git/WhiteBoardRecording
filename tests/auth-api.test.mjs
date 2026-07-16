@@ -113,7 +113,7 @@ before(async () => {
     store,
     authSecret: 'test-auth-secret-not-for-production',
     adminToken,
-    allowedOrigins: allowedOrigin,
+    allowedOrigins: `${allowedOrigin},null`,
     cookieSecure: false,
     sessionDays: 30,
     loadProtectedApp: async () => `<!doctype html><head>${PRO_PLAN_PLACEHOLDER}<title>Protected WhiteBoard</title></head>`
@@ -142,6 +142,9 @@ test('health and CORS policy', async () => {
   const health = await request('/health');
   assert.equal(health.response.status, 200);
   assert.equal(health.data.ok, true);
+  const fileOrigin = await request('/health', { origin: 'null' });
+  assert.equal(fileOrigin.response.status, 200);
+  assert.equal(fileOrigin.response.headers.get('access-control-allow-origin'), 'null');
   const denied = await request('/api/session', { origin: 'https://evil.example' });
   assert.equal(denied.response.status, 403);
   assert.equal(denied.data.code, 'ORIGIN_DENIED');

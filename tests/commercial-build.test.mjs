@@ -127,6 +127,17 @@ test('all shipped password inputs use the four-character minimum', async () => {
   }
 });
 
+test('all customer login forms can show and hide the password', async () => {
+  for (const file of ['index.html', 'whiteboard.html', 'whiteboard-pro.html']) {
+    const html = await source(file);
+    assert.match(html, /data-password-toggle="(?:password|proPassword)"[^>]*aria-label="显示密码"/);
+    assert.match(html, /<svg class="password-eye"[^>]*aria-hidden="true">/);
+    assert.match(html, /<svg class="password-eye-off"[^>]*aria-hidden="true">/);
+    assert.match(html, /input\.type=show\?'text':'password'/);
+    assert.match(html, /button\.setAttribute\('aria-pressed',String\(show\)\)/);
+  }
+});
+
 test('static Pro accounts contain enabled hashed accounts without plaintext passwords', async () => {
   const data = JSON.parse(await source('accounts.json'));
   assert.equal('purchase' in data, false);
@@ -200,6 +211,8 @@ test('Render blueprint has one protected Node service in Oregon', async () => {
   for (const key of ['DATABASE_URL', 'AUTH_SECRET', 'ADMIN_TOKEN', 'ALLOWED_ORIGINS', 'COOKIE_DOMAIN']) {
     assert.match(yaml, new RegExp(`key: ${key}`));
   }
+  assert.match(yaml, /path: \/accounts\.json\s+name: Access-Control-Allow-Origin\s+value: "\*"/);
+  assert.match(yaml, /value: https:\/\/record\.leewen\.work,http:\/\/localhost:8000,null/);
 });
 
 test('inline JavaScript in shipped HTML parses successfully', async () => {

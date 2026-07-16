@@ -23,7 +23,7 @@ const handler = createApp({
   store,
   authSecret: process.env.AUTH_SECRET,
   adminToken: process.env.ADMIN_TOKEN,
-  allowedOrigins: process.env.ALLOWED_ORIGINS || 'https://record.leewen.work,http://localhost:8000',
+  allowedOrigins: process.env.ALLOWED_ORIGINS || 'https://record.leewen.work,http://localhost:8000,null',
   cookieDomain: process.env.COOKIE_DOMAIN || '',
   cookieSecure: process.env.COOKIE_SECURE !== '0',
   sessionDays: process.env.SESSION_DAYS || 30,
