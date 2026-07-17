@@ -14,6 +14,24 @@ async function source(name) {
   return readFile(resolve(root, name), 'utf8');
 }
 
+function embeddedSticker(html, name) {
+  const start = html.indexOf(`{name:'${name}'`);
+  const end = html.indexOf('}\n      ,', start);
+  assert.notEqual(start, -1, `${name} should exist`);
+  assert.notEqual(end, -1, `${name} should have a complete object`);
+  const object = html.slice(start, end + 1);
+  const dimensions = object.match(/w:(\d+),h:(\d+),src:'data:image\/webp;base64,'\+/);
+  assert.ok(dimensions, `${name} should be an inline WebP`);
+  const base64 = [...object.matchAll(/'([A-Za-z0-9+/=]+)'/g)]
+    .map((match) => match[1])
+    .join('');
+  return {
+    width: Number(dimensions[1]),
+    height: Number(dimensions[2]),
+    bytes: Buffer.from(base64, 'base64'),
+  };
+}
+
 test('public build publishes the commercial free app and excludes private source apps', async () => {
   await execFileAsync(process.execPath, [resolve(root, 'scripts/build-static.mjs')], { cwd: root });
   const files = (await readdir(resolve(root, '.render-static'))).sort();
@@ -115,6 +133,56 @@ test('sticker tools stay above slide canvas controls in both whiteboard variants
     assert.match(html, /\.slideFrame\{position:fixed;z-index:57;/);
     assert.match(html, /#slideRevealFloatBtn\{position:fixed;z-index:58;/);
     assert.match(html, /\.sticker-popover\{position:fixed;z-index:59;/);
+  }
+});
+
+test('remote meeting AI comic stickers ship identically in both whiteboard variants', async () => {
+  const groups = [];
+  const names = ['远程会议', '实时记录', '实时翻译', '详细纪要', '会议总结', '行动计划'];
+
+  for (const file of ['whiteboard.html', 'whiteboard-pro.html']) {
+    const html = await source(file);
+    const start = html.indexOf("{id:'meeting',label:'会议场景',stickers:[");
+    const end = html.indexOf('\n    ]}', start);
+    assert.notEqual(start, -1, `${file} should include the meeting sticker group`);
+    assert.notEqual(end, -1, `${file} should close the meeting sticker group`);
+    const group = html.slice(start, end);
+    assert.equal((group.match(/data:image\/webp;base64,/g) || []).length, 6);
+    for (const name of names) assert.ok(group.includes(`会议场景·${name}`));
+    groups.push(group);
+  }
+
+  assert.equal(groups[0], groups[1]);
+});
+
+test('praise stickers are embedded identically in both whiteboard variants', async () => {
+  const expected = {
+    '男生·表扬': {
+      width: 182,
+      height: 420,
+      sha256: 'fe9571d0b26b0d1dc130aac71e7bc1b848d749ae75901b0ef6d2a3bcef1c4a9b',
+    },
+    '女生·表扬': {
+      width: 178,
+      height: 420,
+      sha256: '7bf975b9cd751973048e575c9e685a70dc700ba3b079190dc237cff66fff3d44',
+    },
+    '综合·女孩点赞': {
+      width: 417,
+      height: 420,
+      sha256: '263aca8304bcc6db7a60d4a6808c74f59c86be183bec02efe5ee99a77e0cd532',
+    },
+  };
+  const apps = await Promise.all(['whiteboard.html', 'whiteboard-pro.html'].map(source));
+
+  for (const [name, asset] of Object.entries(expected)) {
+    const embedded = apps.map((html) => embeddedSticker(html, name));
+    for (const sticker of embedded) {
+      assert.equal(sticker.width, asset.width);
+      assert.equal(sticker.height, asset.height);
+      assert.equal(createHash('sha256').update(sticker.bytes).digest('hex'), asset.sha256);
+    }
+    assert.deepEqual(embedded[0].bytes, embedded[1].bytes);
   }
 });
 
