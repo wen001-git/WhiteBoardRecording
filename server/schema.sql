@@ -23,3 +23,15 @@ CREATE TABLE IF NOT EXISTS devices (
 );
 
 CREATE INDEX IF NOT EXISTS devices_account_id_idx ON devices(account_id);
+
+CREATE TABLE IF NOT EXISTS login_events (
+  id BIGSERIAL PRIMARY KEY,
+  account_id BIGINT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+  device_id TEXT NOT NULL,
+  device_name TEXT NOT NULL DEFAULT '',
+  ip_address TEXT NOT NULL,
+  user_agent TEXT NOT NULL DEFAULT '',
+  logged_in_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS login_events_account_time_idx ON login_events(account_id, logged_in_at DESC);

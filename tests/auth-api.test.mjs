@@ -28,6 +28,7 @@ class MemoryStore {
       maxDevices,
       sessionVersion: 1,
       devices: [],
+      loginEvents: [],
       createdAt: new Date().toISOString(),
       lastLoginAt: null
     };
@@ -51,6 +52,10 @@ class MemoryStore {
   }
 
   async touchLogin(id) { const account = await this.getAccountById(id); account.lastLoginAt = new Date().toISOString(); }
+  async recordLogin(id, login) {
+    const account = await this.getAccountById(id);
+    account.loginEvents.unshift({ id: account.loginEvents.length + 1, ...login, loggedInAt: new Date().toISOString() });
+  }
   async validateSession(id, deviceId, version) {
     const account = await this.getAccountById(id);
     if (!account || !account.enabled || account.sessionVersion !== Number(version)) return null;
@@ -91,14 +96,15 @@ const store = new MemoryStore();
 let server;
 let base;
 
-async function request(path, { method = 'GET', body, cookie, admin = false, origin = allowedOrigin } = {}) {
+async function request(path, { method = 'GET', body, cookie, admin = false, origin = allowedOrigin, headers = {} } = {}) {
   const response = await fetch(base + path, {
     method,
     headers: {
       origin,
       ...(body ? { 'content-type': 'application/json' } : {}),
       ...(cookie ? { cookie } : {}),
-      ...(admin ? { authorization: `Bearer ${adminToken}` } : {})
+      ...(admin ? { authorization: `Bearer ${adminToken}` } : {}),
+      ...headers
     },
     body: body ? JSON.stringify(body) : undefined
   });
@@ -194,6 +200,57 @@ test('login binds devices and rejects the fourth device', async () => {
   const session = await request('/api/session', { cookie: lastCookie });
   assert.equal(session.response.status, 200);
   assert.equal(session.data.plan, 'pro');
+});
+
+test('successful Neon logins record IP history while failed logins do not', async () => {
+  const account = await store.getAccountByUsername('creator');
+  const before = account.loginEvents.length;
+  for (const ipAddress of ['203.0.113.10', '198.51.100.24']) {
+    const login = await request('/api/login', {
+      method: 'POST',
+      headers: { 'x-forwarded-for': `${ipAddress}, 10.0.0.1`, 'user-agent': 'IP history test browser' },
+      body: { username: 'creator', password: 'creator-pass-123', deviceId: 'creator-device-001', deviceName: 'Test Mac' }
+    });
+    assert.equal(login.response.status, 200);
+  }
+  const failed = await request('/api/login', {
+    method: 'POST',
+    headers: { 'x-forwarded-for': '192.0.2.99' },
+    body: { username: 'creator', password: 'wrong-password', deviceId: 'creator-device-001' }
+  });
+  assert.equal(failed.response.status, 401);
+  const admin = await request('/api/admin/accounts', { admin: true });
+  const creator = admin.data.accounts.find(item => item.id === account.id);
+  assert.equal(creator.loginEvents.length, before + 2);
+  assert.deepEqual(creator.loginEvents.slice(0, 2).map(item => item.ipAddress), ['198.51.100.24', '203.0.113.10']);
+  assert.equal(creator.loginEvents[0].deviceName, 'Test Mac');
+  assert.equal(creator.loginEvents[0].userAgent, 'IP history test browser');
+});
+
+test('successful login response does not wait for the IP audit write', async () => {
+  const originalRecordLogin = store.recordLogin;
+  let releaseAudit;
+  store.recordLogin = async function delayedRecordLogin(...args) {
+    await new Promise(resolve => { releaseAudit = resolve; });
+    return originalRecordLogin.apply(this, args);
+  };
+  try {
+    const result = await Promise.race([
+      request('/api/login', {
+        method: 'POST',
+        headers: { 'x-forwarded-for': '203.0.113.88' },
+        body: { username: 'creator', password: 'creator-pass-123', deviceId: 'creator-device-001' }
+      }),
+      new Promise(resolve => setTimeout(() => resolve({ timedOut: true }), 500))
+    ]);
+    assert.notEqual(result.timedOut, true);
+    assert.equal(result.response.status, 200);
+    assert.equal(typeof releaseAudit, 'function');
+  } finally {
+    releaseAudit?.();
+    store.recordLogin = originalRecordLogin;
+    await new Promise(resolve => setImmediate(resolve));
+  }
 });
 
 test('one-device test account rejects its second device', async () => {

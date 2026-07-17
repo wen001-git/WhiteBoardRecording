@@ -21,6 +21,7 @@
 - `grantServerProSession()` 动态更新 `APP_PLAN/IS_PRO/SERVER_PRO_GRANTED`，`renderAccountEntry()` 同步右下角用户名、Pro 样式和退出菜单。不要恢复整页脚本二次执行，否则会再次触发 `screenVideo` 等全局声明冲突。
 - 账户入口只绑定一次事件，点击行为根据当前 `IS_PRO` 决定打开登录或菜单；退出同时清理静态 session 并调用 `/api/logout`，避免两种会话叠加。
 - `/api/app` 仍保留为服务端兼容接口和授权标记测试，但当前静态入口不依赖它加载页面。
+- Neon 成功登录响应结束后，服务端异步写入 `login_events`（IP、设备、User-Agent、时间）；失败登录、设备超限和本地静态账号不记录，审计写入失败也不得拖慢或阻断登录。管理 API 每个账号只返回最近 100 条，`account-admin.html` 对任意 1 小时窗口内至少 2 个不同 IP 给出共享风险提醒；VPN 和移动网络切换可能产生误报。
 
 ### 独立购买配置
 
@@ -73,11 +74,12 @@
 <a id="slides"></a>
 ## Slides — 幻灯片、比例与 DOM 浮层
 
-- 幻灯片数据是 `state.slides[{id,x,y,w,h}]` 与 `state.activeSlide`，属于文档元数据，不在 `state.scene` 中，也不进入普通对象撤销栈。
+- 幻灯片数据是 `state.slides[{id,x,y,w,h,backgroundColor}]` 与 `state.activeSlide`；`backgroundColor:null` 表示继承 `state.canvasBackground`。文档 v2 保存全局底色和单页覆盖，旧文档缺字段时回退纯白/继承。
 - `addSlide()` 通过 `createSlideAtSmartPosition()`：当前视野接近 active slide 时在右侧找空位；用户已移动到远处空白时按当前 viewport 中心创建。
 - `insertSlideAt()` 通过 `createSlideForDeckInsert()` 和 `shiftSlidesAndContents()` 线性插入；后续幻灯片及中心落在其中的对象必须一起右移，保持面板顺序、世界坐标从左到右顺序和录制顺序一致。
 - `selectSlide()` 是选中并对焦的单一入口；setup/recording/paused 时还要同步 `recConfig.frame`。比例修改统一走 `setRecordingRatio()` / `setCustomRecordingRatio()`，已有幻灯片由 `resizeSlidesToRatio()` 保持中心重算。
 - `#slideFramesLayer`、幻灯片序号、`#slideRevealFloatBtn`、`#minimap` 和比例弹层都是 DOM UI，不得写入 canvas。笔迹播放本身由 `drawSlideRevealOverlay()` 画入 board，才能进入录制。
+- 背景渲染顺序固定为全局底色 → 单页覆盖 → 对象；背景改动进入扩展后的对象撤销快照，但不改变幻灯片增删的既有撤销行为。鸟瞰图和笔迹播放必须使用 `effectiveSlideBackground()`，深色页的笔迹提取需排除背景并改用浅色轮廓。
 - 层级约束：录制框之上仍需看见幻灯片边框，笔迹按钮再高一层；打开的贴纸工具面板必须继续覆盖二者，避免幻灯片标签、边框或笔迹按钮穿透工具面板。`applyFrameStyle()` 不能为了 UI 按钮缩短最终取景框。
 - `.slidesList` 必须保持 `overflow-x:hidden`，否则纵向滚动条会引发横向溢出；删除角标负偏移依赖列表 padding，调整窄面板尺寸时需同时验证二者。
 
@@ -88,6 +90,7 @@
 
 - `recConfig` 保存比例、背景、白卡片边距/圆角、取景框、摄像头、麦克风、光标效果和文字水印；状态机为 idle → setup → recording → paused。
 - `drawRecFrame()` 顺序：背景 → 白卡片 → 裁剪后的 board → 摄像头 → 光标高亮 → 用户文字水印 → 计划/免费版强制水印。`recCanvas.captureStream(30)` 与 `getRecordingAudioTracks()` 组成最终 MediaStream。
+- 画布底色与录制壁纸是两套配置：前者属于文档并已画进 `board`，后者属于 `recConfig` 且只装饰白卡片外层；录制设置预览的卡片应显示当前有效画布底色。
 - 可选文字水印使用 `wb_recording_watermark_v1` 本机保存，最多 40 字，支持九宫格预设、预览拖动后的归一化自定义位置、大小与透明度；水印只参与最终合成，不成为白板对象。
 - `recConfig.showCamera` 只控制成品是否叠加摄像头；硬件占用由 `enableUserMedia()` / `stopUserMedia()` 和 `#mediaToggle` 管理。硬件关闭时不得偷偷重新请求麦克风。
 
@@ -128,6 +131,6 @@
 
 | 日期 | 变更内容 |
 |------|----------|
+| 2026-07-18 | 记录 Neon 成功登录 IP 历史、异步非阻塞写入和一小时多 IP 提醒；why：辅助识别账号共享且不增加用户登录等待 |
+| 2026-07-17 | 记录全局画布底色、单页覆盖、v2 文档及笔迹/录像渲染约束；why：避免后续把文档底色与录制壁纸混为同一配置 |
 | 2026-07-17 | 记录录制文字水印的设置、持久化和白板/录屏合成顺序；why：避免后续把预览 DOM 或白板对象误混入录像管线 |
-| 2026-07-17 | 记录远程会议 AI 助手的 6 张连续场景贴纸；why：确保两个白板版本长期保持素材、命名和叙事顺序一致 |
-| 2026-07-17 | 记录男女“表扬”和综合“女孩点赞”贴纸的透明处理及两版同步约束；why：后续扩充或压缩素材时保持角色一致与边缘质量 |

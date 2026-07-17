@@ -33,6 +33,17 @@ function deviceFromRow(row) {
   };
 }
 
+function loginEventFromRow(row) {
+  return {
+    id: Number(row.id),
+    deviceId: row.device_id,
+    deviceName: row.device_name || '',
+    ipAddress: row.ip_address || '',
+    userAgent: row.user_agent || '',
+    loggedInAt: row.logged_in_at
+  };
+}
+
 export class PgAccountStore {
   constructor(connectionString) {
     if (!connectionString) throw new Error('DATABASE_URL 未配置');
@@ -100,6 +111,14 @@ export class PgAccountStore {
     await this.pool.query('UPDATE accounts SET last_login_at=NOW() WHERE id=$1', [accountId]);
   }
 
+  async recordLogin(accountId, login) {
+    await this.pool.query(
+      `INSERT INTO login_events(account_id,device_id,device_name,ip_address,user_agent)
+       VALUES($1,$2,$3,$4,$5)`,
+      [accountId, login.deviceId, login.deviceName || '', login.ipAddress || '', login.userAgent || '']
+    );
+  }
+
   async validateSession(accountId, deviceId, sessionVersion) {
     const result = await this.pool.query(
       `SELECT a.*,d.id AS device_row_id FROM accounts a
@@ -125,17 +144,33 @@ export class PgAccountStore {
   }
 
   async listAccounts() {
-    const [accountsResult, devicesResult] = await Promise.all([
+    const [accountsResult, devicesResult, loginsResult] = await Promise.all([
       this.pool.query('SELECT * FROM accounts ORDER BY created_at DESC'),
-      this.pool.query('SELECT * FROM devices ORDER BY last_seen_at DESC')
+      this.pool.query('SELECT * FROM devices ORDER BY last_seen_at DESC'),
+      this.pool.query(
+        `SELECT * FROM (
+           SELECT login_events.*,ROW_NUMBER() OVER (PARTITION BY account_id ORDER BY logged_in_at DESC) AS account_row
+           FROM login_events
+         ) recent WHERE account_row<=100 ORDER BY logged_in_at DESC`
+      )
     ]);
-    const byAccount = new Map();
+    const devicesByAccount = new Map();
     for (const row of devicesResult.rows) {
-      const list = byAccount.get(Number(row.account_id)) || [];
+      const list = devicesByAccount.get(Number(row.account_id)) || [];
       list.push(deviceFromRow(row));
-      byAccount.set(Number(row.account_id), list);
+      devicesByAccount.set(Number(row.account_id), list);
     }
-    return accountsResult.rows.map(row => ({ ...accountFromRow(row), devices: byAccount.get(Number(row.id)) || [] }));
+    const loginsByAccount = new Map();
+    for (const row of loginsResult.rows) {
+      const list = loginsByAccount.get(Number(row.account_id)) || [];
+      list.push(loginEventFromRow(row));
+      loginsByAccount.set(Number(row.account_id), list);
+    }
+    return accountsResult.rows.map(row => ({
+      ...accountFromRow(row),
+      devices: devicesByAccount.get(Number(row.id)) || [],
+      loginEvents: loginsByAccount.get(Number(row.id)) || []
+    }));
   }
 
   async updateAccount(id, patch) {

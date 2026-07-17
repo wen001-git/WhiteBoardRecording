@@ -15,7 +15,8 @@ function publicAccount(account) {
     maxDevices: account.maxDevices,
     createdAt: account.createdAt,
     lastLoginAt: account.lastLoginAt,
-    devices: account.devices || []
+    devices: account.devices || [],
+    loginEvents: account.loginEvents || []
   };
 }
 
@@ -127,11 +128,12 @@ export function createApp(options) {
           attempt.count += 1; loginAttempts.set(ip, attempt);
           return sendJson(res, 401, { ok: false, code: account && !account.enabled ? 'ACCOUNT_DISABLED' : 'LOGIN_FAILED', message: account && !account.enabled ? '账号已停用，请联系作者' : '账号或密码不正确' }, cors);
         }
-        const binding = await store.bindDevice(account.id, {
+        const device = {
           deviceId,
           deviceName: String(body.deviceName || '').slice(0, 120),
           userAgent: String(req.headers['user-agent'] || '').slice(0, 500)
-        });
+        };
+        const binding = await store.bindDevice(account.id, device);
         if (!binding.ok) {
           return sendJson(res, binding.reason === 'DEVICE_LIMIT' ? 403 : 401, {
             ok: false,
@@ -145,10 +147,14 @@ export function createApp(options) {
         const exp = now + sessionDays * 86_400_000;
         const token = signSession({ accountId: account.id, username: account.username, deviceId, sessionVersion: account.sessionVersion, iat: now, exp }, authSecret);
         loginAttempts.delete(ip);
-        return sendJson(res, 200, { ok: true, plan: 'pro', username: account.username, maxDevices: account.maxDevices, expiresAt: exp }, {
+        sendJson(res, 200, { ok: true, plan: 'pro', username: account.username, maxDevices: account.maxDevices, expiresAt: exp }, {
           ...cors,
           'set-cookie': sessionCookie(COOKIE_NAME, token, { secure: cookieSecure, domain: cookieDomain, maxAge: sessionDays * 86_400 })
         });
+        void store.recordLogin(account.id, { ...device, ipAddress: ip.slice(0, 128) }).catch(error => {
+          console.error('Failed to record successful login', error);
+        });
+        return;
       }
 
       if (req.method === 'GET' && url.pathname === '/api/session') {

@@ -10,15 +10,15 @@
     body{padding:24px}.page{width:min(1120px,100%);margin:auto}.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:22px}.topbar h1{font-size:25px;margin:0}.topbar p{margin:5px 0 0;color:var(--muted);font-size:13px}.status{min-height:22px;color:var(--muted);font-size:13px}.status.error{color:var(--danger)}
     .panel{background:#fff;border:1px solid var(--line);box-shadow:0 10px 34px rgba(35,31,46,.08);padding:20px;margin-bottom:18px}.panel h2{font-size:16px;margin:0 0 16px}.grid{display:grid;grid-template-columns:2fr 2fr 1fr auto;gap:12px;align-items:end}.field{display:grid;gap:6px}.field label{font-size:12px;font-weight:700;color:#58544f}.field input{height:42px;border:1px solid #d8d4ce;border-radius:6px;padding:0 11px;font:inherit;min-width:0}.field input:focus{outline:0;border-color:var(--accent);box-shadow:0 0 0 3px rgba(91,87,214,.12)}
     button{font:inherit;font-weight:700;cursor:pointer;border-radius:6px;height:40px;padding:0 14px;border:1px solid var(--line);background:#fff;color:var(--ink)}button:hover{background:#f7f6fa}button:disabled{opacity:.45;cursor:not-allowed}.primary{background:var(--ink);border-color:var(--ink);color:#fff}.danger{color:var(--danger)}.compact{height:34px;padding:0 10px;font-size:12px}.token-row{display:grid;grid-template-columns:minmax(260px,1fr) minmax(220px,1fr) auto;gap:12px;align-items:end}
-    .accounts{background:#fff;border:1px solid var(--line);box-shadow:0 10px 34px rgba(35,31,46,.08)}.accounts-head,.account-main{display:grid;grid-template-columns:minmax(150px,1.2fr) 110px 120px minmax(180px,1.3fr) auto;gap:12px;align-items:center}.accounts-head{padding:11px 16px;background:#f3f1ed;color:var(--muted);font-size:12px;font-weight:700}.account{border-top:1px solid var(--line)}.account:first-of-type{border-top:0}.account-main{padding:15px 16px}.username{font-weight:800}.meta{font-size:11px;color:var(--muted);margin-top:4px}.badge{display:inline-flex;align-items:center;gap:6px;font-size:12px}.dot{width:8px;height:8px;border-radius:50%;background:var(--good)}.off .dot{background:#aaa}.actions{display:flex;gap:7px;justify-content:flex-end;flex-wrap:wrap}.device-limit{width:70px;height:34px;border:1px solid var(--line);border-radius:5px;padding:0 7px}.devices{display:none;background:#fbfaf8;border-top:1px solid var(--line);padding:12px 16px}.account.open .devices{display:block}.device{display:grid;grid-template-columns:minmax(150px,1fr) minmax(240px,2fr) 150px;gap:12px;padding:8px 0;border-top:1px solid #eeeae4;font-size:12px}.device:first-child{border-top:0}.empty{padding:40px;text-align:center;color:var(--muted)}
+    .accounts{background:#fff;border:1px solid var(--line);box-shadow:0 10px 34px rgba(35,31,46,.08)}.accounts-head,.account-main{display:grid;grid-template-columns:minmax(150px,1.2fr) 110px 120px minmax(180px,1.3fr) auto;gap:12px;align-items:center}.accounts-head{padding:11px 16px;background:#f3f1ed;color:var(--muted);font-size:12px;font-weight:700}.account{border-top:1px solid var(--line)}.account:first-of-type{border-top:0}.account-main{padding:15px 16px}.username{font-weight:800}.meta{font-size:11px;color:var(--muted);margin-top:4px}.badge{display:inline-flex;align-items:center;gap:6px;font-size:12px}.dot{width:8px;height:8px;border-radius:50%;background:var(--good)}.off .dot{background:#aaa}.actions{display:flex;gap:7px;justify-content:flex-end;flex-wrap:wrap}.device-limit{width:70px;height:34px;border:1px solid var(--line);border-radius:5px;padding:0 7px}.devices{display:none;background:#fbfaf8;border-top:1px solid var(--line);padding:12px 16px}.account.open .devices{display:block}.subsection{margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}.subsection:first-child{margin-top:0;padding-top:0;border-top:0}.subsection-title{font-size:12px;font-weight:800;margin-bottom:7px}.device{display:grid;grid-template-columns:minmax(150px,1fr) minmax(240px,2fr) 150px;gap:12px;padding:8px 0;border-top:1px solid #eeeae4;font-size:12px}.device:first-of-type{border-top:0}.login{display:grid;grid-template-columns:minmax(130px,.8fr) minmax(130px,1fr) minmax(260px,2fr) 150px;gap:12px;padding:8px 0;border-top:1px solid #eeeae4;font-size:12px}.login-head{color:var(--muted);font-weight:700}.ip{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all}.warning{margin:8px 0;padding:9px 10px;border:1px solid #efc46e;background:#fff8e6;color:#78530c;font-size:12px;border-radius:6px}.empty{padding:40px;text-align:center;color:var(--muted)}
     dialog{border:0;padding:0;width:min(440px,calc(100% - 28px));box-shadow:0 20px 80px rgba(0,0,0,.25)}dialog::backdrop{background:rgba(30,30,30,.46)}.dialog-body{padding:24px}.dialog-body h2{margin:0 0 17px;font-size:19px}.dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
-    @media(max-width:820px){body{padding:8px}.grid,.token-row{grid-template-columns:1fr}.accounts-head{display:none}.account-main{grid-template-columns:1fr 1fr}.account-main>:first-child,.account-main>.actions{grid-column:1/-1}.actions{justify-content:flex-start}.device{grid-template-columns:1fr}.topbar{align-items:flex-start;flex-direction:column}}
+    @media(max-width:820px){body{padding:8px}.grid,.token-row{grid-template-columns:1fr}.accounts-head{display:none}.account-main{grid-template-columns:1fr 1fr}.account-main>:first-child,.account-main>.actions{grid-column:1/-1}.actions{justify-content:flex-start}.device,.login{grid-template-columns:1fr}.login-head{display:none}.topbar{align-items:flex-start;flex-direction:column}}
   </style>
 </head>
 <body>
   <main class="page">
     <header class="topbar">
-      <div><h1>账号管理</h1><p>创建 Pro 账号、控制设备数量并处理设备解绑。</p></div>
+      <div><h1>账号管理</h1><p>创建 Pro 账号、控制设备数量，并查看 Neon 账号的成功登录 IP。</p></div>
       <div class="status" id="status" aria-live="polite"></div>
     </header>
 
@@ -86,6 +86,17 @@ function resolveApiBase(){
     function status(message,error=false){statusEl.textContent=message;statusEl.classList.toggle('error',error)}
     function escapeHtml(value){return String(value??'').replace(/[&<>'"]/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]))}
     function formatDate(value){if(!value)return '尚未登录';try{return new Intl.DateTimeFormat('zh-CN',{dateStyle:'medium',timeStyle:'short'}).format(new Date(value))}catch{return String(value)}}
+    function detectIpBurst(events){
+      const hour=60*60*1000;
+      const list=(events||[]).map(event=>({...event,time:new Date(event.loggedInAt).getTime()})).filter(event=>event.ipAddress&&Number.isFinite(event.time)).sort((a,b)=>a.time-b.time);
+      let best=null;
+      for(let start=0;start<list.length;start+=1){
+        const addresses=new Set();let end=start;
+        while(end<list.length&&list[end].time-list[start].time<=hour){addresses.add(list[end].ipAddress);end+=1}
+        if(addresses.size>=2&&(!best||addresses.size>best.count))best={count:addresses.size,from:list[start].loggedInAt,to:list[end-1].loggedInAt};
+      }
+      return best;
+    }
 async function request(path,options={}){
   if(location.protocol==='file:'){
     throw new Error(`当前通过 file:// 打开，浏览器会阻止跨域管理请求。请在项目目录运行 python3 -m http.server 8000，再打开 ${LOCAL_ADMIN_URL}`);
@@ -106,22 +117,32 @@ async function request(path,options={}){
     }
     function render(){
       if(!accounts.length){accountList.innerHTML='<div class="empty">还没有账号，可以先创建一个测试账号</div>';return}
-      accountList.innerHTML=accounts.map(account=>`<article class="account" data-id="${account.id}">
+      accountList.innerHTML=accounts.map(account=>{
+        const loginEvents=account.loginEvents||[];
+        const burst=detectIpBurst(loginEvents);
+        return `<article class="account" data-id="${account.id}">
         <div class="account-main">
           <div><div class="username">${escapeHtml(account.username)}</div><div class="meta">创建于 ${formatDate(account.createdAt)}</div></div>
           <div class="badge ${account.enabled?'':'off'}"><i class="dot"></i>${account.enabled?'已启用':'已停用'}</div>
           <div><input class="device-limit" type="number" min="1" max="20" value="${account.maxDevices}" aria-label="设备上限"></div>
           <div>${formatDate(account.lastLoginAt)}<div class="meta">已绑定 ${account.devices.length} 台设备</div></div>
           <div class="actions">
-            <button class="compact" data-action="devices">设备</button>
+            <button class="compact" data-action="devices">设备 / 登录 IP</button>
             <button class="compact" data-action="password">改密码</button>
             <button class="compact ${account.enabled?'danger':''}" data-action="toggle">${account.enabled?'停用':'启用'}</button>
           </div>
         </div>
-        <div class="devices">${account.devices.length?account.devices.map(device=>`<div class="device"><span>${escapeHtml(device.deviceName||'未命名设备')}</span><span title="${escapeHtml(device.userAgent)}">${escapeHtml(device.userAgent||device.deviceId)}</span><span>${formatDate(device.lastSeenAt)}</span></div>`).join(''):'<div class="meta">暂无绑定设备</div>'}
-          ${account.devices.length?'<div class="actions" style="margin-top:10px"><button class="compact danger" data-action="clear">清空全部设备</button></div>':''}
+        <div class="devices">
+          <section class="subsection"><div class="subsection-title">已绑定设备</div>
+            ${account.devices.length?account.devices.map(device=>`<div class="device"><span>${escapeHtml(device.deviceName||'未命名设备')}</span><span title="${escapeHtml(device.userAgent)}">${escapeHtml(device.userAgent||device.deviceId)}</span><span>${formatDate(device.lastSeenAt)}</span></div>`).join(''):'<div class="meta">暂无绑定设备</div>'}
+            ${account.devices.length?'<div class="actions" style="margin-top:10px"><button class="compact danger" data-action="clear">清空全部设备</button></div>':''}
+          </section>
+          <section class="subsection"><div class="subsection-title">最近成功登录 IP（最多 100 条，仅 Neon 账号）</div>
+            ${burst?`<div class="warning">提醒：检测到 1 小时内使用 ${burst.count} 个不同 IP（${formatDate(burst.from)} 至 ${formatDate(burst.to)}）。这可能是账号共享，也可能由 VPN、移动网络切换造成。</div>`:''}
+            ${loginEvents.length?`<div class="login login-head"><span>IP 地址</span><span>设备</span><span>浏览器</span><span>登录时间</span></div>${loginEvents.map(login=>`<div class="login"><span class="ip">${escapeHtml(login.ipAddress||'未知')}</span><span>${escapeHtml(login.deviceName||login.deviceId||'未命名设备')}</span><span title="${escapeHtml(login.userAgent)}">${escapeHtml(login.userAgent||'未知浏览器')}</span><span>${formatDate(login.loggedInAt)}</span></div>`).join('')}`:'<div class="meta">暂无登录记录；部署此版本后的新登录才会出现在这里。</div>'}
+          </section>
         </div>
-      </article>`).join('');
+      </article>`}).join('');
     }
     async function loadAccounts(){
       status('正在连接账号服务，休眠唤醒可能需要约 30–60 秒…');

@@ -194,6 +194,10 @@ test('admin token remains session-only and new accounts default to three devices
   assert.doesNotMatch(html, /localStorage\.[^(]*\([^)]*wb_admin_token/);
   assert.match(html, /value="3"/);
   assert.equal((html.match(/minlength="4"/g) || []).length, 2);
+  assert.match(html, /设备 \/ 登录 IP/);
+  assert.match(html, /最近成功登录 IP（最多 100 条，仅 Neon 账号）/);
+  assert.match(html, /function detectIpBurst\(events\)/);
+  assert.match(html, /检测到 1 小时内使用/);
 });
 
 test('all shipped password inputs use the four-character minimum', async () => {
