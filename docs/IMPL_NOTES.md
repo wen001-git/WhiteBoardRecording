@@ -86,8 +86,9 @@
 
 ### 白板录制
 
-- `recConfig` 保存比例、背景、白卡片边距/圆角、取景框、摄像头、麦克风和光标效果；状态机为 idle → setup → recording → paused。
-- `drawRecFrame()` 顺序：背景 → 白卡片 → 裁剪后的 board → 摄像头 → 光标高亮。`recCanvas.captureStream(30)` 与 `getRecordingAudioTracks()` 组成最终 MediaStream。
+- `recConfig` 保存比例、背景、白卡片边距/圆角、取景框、摄像头、麦克风、光标效果和文字水印；状态机为 idle → setup → recording → paused。
+- `drawRecFrame()` 顺序：背景 → 白卡片 → 裁剪后的 board → 摄像头 → 光标高亮 → 用户文字水印 → 计划/免费版强制水印。`recCanvas.captureStream(30)` 与 `getRecordingAudioTracks()` 组成最终 MediaStream。
+- 可选文字水印使用 `wb_recording_watermark_v1` 本机保存，最多 40 字，支持九宫格预设、预览拖动后的归一化自定义位置、大小与透明度；水印只参与最终合成，不成为白板对象。
 - `recConfig.showCamera` 只控制成品是否叠加摄像头；硬件占用由 `enableUserMedia()` / `stopUserMedia()` 和 `#mediaToggle` 管理。硬件关闭时不得偷偷重新请求麦克风。
 
 ### 录屏
@@ -95,6 +96,7 @@
 - `getDisplayMedia()` 后读取 `displaySurface`：browser/window 使用完整来源并直接开始；monitor 或未知来源进入冻结预览和独立区域裁剪。
 - `#screenVideo` 离屏隐藏，仅作 fallback 取帧源；Chrome/Edge 优先用 `MediaStreamTrackProcessor` 的 VideoFrame 驱动 `drawScreenFrame()`，避免页面切后台掉帧。
 - 裁剪使用会话级归一化 `screenCropNorm{x,y,w,h}`，不能复用或持久化白板 `recConfig.frame`。`#screenStage/#screenSnap/#screenCropFrame` 都是 DOM，不进入输出。
+- `drawScreenFrame()` 与白板录制共用 `drawUserWatermark()`，顺序同样在摄像头合成后、计划/免费版强制水印前；设置预览里的 `#previewWatermark` 是 DOM，不得进入来源画面。
 - 录屏时页面摄像头气泡设为不可见但保留解码，防止整屏录制出现双重人脸；摄像头帧泵在屏幕源长期不出帧时补合成，避免头像冻结。
 - 停止流程保留 `recStopping/recStopHandled` 一次性守卫、`requestData()` 和 onstop 超时兜底，防止 Chrome “停止分享”丢失完成页或生成两份结果。
 
@@ -126,6 +128,6 @@
 
 | 日期 | 变更内容 |
 |------|----------|
+| 2026-07-17 | 记录录制文字水印的设置、持久化和白板/录屏合成顺序；why：避免后续把预览 DOM 或白板对象误混入录像管线 |
 | 2026-07-17 | 记录远程会议 AI 助手的 6 张连续场景贴纸；why：确保两个白板版本长期保持素材、命名和叙事顺序一致 |
 | 2026-07-17 | 记录男女“表扬”和综合“女孩点赞”贴纸的透明处理及两版同步约束；why：后续扩充或压缩素材时保持角色一致与边缘质量 |
-| 2026-07-17 | 记录 `state.scene` 图层顺序和多选重排约束；why：避免后续对象类型或图层操作破坏相对顺序、选中态与撤销语义 |
