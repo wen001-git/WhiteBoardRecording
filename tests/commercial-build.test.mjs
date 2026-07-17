@@ -109,6 +109,15 @@ test('all agreed free limits are enforced before protected actions', async () =>
   assert.doesNotMatch(html, /白板录制工具  免费版/);
 });
 
+test('sticker tools stay above slide canvas controls in both whiteboard variants', async () => {
+  for (const file of ['whiteboard.html', 'whiteboard-pro.html']) {
+    const html = await source(file);
+    assert.match(html, /\.slideFrame\{position:fixed;z-index:57;/);
+    assert.match(html, /#slideRevealFloatBtn\{position:fixed;z-index:58;/);
+    assert.match(html, /\.sticker-popover\{position:fixed;z-index:59;/);
+  }
+});
+
 test('admin token remains session-only and new accounts default to three devices', async () => {
   const html = await source('account-admin.html');
   assert.match(html, /const TOKEN_KEY\s*=\s*['"]wb_admin_token['"]/);

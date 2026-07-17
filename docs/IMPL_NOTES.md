@@ -50,8 +50,8 @@
 
 ### 对象和选择
 
-- 白板内容位于 `state.scene[]`；视图为 `state.view{x,y,scale}`。选择态由 `selectedIndex` 指向对象，`selectObjectAt()` 从顶层向下复用 `hitTest()`。
-- `#selectionBox` 是 DOM 浮层，不写入 canvas，因此不进入录制。移动、四角缩放和顶部旋转点修改对象本身；删除前必须 `pushHistory()`。
+- 白板内容位于 `state.scene[]`；视图为 `state.view{x,y,scale}`。单选主对象由 `selectedIndex` 指向，多选集合由 `selectedIndices` 保存；对象点击与框选都复用 `hitTest()` / `selectionObjectBounds()`。
+- `#selectionBox` 与 `#marqueeBox` 都是 DOM 浮层，不写入 canvas，因此不进入录制。多选只开放整体移动和删除；单选继续开放四角缩放、顶部旋转点和文字编辑。移动或删除前必须且只需 `pushHistory()` 一次。
 - 缩放/旋转基准使用 `transformBounds()` 的对象本体框，不能使用带 UI padding 的选择框，否则图片和文字尺寸会漂移。
 - 图片对象为 `{type:'image',src,x,y,w,h}`，`src` 是 data URL；`imageCache` 缓存解码结果。导入和粘贴先裁透明/近白空边，再走 `beginPendingImage()` 放置流程。
 
@@ -77,7 +77,7 @@
 - `insertSlideAt()` 通过 `createSlideForDeckInsert()` 和 `shiftSlidesAndContents()` 线性插入；后续幻灯片及中心落在其中的对象必须一起右移，保持面板顺序、世界坐标从左到右顺序和录制顺序一致。
 - `selectSlide()` 是选中并对焦的单一入口；setup/recording/paused 时还要同步 `recConfig.frame`。比例修改统一走 `setRecordingRatio()` / `setCustomRecordingRatio()`，已有幻灯片由 `resizeSlidesToRatio()` 保持中心重算。
 - `#slideFramesLayer`、幻灯片序号、`#slideRevealFloatBtn`、`#minimap` 和比例弹层都是 DOM UI，不得写入 canvas。笔迹播放本身由 `drawSlideRevealOverlay()` 画入 board，才能进入录制。
-- 层级约束：录制框之上仍需看见幻灯片边框，笔迹按钮再高一层；但 `applyFrameStyle()` 不能为了 UI 按钮缩短最终取景框。
+- 层级约束：录制框之上仍需看见幻灯片边框，笔迹按钮再高一层；打开的贴纸工具面板必须继续覆盖二者，避免幻灯片标签、边框或笔迹按钮穿透工具面板。`applyFrameStyle()` 不能为了 UI 按钮缩短最终取景框。
 - `.slidesList` 必须保持 `overflow-x:hidden`，否则纵向滚动条会引发横向溢出；删除角标负偏移依赖列表 padding，调整窄面板尺寸时需同时验证二者。
 
 <a id="recording"></a>
@@ -102,6 +102,7 @@
 - 摄像头位置为四角配置；亮度通过 screen 混合白层实现，不要改回每帧 `ctx.filter`，后者曾导致真实录制卡顿。
 - 美颜通过固定小工作画布、YCbCr 肤色软掩膜和盒式模糊实现，只平滑肤色。设置预览与录制共用 `drawCamBeautified()` 管线。
 - 浏览器原生 MP4 支持时直接录制；否则先录 webm，用户请求转码时才加载 ffmpeg.wasm。提词器始终是独立 DOM 浮层，不得进入 `drawRecFrame()` 或 `drawScreenFrame()`。
+- 提词器标题栏负责拖动，位置必须经 `clampTelePosition()` 限制在视口内；右侧 `.slidesPanel` 固定在 `right:14px` 且层级高于提词器，不能再根据提词器显隐移动到其覆盖范围内。
 
 <a id="stickers"></a>
 ## Stickers — 彩铅人物与图片资源
@@ -121,6 +122,6 @@
 
 | 日期 | 变更内容 |
 |------|----------|
-| 2026-07-16 | 补充 `file://` 登录的数据源与 CORS 配套约束；why：避免只改前端地址却仍被静态站或账号 API 拒绝 |
-| 2026-07-16 | 将 Auth 小节更新为独立 paywall 和动态 Neon 会话的现行实现，保留禁止恢复 `document.write()` 的回归红线；why：让后续接手者直接沿用已修复的数据流 |
-| 2026-07-16 | 从原大型 `AGENTS.md` 提炼五个按需实现小节，保留当前入口和不可回退约束；why：降低每次接手的自动上下文成本，同时避免删除关键工程经验 |
+| 2026-07-17 | 记录提词器拖动边界与幻灯片面板固定层级约束；why：防止提词器挡住内容或再次吞掉右侧幻灯片导航 |
+| 2026-07-17 | 记录选择工具的框选多选状态、联合边框和批量移动/删除约束；why：避免后续单选功能改动破坏多对象操作或产生重复历史快照 |
+| 2026-07-17 | 明确贴纸工具面板必须高于幻灯片边框和笔迹按钮；why：防止画布辅助层穿透并干扰贴纸选择 |
