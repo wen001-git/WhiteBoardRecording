@@ -1,8 +1,10 @@
-import { createHmac, scrypt as scryptCallback, timingSafeEqual } from 'node:crypto';
+import { createHash, createHmac, scrypt as scryptCallback, timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';
 
 const scrypt = promisify(scryptCallback);
 export const SHARED_PASSWORD_SALT = 'wb-static-pro-salt-v1';
+export const LEGACY_PASSWORD_SCHEME = 'scrypt-v1';
+export const STATIC_PASSWORD_SCHEME = 'static-sha256-v1';
 
 export function safeEqual(a, b) {
   const aa = Buffer.from(String(a ?? ''));
@@ -11,16 +13,32 @@ export function safeEqual(a, b) {
 }
 
 export function normalizeUsername(value) {
-  return String(value ?? '').trim().toLocaleLowerCase('en-US');
+  return String(value ?? '').trim().toLowerCase();
 }
 
-export async function makePassword(password) {
-  const salt = SHARED_PASSWORD_SALT;
-  const derived = await scrypt(String(password), salt, 64);
-  return { salt, hash: Buffer.from(derived).toString('base64url') };
+export function staticPasswordHash(username, password, salt = SHARED_PASSWORD_SALT) {
+  const input = `${String(salt)}:${normalizeUsername(username)}:${String(password)}`;
+  return createHash('sha256').update(input, 'utf8').digest('hex');
 }
 
-export async function verifyPassword(password, salt, expectedHash) {
+export async function makePassword(username, password) {
+  return {
+    salt: SHARED_PASSWORD_SALT,
+    hash: staticPasswordHash(username, password),
+    scheme: STATIC_PASSWORD_SCHEME
+  };
+}
+
+export async function makeLegacyPassword(password, salt = SHARED_PASSWORD_SALT) {
+  const derived = await scrypt(String(password), String(salt), 64);
+  return { salt: String(salt), hash: Buffer.from(derived).toString('base64url'), scheme: LEGACY_PASSWORD_SCHEME };
+}
+
+export async function verifyPassword({ username, password, salt, expectedHash, scheme }) {
+  if (scheme === STATIC_PASSWORD_SCHEME) {
+    return safeEqual(staticPasswordHash(username, password, salt), expectedHash);
+  }
+  if (scheme !== LEGACY_PASSWORD_SCHEME) return false;
   const derived = await scrypt(String(password), String(salt), 64);
   return safeEqual(Buffer.from(derived).toString('base64url'), expectedHash);
 }

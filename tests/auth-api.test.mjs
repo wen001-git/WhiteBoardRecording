@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { after, before, test } from 'node:test';
-import { makePassword, normalizeUsername, SHARED_PASSWORD_SALT } from '../server/auth.mjs';
+import { LEGACY_PASSWORD_SCHEME, makeLegacyPassword, makePassword, normalizeUsername, SHARED_PASSWORD_SALT, STATIC_PASSWORD_SCHEME, staticPasswordHash } from '../server/auth.mjs';
 import { createApp } from '../server/app.mjs';
 import { PRO_PLAN_GRANTED, PRO_PLAN_PLACEHOLDER } from '../server/pro-app.mjs';
 
@@ -17,13 +17,14 @@ class MemoryStore {
 
   async createAccount({ username, password, maxDevices = 3 }) {
     if (await this.getAccountByUsername(username)) throw Object.assign(new Error('duplicate'), { code: '23505' });
-    const credentials = await makePassword(password);
+    const credentials = await makePassword(username, password);
     const account = {
       id: this.nextId++,
       username: String(username).trim(),
       usernameNormalized: normalizeUsername(username),
       passwordHash: credentials.hash,
       passwordSalt: credentials.salt,
+      passwordScheme: credentials.scheme,
       enabled: true,
       maxDevices,
       sessionVersion: 1,
@@ -75,11 +76,30 @@ class MemoryStore {
   async resetPassword(id, password) {
     const account = await this.getAccountById(id);
     if (!account) return null;
-    const credentials = await makePassword(password);
+    const credentials = await makePassword(account.username, password);
     account.passwordHash = credentials.hash;
     account.passwordSalt = credentials.salt;
+    account.passwordScheme = credentials.scheme;
     account.sessionVersion += 1;
     return account;
+  }
+  async upgradePassword(id, username, password) {
+    const account = await this.getAccountById(id);
+    if (!account || account.passwordScheme !== LEGACY_PASSWORD_SCHEME) return null;
+    const credentials = await makePassword(username, password);
+    account.passwordHash = credentials.hash;
+    account.passwordSalt = credentials.salt;
+    account.passwordScheme = credentials.scheme;
+    return account;
+  }
+  async deleteAccount(id, expectedUsername) {
+    const account = await this.getAccountById(id);
+    if (!account) return { status: 'not-found' };
+    if (account.usernameNormalized !== normalizeUsername(expectedUsername)) return { status: 'username-mismatch' };
+    const devices = account.devices.length;
+    const loginEvents = account.loginEvents.length;
+    this.accounts = this.accounts.filter(item => item.id !== account.id);
+    return { status: 'deleted', account, devices, loginEvents };
   }
   async resetDevices(id) {
     const account = await this.getAccountById(id);
@@ -144,12 +164,55 @@ after(async () => {
   });
 });
 
-test('backend password hashes use the shared static-account salt', async () => {
-  const first = await makePassword('same-password');
-  const second = await makePassword('same-password');
+test('backend password hashes exactly match the static SHA-256 formula', async () => {
+  const first = await makePassword('TestUser', 'P@ssw0rd');
+  const second = await makePassword('  TESTUSER  ', 'P@ssw0rd');
   assert.equal(first.salt, SHARED_PASSWORD_SALT);
   assert.equal(second.salt, SHARED_PASSWORD_SALT);
+  assert.equal(first.scheme, STATIC_PASSWORD_SCHEME);
   assert.equal(first.hash, second.hash);
+  assert.equal(first.hash, 'cfc85ea562bb49402ac8a18e3579d9628a293197b38e3163305399fe5a996cb2');
+  assert.equal(first.hash, staticPasswordHash('testuser', 'P@ssw0rd'));
+});
+
+test('legacy scrypt accounts migrate after successful login but not after a failed attempt', async () => {
+  const account = await store.createAccount({ username: 'legacy-user', password: 'legacy-pass-123' });
+  const legacy = await makeLegacyPassword('legacy-pass-123');
+  account.passwordHash = legacy.hash;
+  account.passwordSalt = legacy.salt;
+  account.passwordScheme = legacy.scheme;
+
+  const failed = await request('/api/login', {
+    method: 'POST',
+    body: { username: 'LEGACY-USER', password: 'wrong-password', deviceId: 'legacy-device-0001' }
+  });
+  assert.equal(failed.response.status, 401);
+  assert.equal(account.passwordScheme, LEGACY_PASSWORD_SCHEME);
+
+  const login = await request('/api/login', {
+    method: 'POST',
+    body: { username: 'LEGACY-USER', password: 'legacy-pass-123', deviceId: 'legacy-device-0001' }
+  });
+  assert.equal(login.response.status, 200);
+  assert.equal(account.passwordScheme, STATIC_PASSWORD_SCHEME);
+  assert.equal(account.passwordHash, staticPasswordHash('legacy-user', 'legacy-pass-123'));
+});
+
+test('static login audit also migrates matching legacy Neon credentials', async () => {
+  const account = await store.createAccount({ username: 'legacy-audit', password: 'audit-pass-123' });
+  const legacy = await makeLegacyPassword('audit-pass-123');
+  account.passwordHash = legacy.hash;
+  account.passwordSalt = legacy.salt;
+  account.passwordScheme = legacy.scheme;
+
+  const audit = await request('/api/login-audit', {
+    method: 'POST',
+    body: { username: 'legacy-audit', password: 'audit-pass-123', deviceId: 'legacy-audit-device-01' }
+  });
+  assert.equal(audit.response.status, 204);
+  await waitFor(() => account.passwordScheme === STATIC_PASSWORD_SCHEME);
+  assert.equal(account.devices.length, 0);
+  assert.equal(account.loginEvents.length, 1);
 });
 
 test('health and CORS policy', async () => {
@@ -386,4 +449,42 @@ test('disabled account cannot log in and existing sessions are rejected', async 
   });
   assert.equal(login.response.status, 401);
   assert.equal(login.data.code, 'ACCOUNT_DISABLED');
+});
+
+test('admin deletion checks identity, removes related data, and invalidates sessions', async () => {
+  const created = await request('/api/admin/accounts', {
+    method: 'POST', admin: true, body: { username: 'delete-target', password: 'delete-pass-123' }
+  });
+  const account = await store.getAccountByUsername('delete-target');
+  const login = await request('/api/login', {
+    method: 'POST',
+    body: { username: 'delete-target', password: 'delete-pass-123', deviceId: 'delete-device-0001' }
+  });
+  assert.equal(created.response.status, 201);
+  assert.equal(login.response.status, 200);
+  await waitFor(() => account.loginEvents.length === 1);
+
+  const unauthorized = await request(`/api/admin/accounts/${account.id}`, {
+    method: 'DELETE', body: { username: 'delete-target' }
+  });
+  assert.equal(unauthorized.response.status, 401);
+  const mismatch = await request(`/api/admin/accounts/${account.id}`, {
+    method: 'DELETE', admin: true, body: { username: 'another-account' }
+  });
+  assert.equal(mismatch.response.status, 409);
+  assert.equal(mismatch.data.code, 'USERNAME_MISMATCH');
+  const missing = await request('/api/admin/accounts/999999', {
+    method: 'DELETE', admin: true, body: { username: 'delete-target' }
+  });
+  assert.equal(missing.response.status, 404);
+
+  const deleted = await request(`/api/admin/accounts/${account.id}`, {
+    method: 'DELETE', admin: true, body: { username: 'DELETE-TARGET' }
+  });
+  assert.equal(deleted.response.status, 200);
+  assert.equal(deleted.data.deleted.username, 'delete-target');
+  assert.equal(deleted.data.deleted.devices, 1);
+  assert.equal(deleted.data.deleted.loginEvents, 1);
+  assert.equal(await store.getAccountByUsername('delete-target'), null);
+  assert.equal((await request('/api/session', { cookie: login.cookie })).response.status, 401);
 });

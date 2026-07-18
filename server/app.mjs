@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { parseCookies, safeEqual, sessionCookie, signSession, verifyPassword, verifySession } from './auth.mjs';
+import { LEGACY_PASSWORD_SCHEME, parseCookies, safeEqual, sessionCookie, signSession, STATIC_PASSWORD_SCHEME, verifyPassword, verifySession } from './auth.mjs';
 import { injectProGrant } from './pro-app.mjs';
 
 const COOKIE_NAME = 'wb_pro_session';
@@ -15,6 +15,7 @@ function publicAccount(account) {
     maxDevices: account.maxDevices,
     createdAt: account.createdAt,
     lastLoginAt: account.lastLoginAt,
+    passwordScheme: account.passwordScheme || LEGACY_PASSWORD_SCHEME,
     devices: account.devices || [],
     loginEvents: account.loginEvents || []
   };
@@ -87,7 +88,7 @@ export function createApp(options) {
     return {
       'access-control-allow-origin': origin,
       'access-control-allow-credentials': 'true',
-      'access-control-allow-methods': 'GET,POST,PATCH,OPTIONS',
+      'access-control-allow-methods': 'GET,POST,PATCH,DELETE,OPTIONS',
       'access-control-allow-headers': 'Content-Type,Authorization,X-Device-Id',
       vary: 'Origin'
     };
@@ -99,6 +100,30 @@ export function createApp(options) {
     if (!payload) return null;
     const account = await store.validateSession(payload.accountId, payload.deviceId, payload.sessionVersion);
     return account ? { account, payload } : null;
+  }
+
+  async function passwordMatches(account, password) {
+    if (!account) return false;
+    const ok = await verifyPassword({
+      username: account.username,
+      password,
+      salt: account.passwordSalt,
+      expectedHash: account.passwordHash,
+      scheme: account.passwordScheme || LEGACY_PASSWORD_SCHEME
+    });
+    if (ok && (account.passwordScheme || LEGACY_PASSWORD_SCHEME) === LEGACY_PASSWORD_SCHEME) {
+      try {
+        const upgraded = await store.upgradePassword(account.id, account.username, password);
+        if (upgraded) {
+          account.passwordHash = upgraded.passwordHash;
+          account.passwordSalt = upgraded.passwordSalt;
+          account.passwordScheme = STATIC_PASSWORD_SCHEME;
+        }
+      } catch (error) {
+        console.error('Failed to upgrade legacy password hash', error);
+      }
+    }
+    return ok;
   }
 
   return async function handle(req, res) {
@@ -130,7 +155,7 @@ export function createApp(options) {
         if (!username || !password || !deviceId || attempt.count >= 20) return;
         void (async () => {
           const account = await store.getAccountByUsername(username);
-          const passwordOk = account && await verifyPassword(password, account.passwordSalt, account.passwordHash);
+          const passwordOk = await passwordMatches(account, password);
           if (!account || !passwordOk || !account.enabled) {
             attempt.count += 1;
             loginAuditAttempts.set(ip, attempt);
@@ -158,7 +183,7 @@ export function createApp(options) {
         const deviceId = validateDeviceId(body.deviceId);
         if (!username || !password || !deviceId) return sendJson(res, 400, { ok: false, code: 'INVALID_INPUT', message: '请输入账号、密码，并允许生成设备标识' }, cors);
         const account = await store.getAccountByUsername(username);
-        const passwordOk = account && await verifyPassword(password, account.passwordSalt, account.passwordHash);
+        const passwordOk = await passwordMatches(account, password);
         if (!account || !passwordOk || !account.enabled) {
           attempt.count += 1; loginAttempts.set(ip, attempt);
           return sendJson(res, 401, { ok: false, code: account && !account.enabled ? 'ACCOUNT_DISABLED' : 'LOGIN_FAILED', message: account && !account.enabled ? '账号已停用，请联系作者' : '账号或密码不正确' }, cors);
@@ -241,6 +266,23 @@ export function createApp(options) {
         if (match) {
           const id = Number(match[1]);
           const action = match[2] || '';
+          if (req.method === 'DELETE' && !action) {
+            const body = await readJson(req);
+            const username = String(body.username || '').trim();
+            if (!username) return sendJson(res, 400, { ok: false, code: 'INVALID_INPUT', message: '请输入完整账号名确认删除' }, cors);
+            const deleted = await store.deleteAccount(id, username);
+            if (deleted.status === 'not-found') return sendJson(res, 404, { ok: false, code: 'NOT_FOUND', message: '账号不存在' }, cors);
+            if (deleted.status === 'username-mismatch') return sendJson(res, 409, { ok: false, code: 'USERNAME_MISMATCH', message: '账号名与待删除记录不匹配，请刷新列表后重试' }, cors);
+            return sendJson(res, 200, {
+              ok: true,
+              deleted: {
+                id: deleted.account.id,
+                username: deleted.account.username,
+                devices: deleted.devices,
+                loginEvents: deleted.loginEvents
+              }
+            }, cors);
+          }
           if (req.method === 'PATCH' && !action) {
             const body = await readJson(req);
             const patch = {};

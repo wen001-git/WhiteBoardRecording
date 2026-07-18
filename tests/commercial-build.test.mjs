@@ -219,6 +219,19 @@ test('account admin can show and hide every token or password field', async () =
   assert.match(html, /button\.setAttribute\('aria-pressed',String\(show\)\)/);
 });
 
+test('account admin requires typed identity confirmation before deleting Neon data', async () => {
+  const html = await source('account-admin.html');
+  assert.match(html, /id="deleteDialog"/);
+  assert.match(html, /id="deleteUsername"/);
+  assert.match(html, /id="confirmDelete"[^>]*disabled/);
+  assert.match(html, /data-action="convert-static"/);
+  assert.match(html, /data-action="delete-neon"/);
+  assert.match(html, /method:'DELETE'/);
+  assert.match(html, /normalizeUsername\(typed\)!==normalizeUsername\(account\.username\)/);
+  assert.match(html, /accounts\.json 不会改变/);
+  assert.match(html, /删除后将无法登录/);
+});
+
 test('account admin merges every published static account with Neon accounts', async () => {
   const html = await source('account-admin.html');
   const script = html.match(/<script>([\s\S]*?)<\/script>/i)?.[1];
@@ -248,7 +261,7 @@ test('account admin merges every published static account with Neon accounts', a
     sessionStorage: { getItem() { return null; }, setItem() {} },
     document: { getElementById: element },
   });
-  vm.runInContext(`${script}\n;globalThis.__mergeAccountSources=mergeAccountSources;`, context);
+  vm.runInContext(`${script}\n;globalThis.__mergeAccountSources=mergeAccountSources;globalThis.__deleteAction=deleteAction;globalThis.__setStaticAccountsReady=value=>{staticAccountsReady=value};`, context);
   const neonAccounts = [
     { id: 1, username: 'Admin', enabled: true, devices: [], loginEvents: [] },
     { id: 2, username: 'never-logged-in', enabled: true, devices: [], loginEvents: [] },
@@ -256,11 +269,19 @@ test('account admin merges every published static account with Neon accounts', a
   const merged = context.__mergeAccountSources(neonAccounts, [
     { u: 'admin', enabled: true },
     { u: 'static-only', enabled: true },
+    { u: 'never-logged-in', enabled: false },
   ]);
   assert.equal(merged.length, 3);
   assert.equal(merged.find(account => account.id === 1).staticAccount, true);
+  assert.equal(merged.find(account => account.id === 1).staticEnabled, true);
   assert.equal(merged.find(account => account.id === 2).staticOnly, false);
+  assert.equal(merged.find(account => account.id === 2).staticEnabled, false);
   assert.equal(merged.find(account => account.username === 'static-only').staticOnly, true);
+  assert.match(context.__deleteAction(merged[0]), /删除不可用/);
+  context.__setStaticAccountsReady(true);
+  assert.match(context.__deleteAction(merged.find(account => account.id === 1)), /转为静态账号/);
+  assert.match(context.__deleteAction(merged.find(account => account.id === 2)), /先启用 static/);
+  assert.match(context.__deleteAction({ id: 3, staticOnly: false, staticAccount: false }), /永久删除/);
 });
 
 test('all shipped password inputs use the four-character minimum', async () => {

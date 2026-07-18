@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
-import { makePassword, normalizeUsername } from './auth.mjs';
+import { LEGACY_PASSWORD_SCHEME, makePassword, normalizeUsername, STATIC_PASSWORD_SCHEME } from './auth.mjs';
 
 const { Pool } = pg;
 const schemaPath = fileURLToPath(new URL('./schema.sql', import.meta.url));
@@ -14,6 +14,7 @@ function accountFromRow(row) {
     usernameNormalized: row.username_normalized,
     passwordHash: row.password_hash,
     passwordSalt: row.password_salt,
+    passwordScheme: row.password_scheme || LEGACY_PASSWORD_SCHEME,
     enabled: row.enabled,
     maxDevices: Number(row.max_devices),
     sessionVersion: Number(row.session_version),
@@ -134,11 +135,11 @@ export class PgAccountStore {
 
   async createAccount({ username, password, maxDevices = 3 }) {
     const normalized = normalizeUsername(username);
-    const credentials = await makePassword(password);
+    const credentials = await makePassword(username, password);
     const result = await this.pool.query(
-      `INSERT INTO accounts(username,username_normalized,password_hash,password_salt,max_devices)
-       VALUES($1,$2,$3,$4,$5) RETURNING *`,
-      [String(username).trim(), normalized, credentials.hash, credentials.salt, maxDevices]
+      `INSERT INTO accounts(username,username_normalized,password_hash,password_salt,password_scheme,max_devices)
+       VALUES($1,$2,$3,$4,$5,$6) RETURNING *`,
+      [String(username).trim(), normalized, credentials.hash, credentials.salt, credentials.scheme, maxDevices]
     );
     return accountFromRow(result.rows[0]);
   }
@@ -186,13 +187,59 @@ export class PgAccountStore {
   }
 
   async resetPassword(id, password) {
-    const credentials = await makePassword(password);
+    const account = await this.getAccountById(id);
+    if (!account) return null;
+    const credentials = await makePassword(account.username, password);
     const result = await this.pool.query(
-      `UPDATE accounts SET password_hash=$1,password_salt=$2,session_version=session_version+1
-       WHERE id=$3 RETURNING *`,
-      [credentials.hash, credentials.salt, id]
+      `UPDATE accounts SET password_hash=$1,password_salt=$2,password_scheme=$3,session_version=session_version+1
+       WHERE id=$4 RETURNING *`,
+      [credentials.hash, credentials.salt, credentials.scheme, id]
     );
     return accountFromRow(result.rows[0]);
+  }
+
+  async upgradePassword(id, username, password) {
+    const credentials = await makePassword(username, password);
+    const result = await this.pool.query(
+      `UPDATE accounts SET password_hash=$1,password_salt=$2,password_scheme=$3
+       WHERE id=$4 AND password_scheme=$5 RETURNING *`,
+      [credentials.hash, credentials.salt, credentials.scheme, id, LEGACY_PASSWORD_SCHEME]
+    );
+    return accountFromRow(result.rows[0]);
+  }
+
+  async deleteAccount(id, expectedUsername) {
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      const accountResult = await client.query('SELECT * FROM accounts WHERE id=$1 FOR UPDATE', [id]);
+      const account = accountFromRow(accountResult.rows[0]);
+      if (!account) {
+        await client.query('ROLLBACK');
+        return { status: 'not-found' };
+      }
+      if (account.usernameNormalized !== normalizeUsername(expectedUsername)) {
+        await client.query('ROLLBACK');
+        return { status: 'username-mismatch' };
+      }
+      const countsResult = await client.query(
+        `SELECT
+          (SELECT COUNT(*)::int FROM devices WHERE account_id=$1) AS devices,
+          (SELECT COUNT(*)::int FROM login_events WHERE account_id=$1) AS login_events`,
+        [id]
+      );
+      await client.query('DELETE FROM accounts WHERE id=$1', [id]);
+      await client.query('COMMIT');
+      return {
+        status: 'deleted',
+        account,
+        devices: Number(countsResult.rows[0].devices),
+        loginEvents: Number(countsResult.rows[0].login_events)
+      };
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally { client.release(); }
   }
 
   async resetDevices(id) {
