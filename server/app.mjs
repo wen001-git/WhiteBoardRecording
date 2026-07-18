@@ -78,6 +78,7 @@ export function createApp(options) {
   const allowedOrigins = parseAllowedOrigins(options.allowedOrigins);
   const loadProtectedApp = options.loadProtectedApp;
   const loginAttempts = new Map();
+  const loginAuditAttempts = new Map();
 
   function corsHeaders(req) {
     const origin = String(req.headers.origin || '');
@@ -110,6 +111,40 @@ export function createApp(options) {
         await store.healthCheck();
         const body = req.method === 'HEAD' ? '' : JSON.stringify({ ok: true, service: 'whiteboard-auth' });
         return send(res, 200, body, { 'content-type': 'application/json; charset=utf-8', ...cors });
+      }
+
+      if (req.method === 'POST' && url.pathname === '/api/login-audit') {
+        const ip = requestIp(req);
+        const attempt = loginAuditAttempts.get(ip) || { count: 0, resetAt: Date.now() + 15 * 60_000 };
+        if (Date.now() > attempt.resetAt) { attempt.count = 0; attempt.resetAt = Date.now() + 15 * 60_000; }
+        const body = await readJson(req);
+        const username = String(body.username || '').trim();
+        const password = String(body.password || '');
+        const deviceId = validateDeviceId(body.deviceId);
+        const device = {
+          deviceId,
+          deviceName: String(body.deviceName || '').slice(0, 120),
+          userAgent: String(req.headers['user-agent'] || '').slice(0, 500)
+        };
+        send(res, 204, '', cors);
+        if (!username || !password || !deviceId || attempt.count >= 20) return;
+        void (async () => {
+          const account = await store.getAccountByUsername(username);
+          const passwordOk = account && await verifyPassword(password, account.passwordSalt, account.passwordHash);
+          if (!account || !passwordOk || !account.enabled) {
+            attempt.count += 1;
+            loginAuditAttempts.set(ip, attempt);
+            return;
+          }
+          loginAuditAttempts.delete(ip);
+          await Promise.all([
+            store.touchLogin(account.id),
+            store.recordLogin(account.id, { ...device, ipAddress: ip.slice(0, 128) })
+          ]);
+        })().catch(error => {
+          console.error('Failed to audit overlapping static and Neon login', error);
+        });
+        return;
       }
 
       if (req.method === 'POST' && url.pathname === '/api/login') {

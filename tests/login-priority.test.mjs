@@ -76,18 +76,24 @@ function runtime(fetchImpl, initialStorage = {}, locationOverrides = {}) {
   return { auth: context.__auth, store, elements };
 }
 
-test('valid static credentials log in without calling the account service', async () => {
+test('valid static credentials log in immediately and start a background Neon audit', async () => {
   const calls = [];
   const accounts = staticAccounts();
-  const app = runtime(async url => {
+  const app = runtime(async (url, options = {}) => {
     calls.push(String(url));
     if (url === './accounts.json') return response(200, accounts);
+    if (String(url).endsWith('/api/login-audit')) {
+      assert.equal(options.method, 'POST');
+      assert.equal(options.keepalive, true);
+      return response(204);
+    }
     throw new Error(`unexpected request: ${url}`);
   });
 
   const result = await app.auth.loginPro('LOCAL-USER', 'local-password');
   assert.equal(result.source, 'static');
-  assert.deepEqual(calls, ['./accounts.json']);
+  assert.equal(calls[0], './accounts.json');
+  assert.match(calls[1], /\/api\/login-audit$/);
   assert.equal(JSON.parse(app.store.get('wb_static_pro_session')).source, 'static');
 });
 
@@ -97,6 +103,7 @@ test('file preview loads the deployed accounts file and still short-circuits the
   const app = runtime(async url => {
     calls.push(String(url));
     if (url === 'https://record.leewen.work/accounts.json') return response(200, accounts);
+    if (String(url).endsWith('/api/login-audit')) return response(204);
     throw new Error(`unexpected request: ${url}`);
   }, {}, {
     hostname: '',
@@ -106,7 +113,22 @@ test('file preview loads the deployed accounts file and still short-circuits the
 
   const result = await app.auth.loginPro('local-user', 'local-password');
   assert.equal(result.source, 'static');
-  assert.deepEqual(calls, ['https://record.leewen.work/accounts.json']);
+  assert.equal(calls[0], 'https://record.leewen.work/accounts.json');
+  assert.match(calls[1], /\/api\/login-audit$/);
+});
+
+test('static login does not wait for a stalled Neon audit request', async () => {
+  const accounts = staticAccounts();
+  const app = runtime(async url => {
+    if (url === './accounts.json') return response(200, accounts);
+    if (String(url).endsWith('/api/login-audit')) return new Promise(() => {});
+    throw new Error(`unexpected request: ${url}`);
+  });
+  const result = await Promise.race([
+    app.auth.loginPro('local-user', 'local-password'),
+    new Promise(resolve => setTimeout(() => resolve({ source: 'timed-out' }), 100))
+  ]);
+  assert.equal(result.source, 'static');
 });
 
 test('both login surfaces use the deployed accounts file for file previews', async () => {
@@ -114,6 +136,8 @@ test('both login surfaces use the deployed accounts file for file previews', asy
   for (const source of [html, proHtml]) {
     assert.match(source, /FILE_STATIC_ACCOUNTS_URL='https:\/\/record\.leewen\.work\/accounts\.json'/);
     assert.match(source, /location\.protocol==='file:'\?FILE_STATIC_ACCOUNTS_URL/);
+    assert.match(source, /\/api\/login-audit/);
+    assert.match(source, /\/api\/login-audit'.*keepalive:true/);
   }
 });
 

@@ -155,9 +155,15 @@
       setStatus('正在打开 Pro 白板…');
       location.href=await staticAppPath();
     }
+    function auditStaticLoginInBackground(username,password){
+      void api('/api/login-audit',{method:'POST',keepalive:true,body:JSON.stringify({username,password,deviceId:deviceId(),deviceName:navigator.platform||'浏览器设备'})}).catch(()=>{});
+    }
     async function loginPro(username,password){
       const localSession=await tryStaticLogin(username,password);
-      if(localSession)return {source:'static',session:localSession};
+      if(localSession){
+        auditStaticLoginInBackground(username,password);
+        return {source:'static',session:localSession};
+      }
       setStatus('本地账号未匹配，正在连接账号服务…');
       let response;
       try{

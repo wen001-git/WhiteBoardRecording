@@ -114,6 +114,14 @@ async function request(path, { method = 'GET', body, cookie, admin = false, orig
   return { response, data, cookie: response.headers.get('set-cookie')?.split(';')[0] || '' };
 }
 
+async function waitFor(predicate, timeout = 1000) {
+  const deadline = Date.now() + timeout;
+  while (!predicate()) {
+    if (Date.now() >= deadline) throw new Error('timed out waiting for asynchronous audit');
+    await new Promise(resolve => setTimeout(resolve, 10));
+  }
+}
+
 before(async () => {
   const handler = createApp({
     store,
@@ -225,6 +233,55 @@ test('successful Neon logins record IP history while failed logins do not', asyn
   assert.deepEqual(creator.loginEvents.slice(0, 2).map(item => item.ipAddress), ['198.51.100.24', '203.0.113.10']);
   assert.equal(creator.loginEvents[0].deviceName, 'Test Mac');
   assert.equal(creator.loginEvents[0].userAgent, 'IP history test browser');
+});
+
+test('background audit records only accounts whose static credentials also match Neon', async () => {
+  const account = await store.getAccountByUsername('creator');
+  const before = account.loginEvents.length;
+  const audited = await request('/api/login-audit', {
+    method: 'POST',
+    headers: { 'x-forwarded-for': '203.0.113.51', 'user-agent': 'Static overlap audit browser' },
+    body: { username: 'creator', password: 'creator-pass-123', deviceId: 'static-audit-device-01', deviceName: 'Static Login Mac' }
+  });
+  assert.equal(audited.response.status, 204);
+  await waitFor(() => account.loginEvents.length === before + 1);
+  assert.equal(account.loginEvents[0].ipAddress, '203.0.113.51');
+  assert.equal(account.loginEvents[0].deviceName, 'Static Login Mac');
+
+  const invalid = await request('/api/login-audit', {
+    method: 'POST',
+    headers: { 'x-forwarded-for': '192.0.2.51' },
+    body: { username: 'creator', password: 'not-the-neon-password', deviceId: 'static-audit-device-02' }
+  });
+  assert.equal(invalid.response.status, 204);
+  await new Promise(resolve => setTimeout(resolve, 100));
+  assert.equal(account.loginEvents.length, before + 1);
+});
+
+test('background static-login audit response does not wait for Neon lookup', async () => {
+  const originalLookup = store.getAccountByUsername;
+  let releaseLookup;
+  store.getAccountByUsername = async function delayedLookup(...args) {
+    await new Promise(resolve => { releaseLookup = resolve; });
+    return originalLookup.apply(this, args);
+  };
+  try {
+    const result = await Promise.race([
+      request('/api/login-audit', {
+        method: 'POST',
+        headers: { 'x-forwarded-for': '203.0.113.52' },
+        body: { username: 'creator', password: 'creator-pass-123', deviceId: 'static-audit-device-03' }
+      }),
+      new Promise(resolve => setTimeout(() => resolve({ timedOut: true }), 100))
+    ]);
+    assert.notEqual(result.timedOut, true);
+    assert.equal(result.response.status, 204);
+    assert.equal(typeof releaseLookup, 'function');
+  } finally {
+    releaseLookup?.();
+    store.getAccountByUsername = originalLookup;
+    await new Promise(resolve => setImmediate(resolve));
+  }
 });
 
 test('successful login response does not wait for the IP audit write', async () => {
