@@ -5,6 +5,7 @@ import { access, readFile, readdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { promisify } from 'node:util';
 import test from 'node:test';
+import vm from 'node:vm';
 import { PRO_PLAN_PLACEHOLDER } from '../server/pro-app.mjs';
 
 const execFileAsync = promisify(execFile);
@@ -198,6 +199,50 @@ test('admin token remains session-only and new accounts default to three devices
   assert.match(html, /最近成功登录 IP（最多 100 条，仅 Neon 账号）/);
   assert.match(html, /function detectIpBurst\(events\)/);
   assert.match(html, /检测到 1 小时内使用/);
+});
+
+test('account admin merges every published static account with Neon accounts', async () => {
+  const html = await source('account-admin.html');
+  const script = html.match(/<script>([\s\S]*?)<\/script>/i)?.[1];
+  const elements = new Map();
+  const element = id => {
+    if (!elements.has(id)) elements.set(id, {
+      id,
+      value: '',
+      textContent: '',
+      innerHTML: '',
+      classList: { toggle() {} },
+      addEventListener() {},
+      close() {},
+      showModal() {},
+    });
+    return elements.get(id);
+  };
+  const context = vm.createContext({
+    console,
+    Set,
+    Map,
+    URL,
+    URLSearchParams,
+    Intl,
+    Date,
+    location: { hostname: '', protocol: 'file:', search: '' },
+    sessionStorage: { getItem() { return null; }, setItem() {} },
+    document: { getElementById: element },
+  });
+  vm.runInContext(`${script}\n;globalThis.__mergeAccountSources=mergeAccountSources;`, context);
+  const neonAccounts = [
+    { id: 1, username: 'Admin', enabled: true, devices: [], loginEvents: [] },
+    { id: 2, username: 'never-logged-in', enabled: true, devices: [], loginEvents: [] },
+  ];
+  const merged = context.__mergeAccountSources(neonAccounts, [
+    { u: 'admin', enabled: true },
+    { u: 'static-only', enabled: true },
+  ]);
+  assert.equal(merged.length, 3);
+  assert.equal(merged.find(account => account.id === 1).staticAccount, true);
+  assert.equal(merged.find(account => account.id === 2).staticOnly, false);
+  assert.equal(merged.find(account => account.username === 'static-only').staticOnly, true);
 });
 
 test('all shipped password inputs use the four-character minimum', async () => {
