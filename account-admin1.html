@@ -20,6 +20,7 @@
     .panel{display:none}.panel.on{display:block}.card{background:#fff;border:1px solid var(--line);box-shadow:0 10px 34px rgba(35,31,46,.08);padding:20px;margin-bottom:16px;border-radius:10px}.card h2{font-size:16px;margin:0 0 14px}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.field{display:grid;gap:6px}.field label{font-size:12px;font-weight:800;color:#58544f}.field input,.field select,textarea{border:1px solid #d8d4ce;border-radius:8px;padding:10px 11px;font:inherit;background:#fff;color:var(--ink);outline:none}.field input,.field select{height:42px}.field input:focus,.field select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(91,87,214,.12)}
     textarea{width:100%;min-height:142px;resize:vertical;font-family:ui-monospace,"SF Mono",Consolas,monospace;font-size:12px;line-height:1.55;white-space:pre;overflow:auto}.row{display:grid;grid-template-columns:1fr 1fr;gap:14px}.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
     button{font:inherit;font-weight:800;cursor:pointer;border-radius:8px;height:40px;padding:0 14px;border:1px solid var(--line);background:#fff;color:var(--ink)}button:hover{background:#f7f6fa}button:disabled{opacity:.45;cursor:not-allowed}.primary{background:var(--ink);border-color:var(--ink);color:#fff}.accent{background:var(--accent);border-color:var(--accent);color:#fff}.danger{color:var(--danger)}.ghost{background:#fff}.pill{display:inline-flex;align-items:center;gap:6px;background:var(--accent-soft);color:#29258a;border-radius:999px;padding:3px 9px;font-size:12px;font-weight:800}
+    .secret-field{position:relative}.secret-field input{width:100%;padding-right:50px}.secret-toggle{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:34px;height:34px;padding:7px;border:0;background:transparent;color:var(--muted);display:grid;place-items:center;border-radius:7px}.secret-toggle:hover{background:var(--soft);color:var(--accent)}.secret-toggle:focus-visible{outline:2px solid var(--accent);outline-offset:1px}.secret-toggle svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.secret-toggle .secret-eye-off{display:none}.secret-toggle[aria-pressed="true"] .secret-eye{display:none}.secret-toggle[aria-pressed="true"] .secret-eye-off{display:block}
     .out{font-family:ui-monospace,"SF Mono",Consolas,monospace;font-size:12px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:12px;white-space:pre;overflow:auto;min-height:180px;max-height:390px;line-height:1.5}.out.empty{color:var(--muted);font-family:inherit;white-space:normal}.out.compact{min-height:52px;white-space:pre-wrap;word-break:break-all}.account-list{display:grid;gap:8px}.account-row{display:grid;grid-template-columns:minmax(120px,.8fr) minmax(180px,1fr) auto;gap:10px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:9px 11px;background:#fff}.account-row code{font-family:ui-monospace,"SF Mono",Consolas,monospace}.ok{color:var(--good)}.bad{color:var(--danger)}.hint{color:var(--muted);font-size:12px;line-height:1.6;margin-top:9px}.instructions{margin-top:14px;padding:13px 15px;border-left:4px solid #326579;background:#f2f6f7;color:#44515a;font-size:12px;line-height:1.75}.instructions b{color:#244b5b}.instructions ol{margin:7px 0;padding-left:22px}.instructions code{word-break:break-all}
     @media(max-width:820px){body{padding:10px}.topbar{display:block}.status{text-align:left;margin-top:8px}.grid,.row{grid-template-columns:1fr}.account-row{grid-template-columns:1fr}}
   </style>
@@ -142,7 +143,7 @@ student002:MyPass-002"></textarea>
       <h2>生成单个账号哈希</h2>
       <div class="grid">
         <div class="field"><label for="singleUsername">用户名</label><input id="singleUsername" placeholder="如 admin" autocomplete="off"></div>
-        <div class="field"><label for="singlePassword">明文密码（至少 4 位）</label><input id="singlePassword" type="password" placeholder="如 2009" minlength="4" autocomplete="new-password"></div>
+        <div class="field"><label for="singlePassword">明文密码（至少 4 位）</label><div class="secret-field"><input id="singlePassword" type="password" placeholder="如 2009" minlength="4" autocomplete="new-password"><button class="secret-toggle" id="singlePasswordToggle" type="button" aria-controls="singlePassword" aria-label="显示密码" aria-pressed="false" title="显示密码"><svg class="secret-eye" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.5"/></svg><svg class="secret-eye-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.5"/><path d="m4 4 16 16"/></svg></button></div></div>
         <div class="field"><label for="singleSalt">盐值（默认同步 accounts.json）</label><input id="singleSalt" value="wb-static-pro-salt-v1" spellcheck="false"></div>
         <div class="field"><label>&nbsp;</label><button class="primary" id="singleHashBtn" type="button">生成哈希</button></div>
       </div>
@@ -162,7 +163,7 @@ student002:MyPass-002"></textarea>
       <h2>验证某个账号密码</h2>
       <div class="grid">
         <div class="field"><label for="verifyUsername">用户名</label><input id="verifyUsername"></div>
-        <div class="field"><label for="verifyPassword">密码</label><input id="verifyPassword" type="password"></div>
+        <div class="field"><label for="verifyPassword">密码</label><div class="secret-field"><input id="verifyPassword" type="password"><button class="secret-toggle" id="verifyPasswordToggle" type="button" aria-controls="verifyPassword" aria-label="显示密码" aria-pressed="false" title="显示密码"><svg class="secret-eye" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.5"/></svg><svg class="secret-eye-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.5"/><path d="m4 4 16 16"/></svg></button></div></div>
         <div class="field"><label>&nbsp;</label><button class="primary" id="verifyBtn">验证</button></div>
       </div>
       <p class="hint" id="verifyResult">先读取或粘贴 accounts.json，再验证。</p>
@@ -200,6 +201,12 @@ let accountsFileHandle=null;
 let paywallFileHandle=null;
 let singleHashValue='';
 function status(message,error=false){statusEl.textContent=message;statusEl.classList.toggle('error',error)}
+function wireSecretToggle(inputId,buttonId){
+  const input=document.getElementById(inputId);const button=document.getElementById(buttonId);
+  button.addEventListener('click',()=>{const show=input.type==='password',label=show?'隐藏密码':'显示密码';input.type=show?'text':'password';button.title=label;button.setAttribute('aria-label',label);button.setAttribute('aria-pressed',String(show));});
+}
+wireSecretToggle('singlePassword','singlePasswordToggle');
+wireSecretToggle('verifyPassword','verifyPasswordToggle');
 function resetSingleHashResult(message='输入已修改，请重新生成哈希。'){
   if(!singleHashValue)return;
   singleHashValue='';

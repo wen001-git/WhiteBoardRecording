@@ -201,6 +201,22 @@ test('admin token remains session-only and new accounts default to three devices
   assert.match(html, /检测到 1 小时内使用/);
 });
 
+test('account admin can show and hide every token or password field', async () => {
+  const html = await source('account-admin.html');
+  for (const [inputId, toggleId] of [
+    ['adminToken', 'adminTokenToggle'],
+    ['newPassword', 'newPasswordToggle'],
+    ['resetPassword', 'resetPasswordToggle'],
+  ]) {
+    assert.match(html, new RegExp(`id="${toggleId}"[^>]*aria-controls="${inputId}"[^>]*aria-pressed="false"`));
+  }
+  assert.equal((html.match(/class="secret-eye"/g) || []).length, 3);
+  assert.equal((html.match(/class="secret-eye-off"/g) || []).length, 3);
+  assert.match(html, /input\.type=show\?'text':'password'/);
+  assert.match(html, /button\.setAttribute\('aria-label',label\)/);
+  assert.match(html, /button\.setAttribute\('aria-pressed',String\(show\)\)/);
+});
+
 test('account admin merges every published static account with Neon accounts', async () => {
   const html = await source('account-admin.html');
   const script = html.match(/<script>([\s\S]*?)<\/script>/i)?.[1];
@@ -261,6 +277,17 @@ test('all customer login forms can show and hide the password', async () => {
     assert.match(html, /<svg class="password-eye-off"[^>]*aria-hidden="true">/);
     assert.match(html, /input\.type=show\?'text':'password'/);
     assert.match(html, /button\.setAttribute\('aria-pressed',String\(show\)\)/);
+  }
+});
+
+test('every shipped password input has a matching show and hide button', async () => {
+  for (const file of ['index.html', 'whiteboard.html', 'whiteboard-pro.html', 'account-admin.html', 'account-admin1.html']) {
+    const html = await source(file);
+    const passwordIds = [...html.matchAll(/<input\b[^>]*\bid="([^"]+)"[^>]*\btype="password"[^>]*>/g)].map(match => match[1]);
+    assert.ok(passwordIds.length > 0, `${file} should contain a password input`);
+    for (const inputId of passwordIds) {
+      assert.match(html, new RegExp(`<button\\b[^>]*aria-controls="${inputId}"[^>]*aria-pressed="false"`), `${file}#${inputId} needs a visibility toggle`);
+    }
   }
 });
 
