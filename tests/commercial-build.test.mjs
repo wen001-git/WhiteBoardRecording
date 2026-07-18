@@ -93,7 +93,9 @@ test('private app is full-featured while the commercial template fails closed', 
   assert.match(commercialTemplate, /grantServerProSession\(result\.session\)/);
   assert.match(commercialTemplate, /proApi\('\/api\/logout'/);
   assert.match(commercialTemplate, /localStorage\.removeItem\(STATIC_SESSION_KEY\)/);
-  assert.match(commercialTemplate, /btn\.textContent=username/);
+  assert.match(commercialTemplate, /label\.textContent=username/);
+  assert.match(commercialTemplate, /share\.hidden=false/);
+  assert.match(commercialTemplate, /share\.hidden=true/);
   assert.doesNotMatch(commercialTemplate, /Pro · \$\{username\}/);
   assert.doesNotMatch(commercialTemplate, /document\.write/);
   for (const html of [privateApp, commercialTemplate]) {
@@ -294,6 +296,37 @@ test('public login gateway can copy the configured WeChat ID and reveal the supp
   const existingQr = commercialTemplate.match(/const PRO_QR_DATA_URL='(data:image\/jpeg;base64,[^']+)'/)?.[1];
   assert.ok(gatewayQr, 'index.html should embed the supplied WeChat QR code');
   assert.equal(gatewayQr, existingQr, 'public gateway should reuse the existing verified QR image');
+});
+
+test('logged-in commercial app exposes contact and referral actions without changing the private app', async () => {
+  const [privateApp, commercialTemplate] = await Promise.all([
+    source('whiteboard.html'),
+    source('whiteboard-pro.html'),
+  ]);
+  assert.doesNotMatch(privateApp, /id="accountShareBtn"/);
+  assert.match(commercialTemplate, /id="accountShareBtn"[^>]*aria-haspopup="dialog"[^>]*hidden/);
+  assert.match(commercialTemplate, /\.recbtn\.account-share-btn\[hidden\]\{display:none;\}/);
+  assert.match(commercialTemplate, /id="accountBtnLabel"[^>]*data-compact-label="登录"/);
+  assert.match(commercialTemplate, /已登录 Pro/);
+  assert.match(commercialTemplate, /id="accountContact"[^>]*role="menuitem"/);
+  assert.match(commercialTemplate, /id="accountRecommend"[^>]*role="menuitem"/);
+  assert.match(commercialTemplate, /id="accountLogout"[^>]*role="menuitem"/);
+  assert.match(commercialTemplate, /id="contactShareOverlay"[^>]*aria-modal="true"[^>]*hidden/);
+  assert.match(commercialTemplate, /id="contactShareFeedback"[^>]*aria-live="polite"/);
+  assert.match(commercialTemplate, /id="recommendationText"[^>]*aria-label="推荐语"/);
+  assert.match(commercialTemplate, /function openContactShareDialog\(mode='share'/);
+  assert.match(commercialTemplate, /function buildRecommendationText\(wechat=purchaseConfig\.wechat\)/);
+  assert.match(commercialTemplate, /作者微信：\$\{wechat\}/);
+  assert.match(commercialTemplate, /wechat\.textContent=purchaseConfig\.wechat/);
+  assert.match(commercialTemplate, /String\(wechat\?\.textContent\|\|''\)\.trim\(\)/);
+  assert.match(commercialTemplate, /navigator\.clipboard\?\.writeText/);
+  assert.match(commercialTemplate, /document\.execCommand\('copy'\)/);
+  assert.match(commercialTemplate, /clipboard timeout/);
+  assert.match(commercialTemplate, /typeof navigator\.share!=='function'/);
+  assert.match(commercialTemplate, /error\?\.name!=='AbortError'/);
+  assert.match(commercialTemplate, /contactShareReturnFocus/);
+  assert.match(commercialTemplate, /trigger\?\.focus\?\.\(\)/);
+  assert.match(commercialTemplate, /qr\.src=PRO_QR_DATA_URL/);
 });
 
 test('every shipped password input has a matching show and hide button', async () => {

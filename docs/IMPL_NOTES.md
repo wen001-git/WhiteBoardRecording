@@ -20,6 +20,7 @@
 
 - Neon 登录成功后不再请求 `/api/app` 并 `document.write()` 整份 HTML；入口页进入静态 `app.html`，白板通过 `/api/session` 恢复服务端会话。
 - `grantServerProSession()` 动态更新 `APP_PLAN/IS_PRO/SERVER_PRO_GRANTED`，`renderAccountEntry()` 同步右下角用户名、Pro 样式和退出菜单。不要恢复整页脚本二次执行，否则会再次触发 `screenVideo` 等全局声明冲突。
+- `renderAccountEntry()` 也是已登录联系/推荐入口的唯一显隐开关：免费状态只显示登录；静态或 Neon Pro 恢复后显示“推荐给朋友”和带箭头的账号按钮。账号菜单提供“联系作者 / 推荐给朋友 / 退出登录”，两种入口统一调用 `openContactShareDialog(mode)`；弹窗从当前 `purchaseConfig.wechat` 生成微信号和可编辑推荐语，复用 `PRO_QR_DATA_URL`，首次点击只打开预览，复制或 `navigator.share` 必须由用户再次明确触发。
 - 账户入口只绑定一次事件，点击行为根据当前 `IS_PRO` 决定打开登录或菜单；退出同时清理静态 session 并调用 `/api/logout`，避免两种会话叠加。
 - `/api/app` 仍保留为服务端兼容接口和授权标记测试，但当前静态入口不依赖它加载页面。
 - `account-admin.html` 的账号列表是 Neon `/api/admin/accounts` 与同站点 `accounts.json` 按小写用户名合并后的全集；重叠账号只显示一次，静态独有账号必须标注来源且不能误显示 Neon 的设备上限、改密或登录 IP 操作。
@@ -133,6 +134,6 @@
 
 | 日期 | 变更内容 |
 |------|----------|
+| 2026-07-18 | 记录已登录联系/推荐入口的显隐、动态微信配置、二维码复用和显式复制/分享边界；why：让静态与 Neon Pro 用户都能稳定找到作者且避免首次点击静默覆盖剪贴板 |
 | 2026-07-18 | 记录入口页自动恢复静态/Neon 会话、5 秒检查上限和历史替换跳转；why：避免已登录用户再次看到登录表单或后退后循环跳转 |
 | 2026-07-18 | 记录管理页合并 Neon 与静态账号全集及静态独有账号的操作边界；why：避免列表再次退化为仅显示 Neon 账号或为静态账号暴露无效操作 |
-| 2026-07-18 | 记录 Neon 与静态/Neon 重叠账号的成功登录 IP、非阻塞审计接口和一小时多 IP 提醒；why：扩展账号共享识别且保持本地登录即时放行 |
