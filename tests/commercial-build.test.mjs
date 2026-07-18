@@ -280,6 +280,22 @@ test('all customer login forms can show and hide the password', async () => {
   }
 });
 
+test('public login gateway can copy the configured WeChat ID and reveal the supplied QR code', async () => {
+  const gateway = await source('index.html');
+  const commercialTemplate = await source('whiteboard-pro.html');
+  assert.match(gateway, /id="copyPurchaseWechat"[^>]*aria-label="复制微信号"/);
+  assert.match(gateway, /id="togglePurchaseQr"[^>]*aria-expanded="false"[^>]*aria-controls="purchaseWechatQr"/);
+  assert.match(gateway, /id="purchaseWechatQr"[^>]*aria-hidden="true"/);
+  assert.match(gateway, /id="purchaseWechatFeedback"[^>]*aria-live="polite"/);
+  assert.match(gateway, /navigator\.clipboard\?\.writeText/);
+  assert.match(gateway, /document\.execCommand\('copy'\)/);
+  assert.match(gateway, /String\(wechat\?\.textContent\|\|''\)\.trim\(\)/);
+  const gatewayQr = gateway.match(/const WECHAT_QR_DATA_URL='(data:image\/jpeg;base64,[^']+)'/)?.[1];
+  const existingQr = commercialTemplate.match(/const PRO_QR_DATA_URL='(data:image\/jpeg;base64,[^']+)'/)?.[1];
+  assert.ok(gatewayQr, 'index.html should embed the supplied WeChat QR code');
+  assert.equal(gatewayQr, existingQr, 'public gateway should reuse the existing verified QR image');
+});
+
 test('every shipped password input has a matching show and hide button', async () => {
   for (const file of ['index.html', 'whiteboard.html', 'whiteboard-pro.html', 'account-admin.html', 'account-admin1.html']) {
     const html = await source(file);

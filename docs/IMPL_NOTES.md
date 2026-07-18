@@ -10,6 +10,7 @@
 ### 入口与数据流
 
 - `index.html` 和 `whiteboard-pro.html` 都实现“本地静态账号优先、Neon 兜底”。静态校验成功必须直接返回，不调用 `/api/login`。
+- `index.html` 初始只显示会话检查过渡态：有效 `wb_static_pro_session` 直接进入白板且不请求账号服务；否则以 5 秒上限检查 `/api/session`，有效 Neon Cookie 同样通过 `location.replace()` 进入 `app.html`。只有 401、网络失败或超时才显示登录入口，避免已登录用户看到登录页闪现或后退后循环跳转。
 - HTTP(S) 页面优先读取同目录 `accounts.json`；`file://` 页面先用 `localStorage.wb_static_accounts_json`，没有缓存时读取 `https://record.leewen.work/accounts.json`。生产静态站必须为 `/accounts.json` 返回 `Access-Control-Allow-Origin: *`，Node 的 `ALLOWED_ORIGINS` 必须显式包含 `null`，否则本地文件来源仍会被 CORS 拒绝。静态会话键为 `wb_static_pro_session`。
 - 静态哈希公式是 `SHA-256(salt:usernameLowercase:password)`；统一盐为 `wb-static-pro-salt-v1`。Node/Neon 使用相同盐但仍以 scrypt 派生，不能把两种哈希直接互换。
 - 后端入口在 `server/app.mjs`，核心路由为 `/api/login`、`/api/session`、`/api/logout`、`/api/app` 和 `/api/admin/*`；数据库访问在 `server/store.mjs`。密码规则为 4–128 位。
@@ -132,6 +133,6 @@
 
 | 日期 | 变更内容 |
 |------|----------|
+| 2026-07-18 | 记录入口页自动恢复静态/Neon 会话、5 秒检查上限和历史替换跳转；why：避免已登录用户再次看到登录表单或后退后循环跳转 |
 | 2026-07-18 | 记录管理页合并 Neon 与静态账号全集及静态独有账号的操作边界；why：避免列表再次退化为仅显示 Neon 账号或为静态账号暴露无效操作 |
 | 2026-07-18 | 记录 Neon 与静态/Neon 重叠账号的成功登录 IP、非阻塞审计接口和一小时多 IP 提醒；why：扩展账号共享识别且保持本地登录即时放行 |
-| 2026-07-17 | 记录全局画布底色、单页覆盖、v2 文档及笔迹/录像渲染约束；why：避免后续把文档底色与录制壁纸混为同一配置 |

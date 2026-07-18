@@ -32,9 +32,20 @@ function staticAccounts({ password = 'local-password', enabled = true } = {}) {
   };
 }
 
-function runtime(fetchImpl, initialStorage = {}, locationOverrides = {}) {
+function runtime(fetchImpl, initialStorage = {}, locationOverrides = {}, { sessionTimeoutMs = 5000 } = {}) {
   const store = new Map(Object.entries(initialStorage));
   const elements = new Map();
+  const navigations = [];
+  const bodyClasses = new Set(['auth-checking']);
+  const bodyClassList = {
+    add(name) { bodyClasses.add(name); },
+    remove(name) { bodyClasses.delete(name); },
+    toggle(name, force) {
+      if (force === undefined ? !bodyClasses.has(name) : force) bodyClasses.add(name);
+      else bodyClasses.delete(name);
+    },
+    contains(name) { return bodyClasses.has(name); },
+  };
   const element = id => {
     if (!elements.has(id)) elements.set(id, {
       id,
@@ -48,6 +59,17 @@ function runtime(fetchImpl, initialStorage = {}, locationOverrides = {}) {
     });
     return elements.get(id);
   };
+  const runtimeLocation = {
+    hostname: 'localhost',
+    protocol: 'http:',
+    search: '',
+    href: '',
+    ...locationOverrides,
+    replace(url) {
+      this.href = String(url);
+      navigations.push(String(url));
+    },
+  };
   const context = vm.createContext({
     console,
     URL,
@@ -56,8 +78,11 @@ function runtime(fetchImpl, initialStorage = {}, locationOverrides = {}) {
     Uint8Array,
     Date,
     JSON,
+    AbortController,
+    setTimeout,
+    clearTimeout,
     navigator: { platform: 'Test' },
-    location: { hostname: 'localhost', protocol: 'http:', search: '', href: '', ...locationOverrides },
+    location: runtimeLocation,
     crypto: { subtle: webcrypto.subtle, randomUUID },
     fetch: fetchImpl,
     localStorage: {
@@ -66,14 +91,16 @@ function runtime(fetchImpl, initialStorage = {}, locationOverrides = {}) {
       removeItem(key) { store.delete(key); },
     },
     document: {
+      body: { classList: bodyClassList },
       getElementById: element,
       open() {},
       write() {},
       close() {},
     },
   });
-  vm.runInContext(`${inlineScript}\n;globalThis.__auth={loginPro,checkSession,getActive:()=>activeSessionSource};`, context);
-  return { auth: context.__auth, store, elements };
+  const runtimeScript = inlineScript.replace('const SESSION_CHECK_TIMEOUT_MS=5000;', `const SESSION_CHECK_TIMEOUT_MS=${sessionTimeoutMs};`);
+  vm.runInContext(`${runtimeScript}\n;globalThis.__auth={loginPro,checkSession,isGatewayVisible:()=>!document.body.classList.contains('auth-checking')};`, context);
+  return { auth: context.__auth, store, elements, navigations };
 }
 
 test('valid static credentials log in immediately and start a background Neon audit', async () => {
@@ -171,15 +198,76 @@ test('wrong, disabled, or unavailable static credentials fall back to Neon', asy
   }
 });
 
-test('an existing static session is restored without waking the account service', async () => {
+test('an existing static session opens the whiteboard without waking the account service', async () => {
   const session = { username: 'cached-user', plan: 'pro', source: 'static', expiresAt: Date.now() + 60_000 };
-  const app = runtime(async url => { throw new Error(`unexpected request: ${url}`); }, {
+  const calls = [];
+  const app = runtime(async url => {
+    calls.push(String(url));
+    if (url === './app.html') return response(200);
+    throw new Error(`unexpected request: ${url}`);
+  }, {
     wb_static_pro_session: JSON.stringify(session),
   });
 
-  await app.auth.checkSession();
-  assert.equal(app.auth.getActive(), 'static');
-  assert.equal(app.elements.get('sessionBox').textContent, '已登录：cached-user');
+  assert.equal(await app.auth.checkSession(), true);
+  assert.deepEqual(calls, ['./app.html']);
+  assert.deepEqual(app.navigations, ['./app.html']);
+  assert.equal(app.auth.isGatewayVisible(), false);
+});
+
+test('an existing Neon session opens the whiteboard automatically', async () => {
+  const calls = [];
+  const app = runtime(async url => {
+    calls.push(String(url));
+    if (String(url).endsWith('/api/session')) return response(200, { ok: true, username: 'server-user', plan: 'pro' });
+    if (url === './app.html') return response(200);
+    throw new Error(`unexpected request: ${url}`);
+  });
+
+  assert.equal(await app.auth.checkSession(), true);
+  assert.match(calls[0], /\/api\/session$/);
+  assert.equal(calls[1], './app.html');
+  assert.deepEqual(app.navigations, ['./app.html']);
+  assert.equal(app.auth.isGatewayVisible(), false);
+});
+
+test('an expired static session is cleared before the login gateway is shown', async () => {
+  const session = { username: 'expired-user', plan: 'pro', source: 'static', expiresAt: Date.now() - 1 };
+  const app = runtime(async url => {
+    if (String(url).endsWith('/api/session')) return response(401, { ok: false });
+    throw new Error(`unexpected request: ${url}`);
+  }, {
+    wb_static_pro_session: JSON.stringify(session),
+  });
+
+  assert.equal(await app.auth.checkSession(), false);
+  assert.equal(app.store.has('wb_static_pro_session'), false);
+  assert.deepEqual(app.navigations, []);
+  assert.equal(app.auth.isGatewayVisible(), true);
+});
+
+test('session network errors show the login gateway', async () => {
+  const app = runtime(async url => {
+    if (String(url).endsWith('/api/session')) throw new Error('network unavailable');
+    throw new Error(`unexpected request: ${url}`);
+  });
+
+  assert.equal(await app.auth.checkSession(), false);
+  assert.deepEqual(app.navigations, []);
+  assert.equal(app.auth.isGatewayVisible(), true);
+});
+
+test('a stalled session check times out and shows the login gateway', async () => {
+  const app = runtime(async (url, options = {}) => {
+    if (!String(url).endsWith('/api/session')) throw new Error(`unexpected request: ${url}`);
+    return new Promise((resolve, reject) => {
+      options.signal.addEventListener('abort', () => reject(options.signal.reason));
+    });
+  }, {}, {}, { sessionTimeoutMs: 5 });
+
+  assert.equal(await app.auth.checkSession(), false);
+  assert.deepEqual(app.navigations, []);
+  assert.equal(app.auth.isGatewayVisible(), true);
 });
 
 test('backend errors do not create a static Pro session', async () => {
