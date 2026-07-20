@@ -20,6 +20,19 @@ test('teleprompter title bar is draggable and stays inside the viewport', async 
   }
 });
 
+test('teleprompter has a pointer resize handle constrained to the viewport', async () => {
+  for (const file of ['whiteboard.html', 'whiteboard-pro.html']) {
+    const html = await source(file);
+    assert.match(html, /class="tele-resize" id="teleResize"/);
+    assert.match(html, /\.tele-resize\{[^}]*cursor:nwse-resize;[^}]*touch-action:none;/);
+    assert.match(html, /teleResizeHandle\.addEventListener\('pointerdown'/);
+    assert.match(html, /window\.innerWidth-teleResize\.left-8/);
+    assert.match(html, /window\.innerHeight-teleResize\.top-8/);
+    assert.match(html, /Math\.max\(280,Math\.min\(maxWidth/);
+    assert.match(html, /Math\.max\(300,Math\.min\(maxHeight/);
+  }
+});
+
 test('opening the teleprompter keeps the slide picker visible on the right', async () => {
   for (const file of ['whiteboard.html', 'whiteboard-pro.html']) {
     const html = await source(file);
