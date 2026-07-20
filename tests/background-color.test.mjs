@@ -61,7 +61,7 @@ test('canvas background data is normalized, inherited, saved and undoable', asyn
     assert.match(behavior, /slide\.backgroundColor=null/);
     assert.match(behavior, /canvasColorContrast\(state\.color,current\)<3/);
     assert.doesNotMatch(behavior, /state\.color\s*=/);
-    assert.match(html, /const DOC_VERSION=2/);
+    assert.match(html, /const DOC_VERSION=3/);
     assert.match(html, /canvasBackground:state\.canvasBackground/);
     assert.match(html, /normalizeCanvasColor\(doc\.canvasBackground,DEFAULT_CANVAS_BACKGROUND\)/);
     assert.match(html, /backgroundColor:normalizeCanvasColor\(s&&s\.backgroundColor,null\)/);

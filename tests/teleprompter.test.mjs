@@ -39,3 +39,24 @@ test('teleprompter text is restored and saved locally in both editions', async (
     assert.match(html, /localStorage\.setItem\(TELE_TEXT_STORAGE_KEY,teleText\.value\)/);
   }
 });
+
+test('teleprompter document state is exported, restored and reset without transient UI state', async () => {
+  for (const file of ['whiteboard.html', 'whiteboard-pro.html']) {
+    const html = await source(file);
+    assert.match(html, /const DOC_VERSION=3/);
+    assert.match(html, /teleprompter:currentTeleprompter\(\)/);
+    assert.match(html, /return \{text:teleText\.value,speed:teleSpeed,fontSize:Number\(teleFontInput\.value\)\}/);
+    assert.match(html, /applyTeleprompter\(doc\.teleprompter\)/);
+    assert.match(html, /if\(value===null\|\|value===undefined\|\|value===''\) return fallback;/);
+    assert.match(html, /teleSpeed=clampTeleSetting\(saved&&saved\.speed,10,120,TELE_DEFAULT_SPEED\)/);
+    assert.match(html, /clampTeleSetting\(saved&&saved\.fontSize,16,44,TELE_DEFAULT_FONT_SIZE\)/);
+    assert.match(html, /stopTele\(\);[\s\S]*teleScroll\.scrollTop=0;[\s\S]*teleScroll\.style\.display='none';[\s\S]*teleText\.style\.display='block';/);
+    assert.match(html, /teleText\.addEventListener\('input',[\s\S]*scheduleSave\(\)/);
+    assert.match(html, /teleSpeedInput\.oninput = \(e\)=>\{ teleSpeed=\+e\.target\.value; if\(autoloadDone\) scheduleSave\(\); \}/);
+    assert.match(html, /teleFontInput\.oninput = \(e\)=>\{ teleScroll\.style\.fontSize=e\.target\.value\+'px'; if\(autoloadDone\) scheduleSave\(\); \}/);
+    assert.match(html, /state\.canvasBackground=DEFAULT_CANVAS_BACKGROUND; applyTeleprompter\(null\);/);
+
+    const serialized = html.match(/function currentTeleprompter\(\)\{([\s\S]*?)\n\}/)?.[1] || '';
+    assert.doesNotMatch(serialized, /display|scroll|position|playing|left|top/);
+  }
+});
