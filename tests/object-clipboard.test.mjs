@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import test from 'node:test';
+import vm from 'node:vm';
 
 const root = resolve(import.meta.dirname, '..');
 const variants = ['whiteboard.html', 'whiteboard-pro.html'];
@@ -43,8 +44,41 @@ test('copy, paste, and duplicate shortcuts preserve native text and image clipbo
     assert.match(html, /window\.addEventListener\('copy'/);
     assert.match(html, /target\.isContentEditable\)\) return/);
     assert.match(html, /setData\('text\/plain',SCENE_CLIPBOARD_MARKER\)/);
-    assert.match(html, /getData\('text\/plain'\)===SCENE_CLIPBOARD_MARKER/);
+    assert.match(html, /clipboardText===SCENE_CLIPBOARD_MARKER/);
     assert.match(html, /e\.key\.toLowerCase\(\)==='d' && duplicateSelectedObjects\(\)/);
     assert.match(html, /item\.type\.startsWith\('image\/'\)/);
+    assert.match(html, /if\(pastePlainTextAsObject\(clipboardText\)\) e\.preventDefault\(\)/);
+  }
+});
+
+test('plain clipboard text becomes one selected text object at the current board position', async () => {
+  for (const file of variants) {
+    const html = await source(file);
+    const fn = extractFunction(html, 'pastePlainTextAsObject');
+    const context = {
+      state: { scene: [] },
+      textWorld: null,
+      historyCount: 0,
+      selectedIndex: -1,
+      activeTool: '',
+      status: '',
+      currentImageCenter: () => ({ x: 120, y: 80 }),
+      textObjectFromInput: text => ({ type: 'text', text, x: context.textWorld.x, y: context.textWorld.y }),
+      pushHistory: () => { context.historyCount++; },
+      setActiveTool: tool => { context.activeTool = tool; },
+      setSingleSelection: index => { context.selectedIndex = index; },
+      updateSelectionBox: () => {},
+      updateStylePanel: () => {},
+      render: () => {},
+      flashStatus: value => { context.status = value; }
+    };
+    const paste = vm.runInNewContext(`(${fn})`, context);
+
+    assert.equal(paste('第一行\r\n第二行\0   '), true);
+    assert.deepEqual(context.state.scene[0], { type: 'text', text: '第一行\n第二行', x: 120, y: 80 });
+    assert.equal(context.historyCount, 1);
+    assert.equal(context.selectedIndex, 0);
+    assert.equal(context.activeTool, 'select');
+    assert.equal(context.status, '已粘贴为文字框');
   }
 });
