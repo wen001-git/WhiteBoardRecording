@@ -28,3 +28,14 @@ test('opening the teleprompter keeps the slide picker visible on the right', asy
     assert.doesNotMatch(html, /tele\.style\.display==='flex'\) \? '350px'/);
   }
 });
+
+test('teleprompter text is restored and saved locally in both editions', async () => {
+  for (const file of ['whiteboard.html', 'whiteboard-pro.html']) {
+    const html = await source(file);
+    assert.match(html, /const TELE_TEXT_STORAGE_KEY = 'wb_teleprompter_text_v1';/);
+    assert.match(html, /localStorage\.getItem\(TELE_TEXT_STORAGE_KEY\)/);
+    assert.match(html, /if\(savedTeleText!==null\) teleText\.value=savedTeleText;/);
+    assert.match(html, /teleText\.addEventListener\('input'/);
+    assert.match(html, /localStorage\.setItem\(TELE_TEXT_STORAGE_KEY,teleText\.value\)/);
+  }
+});

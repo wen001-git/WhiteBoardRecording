@@ -155,7 +155,7 @@ export function createApp(options) {
         if (!username || !password || !deviceId || attempt.count >= 20) return;
         void (async () => {
           const account = await store.getAccountByUsername(username);
-          const passwordOk = await passwordMatches(account, password);
+          const passwordOk = account?.enabled ? await passwordMatches(account, password) : false;
           if (!account || !passwordOk || !account.enabled) {
             attempt.count += 1;
             loginAuditAttempts.set(ip, attempt);
@@ -183,7 +183,7 @@ export function createApp(options) {
         const deviceId = validateDeviceId(body.deviceId);
         if (!username || !password || !deviceId) return sendJson(res, 400, { ok: false, code: 'INVALID_INPUT', message: '请输入账号、密码，并允许生成设备标识' }, cors);
         const account = await store.getAccountByUsername(username);
-        const passwordOk = await passwordMatches(account, password);
+        const passwordOk = account?.enabled ? await passwordMatches(account, password) : false;
         if (!account || !passwordOk || !account.enabled) {
           attempt.count += 1; loginAttempts.set(ip, attempt);
           return sendJson(res, 401, { ok: false, code: account && !account.enabled ? 'ACCOUNT_DISABLED' : 'LOGIN_FAILED', message: account && !account.enabled ? '账号已停用，请联系作者' : '账号或密码不正确' }, cors);

@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
-import { LEGACY_PASSWORD_SCHEME, makePassword, normalizeUsername, STATIC_PASSWORD_SCHEME } from './auth.mjs';
+import { LEGACY_PASSWORD_SCHEME, makePassword, normalizeUsername } from './auth.mjs';
 
 const { Pool } = pg;
 const schemaPath = fileURLToPath(new URL('./schema.sql', import.meta.url));

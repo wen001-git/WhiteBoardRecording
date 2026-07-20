@@ -12,7 +12,7 @@
 - `index.html` 和 `whiteboard-pro.html` 都实现“本地静态账号优先、Neon 兜底”。静态校验成功必须直接返回，不调用 `/api/login`。
 - `index.html` 初始只显示会话检查过渡态：有效 `wb_static_pro_session` 直接进入白板且不请求账号服务；否则以 5 秒上限检查 `/api/session`，有效 Neon Cookie 同样通过 `location.replace()` 进入 `app.html`。只有 401、网络失败或超时才显示登录入口，避免已登录用户看到登录页闪现或后退后循环跳转。
 - HTTP(S) 页面优先读取同目录 `accounts.json`；`file://` 页面先用 `localStorage.wb_static_accounts_json`，没有缓存时读取 `https://record.leewen.work/accounts.json`。生产静态站必须为 `/accounts.json` 返回 `Access-Control-Allow-Origin: *`，Node 的 `ALLOWED_ORIGINS` 必须显式包含 `null`，否则本地文件来源仍会被 CORS 拒绝。静态会话键为 `wb_static_pro_session`。
-- 静态哈希公式是 `SHA-256(salt:usernameLowercase:password)`；统一盐为 `wb-static-pro-salt-v1`。Node/Neon 使用相同盐但仍以 scrypt 派生，不能把两种哈希直接互换。
+- 静态与 Node/Neon 新账号统一使用 `SHA-256(salt:usernameLowercase:password)`，输出 64 位小写十六进制，盐为 `wb-static-pro-salt-v1`。数据库用 `password_scheme` 区分 `static-sha256-v1` 和旧 `scrypt-v1`；旧账号仅在启用且密码验证成功后自动迁移，迁移不递增 `session_version`，失败登录和停用账号不得迁移。
 - 后端入口在 `server/app.mjs`，核心路由为 `/api/login`、`/api/session`、`/api/logout`、`/api/app` 和 `/api/admin/*`；数据库访问在 `server/store.mjs`。密码规则为 4–128 位。
 - 服务端会话使用 HttpOnly Cookie；停用账号、改密或清空设备时会递增 `session_version`，旧会话随即失效。静态账号不经过设备限制。
 
@@ -24,6 +24,7 @@
 - 账户入口只绑定一次事件，点击行为根据当前 `IS_PRO` 决定打开登录或菜单；退出同时清理静态 session 并调用 `/api/logout`，避免两种会话叠加。
 - `/api/app` 仍保留为服务端兼容接口和授权标记测试，但当前静态入口不依赖它加载页面。
 - `account-admin.html` 的账号列表是 Neon `/api/admin/accounts` 与同站点 `accounts.json` 按小写用户名合并后的全集；重叠账号只显示一次，静态独有账号必须标注来源且不能误显示 Neon 的设备上限、改密或登录 IP 操作。
+- 管理页只有在成功读取 `accounts.json` 后才开放 Neon 删除：已启用的重叠账号显示“转为静态账号”，Neon 独有账号显示“永久删除”，重叠但 static 已停用时必须先去静态工具启用。两类删除都要求输入完整账号名，调用 `DELETE /api/admin/accounts/:id` 后由数据库级联清理设备与登录事件；API 还要同时校验 id 和规范化用户名。
 - Neon 成功登录响应结束后，服务端异步写入 `login_events`（IP、设备、User-Agent、时间）。静态账号校验成功必须先立即放行，再由两个登录页面通过带 `keepalive` 的 `/api/login-audit` 非阻塞审计，避免随后的页面跳转取消请求；后端仅在同名账号也存在于 Neon、密码一致且启用时记录，不绑定或占用 Neon 设备名额。纯本地账号、密码不一致、失败登录和设备超限不记录，审计请求或写入失败也不得拖慢或阻断登录。管理 API 每个账号只返回最近 100 条，`account-admin.html` 对任意 1 小时窗口内至少 2 个不同 IP 给出共享风险提醒；VPN 和移动网络切换可能产生误报。
 
 ### 独立购买配置
@@ -82,6 +83,7 @@
 - `insertSlideAt()` 通过 `createSlideForDeckInsert()` 和 `shiftSlidesAndContents()` 线性插入；后续幻灯片及中心落在其中的对象必须一起右移，保持面板顺序、世界坐标从左到右顺序和录制顺序一致。
 - `selectSlide()` 是选中并对焦的单一入口；setup/recording/paused 时还要同步 `recConfig.frame`。比例修改统一走 `setRecordingRatio()` / `setCustomRecordingRatio()`，已有幻灯片由 `resizeSlidesToRatio()` 保持中心重算。
 - `#slideFramesLayer`、幻灯片序号、`#slideRevealFloatBtn`、`#minimap` 和比例弹层都是 DOM UI，不得写入 canvas。笔迹播放本身由 `drawSlideRevealOverlay()` 画入 board，才能进入录制。
+- `#slideRevealControl` 是“主按钮播放当前效果 + 箭头打开预设”的分体入口；正式预设包括彩铅铺色、水墨晕染、左上到右下的铅笔描绘和“斜线推进”。四种效果共用色彩感知线稿：浅色页使用接近纯黑、高不透明度且不扩边的细墨线；原始黑灰文字、发丝和排线只走墨线通道，边缘通道必须避开它们，防止同一笔画两侧重复描边变粗。高饱和度色块只补没有墨线的强边界，深色页改用浅线。统一约 4.4 秒，前 34% 完整起稿；后 66% 从头上色并用 `.62` 次幂加快前段推进。各自的空间动作不变，选择记忆、固定种子、录制链和减少动态效果处理继续生效。
 - 背景渲染顺序固定为全局底色 → 单页覆盖 → 对象；背景改动进入扩展后的对象撤销快照，但不改变幻灯片增删的既有撤销行为。鸟瞰图和笔迹播放必须使用 `effectiveSlideBackground()`，深色页的笔迹提取需排除背景并改用浅色轮廓。
 - 层级约束：录制框之上仍需看见幻灯片边框，笔迹按钮再高一层；打开的贴纸工具面板必须继续覆盖二者，避免幻灯片标签、边框或笔迹按钮穿透工具面板。`applyFrameStyle()` 不能为了 UI 按钮缩短最终取景框。
 - `.slidesList` 必须保持 `overflow-x:hidden`，否则纵向滚动条会引发横向溢出；删除角标负偏移依赖列表 padding，调整窄面板尺寸时需同时验证二者。
@@ -91,8 +93,9 @@
 
 ### 白板录制
 
-- `recConfig` 保存比例、背景、白卡片边距/圆角、取景框、摄像头、麦克风、光标效果和文字水印；状态机为 idle → setup → recording → paused。
-- `drawRecFrame()` 顺序：背景 → 白卡片 → 裁剪后的 board → 摄像头 → 光标高亮 → 用户文字水印 → 计划/免费版强制水印。`recCanvas.captureStream(30)` 与 `getRecordingAudioTracks()` 组成最终 MediaStream。
+- `recConfig` 保存比例、背景、白卡片边距/圆角、取景框、摄像头、麦克风、激光笔和文字水印；状态机为 idle → setup → recording → paused。
+- `drawRecFrame()` 顺序：背景 → 白卡片 → 裁剪后的 board → 摄像头 → 激光笔 → 用户文字水印 → 计划/免费版强制水印。`#recordingLaserPointer` 与成品圆点共用 `cursorHighlight/cursorColor/pointInRecordingFrame()`，录制中可由 `#recPointerToggle` 即时开关，不得写入白板文档或撤销历史。
+- `#recBar` 是设置、媒体、提词器、激光笔/录屏光标、计时和录制状态操作的统一容器；幻灯片浮动按钮避让必须读取整个容器边界，不能只读取设置按钮。
 - 画布底色与录制壁纸是两套配置：前者属于文档并已画进 `board`，后者属于 `recConfig` 且只装饰白卡片外层；录制设置预览的卡片应显示当前有效画布底色。
 - 可选文字水印使用 `wb_recording_watermark_v1` 本机保存，最多 40 字，支持九宫格预设、预览拖动后的归一化自定义位置、大小与透明度；水印只参与最终合成，不成为白板对象。
 - `recConfig.showCamera` 只控制成品是否叠加摄像头；硬件占用由 `enableUserMedia()` / `stopUserMedia()` 和 `#mediaToggle` 管理。硬件关闭时不得偷偷重新请求麦克风。
@@ -100,6 +103,7 @@
 ### 录屏
 
 - `getDisplayMedia()` 后读取 `displaySurface`：browser/window 使用完整来源并直接开始；monitor 或未知来源进入冻结预览和独立区域裁剪。
+- 录屏光标开关只使用共享视频轨暴露的 `getCapabilities().cursor` 与 `applyConstraints({cursor})`；缺少 `never` 或可恢复的 `always/motion` 时必须禁用并提示，失败时恢复 UI 状态且继续录制。`drawScreenFrame()` 不得再叠白板激光笔，避免共享源已有光标时出现双影。
 - `#screenVideo` 离屏隐藏，仅作 fallback 取帧源；Chrome/Edge 优先用 `MediaStreamTrackProcessor` 的 VideoFrame 驱动 `drawScreenFrame()`，避免页面切后台掉帧。
 - 裁剪使用会话级归一化 `screenCropNorm{x,y,w,h}`，不能复用或持久化白板 `recConfig.frame`。`#screenStage/#screenSnap/#screenCropFrame` 都是 DOM，不进入输出。
 - `drawScreenFrame()` 与白板录制共用 `drawUserWatermark()`，顺序同样在摄像头合成后、计划/免费版强制水印前；设置预览里的 `#previewWatermark` 是 DOM，不得进入来源画面。
@@ -109,9 +113,11 @@
 ### 摄像头效果与导出
 
 - 摄像头位置为四角配置；亮度通过 screen 混合白层实现，不要改回每帧 `ctx.filter`，后者曾导致真实录制卡顿。
+- 页面摄像头框的最大边长按当前视口短边动态计算并保留 8px 安全边距；放大触及右/下边界时会自动向左/上收回，录屏合成尺寸也必须限制在输出画布内。
 - 美颜通过固定小工作画布、YCbCr 肤色软掩膜和盒式模糊实现，只平滑肤色。设置预览与录制共用 `drawCamBeautified()` 管线。
 - 浏览器原生 MP4 支持时直接录制；否则先录 webm，用户请求转码时才加载 ffmpeg.wasm。提词器始终是独立 DOM 浮层，不得进入 `drawRecFrame()` 或 `drawScreenFrame()`。
 - 提词器标题栏负责拖动，位置必须经 `clampTelePosition()` 限制在视口内；右侧 `.slidesPanel` 固定在 `right:14px` 且层级高于提词器，不能再根据提词器显隐移动到其覆盖范围内。
+- 提词器讲稿通过 `wb_teleprompter_text_v1` 在每次输入时写入 `localStorage`，页面初始化时以 `getItem() !== null` 判断是否恢复；不能用真值判断，否则用户主动清空后刷新会错误恢复默认欢迎词。普通版与 Pro 版必须使用同一个键。
 
 <a id="stickers"></a>
 ## Stickers — 彩铅人物与图片资源
@@ -134,6 +140,6 @@
 
 | 日期 | 变更内容 |
 |------|----------|
-| 2026-07-18 | 记录已登录联系/推荐入口的显隐、动态微信配置、二维码复用和显式复制/分享边界；why：让静态与 Neon Pro 用户都能稳定找到作者且避免首次点击静默覆盖剪贴板 |
-| 2026-07-18 | 记录入口页自动恢复静态/Neon 会话、5 秒检查上限和历史替换跳转；why：避免已登录用户再次看到登录表单或后退后循环跳转 |
-| 2026-07-18 | 记录管理页合并 Neon 与静态账号全集及静态独有账号的操作边界；why：避免列表再次退化为仅显示 Neon 账号或为静态账号暴露无效操作 |
+| 2026-07-20 | 记录提词器讲稿的本机自动保存、刷新恢复与空字符串处理约束；why：防止刷新丢稿或清空后默认文案复现 |
+| 2026-07-20 | 将摄像头框上限改为随视口短边动态放大，并约束录屏合成不越界；why：允许头像接近铺满屏幕，同时适配不同窗口尺寸 |
+| 2026-07-20 | 四种笔迹加快到约 4.4 秒，线稿阶段缩为 34% 并增强上色前段加速；why：减少整体等待，同时保留先线后色的可辨识过程 |

@@ -215,6 +215,30 @@ test('static login audit also migrates matching legacy Neon credentials', async 
   assert.equal(account.loginEvents.length, 1);
 });
 
+test('disabled legacy accounts do not migrate during login or background audit', async () => {
+  const account = await store.createAccount({ username: 'disabled-legacy', password: 'disabled-pass-123' });
+  const legacy = await makeLegacyPassword('disabled-pass-123');
+  account.passwordHash = legacy.hash;
+  account.passwordSalt = legacy.salt;
+  account.passwordScheme = legacy.scheme;
+  account.enabled = false;
+
+  const login = await request('/api/login', {
+    method: 'POST',
+    body: { username: 'disabled-legacy', password: 'disabled-pass-123', deviceId: 'disabled-device-001' }
+  });
+  assert.equal(login.response.status, 401);
+  assert.equal(login.data.code, 'ACCOUNT_DISABLED');
+  const audit = await request('/api/login-audit', {
+    method: 'POST',
+    body: { username: 'disabled-legacy', password: 'disabled-pass-123', deviceId: 'disabled-device-001' }
+  });
+  assert.equal(audit.response.status, 204);
+  await new Promise(resolve => setTimeout(resolve, 20));
+  assert.equal(account.passwordScheme, LEGACY_PASSWORD_SCHEME);
+  assert.equal(account.loginEvents.length, 0);
+});
+
 test('health and CORS policy', async () => {
   const health = await request('/health');
   assert.equal(health.response.status, 200);

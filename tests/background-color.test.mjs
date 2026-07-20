@@ -81,9 +81,9 @@ test('rendering, minimap, reveal and recording preview share the effective backg
     assert.match(minimap, /c\.fillStyle=state\.canvasBackground/);
     assert.match(minimap, /c\.fillStyle=effectiveSlideBackground\(s\)/);
 
-    const reveal = between(html, 'function makeInkCanvasFromSnapshot(', 'function clearSelection(){');
+    const reveal = between(html, 'function makeOutlineCanvasFromSnapshot(', 'function clearSelection(){');
     assert.match(reveal, /const bg=canvasColorRgb\(bgColor\)/);
-    assert.match(reveal, /distance<18/);
+    assert.match(reveal, /revealSmoothstep\(18,70,distance\)/);
     assert.match(reveal, /effectiveSlideBackground\(slide\)/);
 
     const recording = between(html, 'function drawRecFrame(){', 'function drawPlanWatermarks(');
