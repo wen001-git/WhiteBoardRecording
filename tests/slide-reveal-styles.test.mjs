@@ -18,7 +18,7 @@ function between(html, start, end) {
   return html.slice(from, to);
 }
 
-test('both whiteboard variants expose one split control with three new presets and the legacy diagonal sweep', async () => {
+test('both whiteboard variants expose one split control with drawing presets and text-by-line reveal', async () => {
   for (const file of files) {
     const html = await source(file);
     const controls = between(html, '<div id="slideRevealControl"', '<!-- 顶部工具栏 -->');
@@ -28,9 +28,9 @@ test('both whiteboard variants expose one split control with three new presets a
     assert.match(controls, /id="slideRevealPopover"[^>]*role="menu"/);
     assert.deepEqual(
       [...controls.matchAll(/data-slide-reveal-style="([^"]+)"/g)].map(match => match[1]),
-      ['pencil', 'ink', 'diagonal', 'legacy'],
+      ['pencil', 'ink', 'diagonal', 'legacy', 'text'],
     );
-    for (const label of ['彩铅铺色', '水墨晕染', '铅笔描绘', '斜线推进']) assert.match(controls, new RegExp(label));
+    for (const label of ['彩铅铺色', '水墨晕染', '铅笔描绘', '斜线推进', '文字逐行']) assert.match(controls, new RegExp(label));
     assert.doesNotMatch(controls, /data-slide-reveal-style="(?:stroke|left)"/);
   }
 });
@@ -48,7 +48,8 @@ test('reveal presets use a color-aware outline followed by a separate color phas
     assert.match(html, /localStorage\.getItem\(SLIDE_REVEAL_STYLE_KEY\)/);
     assert.match(interaction, /localStorage\.setItem\(SLIDE_REVEAL_STYLE_KEY,slideRevealStyle\)/);
     assert.match(html, /prefers-reduced-motion: reduce/);
-    assert.match(reveal, /duration:4400/);
+    assert.match(reveal, /:4400/);
+    assert.match(reveal, /Math\.max\(900,Math\.max\(0,textIndices\.length-1\)\*650\+320\)/);
     assert.match(reveal, /revealSeeded\(0x4a6f7921\)/);
     assert.match(reveal, /revealSeeded\(0x7f4a7c15\)/);
     assert.match(reveal, /drawRevealPencilMask/);
@@ -58,6 +59,13 @@ test('reveal presets use a color-aware outline followed by a separate color phas
     assert.match(reveal, /function clipDiagonalReveal/);
     assert.match(reveal, /function drawSlideRevealBand/);
     assert.match(reveal, /style==='legacy'/);
+    assert.match(reveal, /normalizedStyle==='text'/);
+    assert.match(reveal, /objectBelongsToSlide\(item\.o,slide\)/);
+    assert.match(reveal, /a\.b\.y-b\.b\.y\|\|a\.b\.x-b\.b\.x/);
+    assert.match(reveal, /当前幻灯片没有可播放的独立文字框/);
+    assert.match(reveal, /function drawTextRevealObject/);
+    assert.match(reveal, /elapsed-order\*650/);
+    assert.match(reveal, /drawObject\(o,\{alpha:amount,offsetY:/);
     assert.match(reveal, /function makeOutlineCanvasFromSnapshot/);
     assert.doesNotMatch(reveal, /function makeInkCanvasFromSnapshot/);
     assert.match(reveal, /const maxPixels=2400000/);
@@ -86,6 +94,7 @@ test('reveal presets use a color-aware outline followed by a separate color phas
     assert.doesNotMatch(reveal, /drawPencilCue/);
     assert.match(interaction, /selectSlideRevealStyle\(option\.dataset\.slideRevealStyle,true\)/);
     assert.ok(render.indexOf('drawObject(state.scene[i])') < render.indexOf('drawSlideRevealOverlay()'));
+    assert.match(render, /if\(isTextRevealObject\(i\)\)\{ drawTextRevealObject\(i\); continue; \}/);
     assert.match(recording, /recCtx\.drawImage\(board,/);
   }
 });

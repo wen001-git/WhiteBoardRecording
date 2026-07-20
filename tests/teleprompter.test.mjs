@@ -47,9 +47,9 @@ test('teleprompter text is restored and saved locally in both editions', async (
     const html = await source(file);
     assert.match(html, /const TELE_TEXT_STORAGE_KEY = 'wb_teleprompter_text_v1';/);
     assert.match(html, /localStorage\.getItem\(TELE_TEXT_STORAGE_KEY\)/);
-    assert.match(html, /if\(savedTeleText!==null\) teleText\.value=savedTeleText;/);
+    assert.match(html, /if\(savedTeleText!==null\) teleText\.textContent=savedTeleText;/);
     assert.match(html, /teleText\.addEventListener\('input'/);
-    assert.match(html, /localStorage\.setItem\(TELE_TEXT_STORAGE_KEY,teleText\.value\)/);
+    assert.match(html, /localStorage\.setItem\(TELE_TEXT_STORAGE_KEY,telePlainText\(\)\)/);
   }
 });
 
@@ -58,7 +58,7 @@ test('teleprompter document state is exported, restored and reset without transi
     const html = await source(file);
     assert.match(html, /const DOC_VERSION=3/);
     assert.match(html, /teleprompter:currentTeleprompter\(\)/);
-    assert.match(html, /return \{text:teleText\.value,speed:teleSpeed,fontSize:Number\(teleFontInput\.value\),color:teleColorInput\.value\}/);
+    assert.match(html, /return \{text:telePlainText\(\),html:sanitizeTeleHtml\(teleText\.innerHTML\),speed:teleSpeed,fontSize:Number\(teleFontInput\.value\)\}/);
     assert.match(html, /applyTeleprompter\(doc\.teleprompter\)/);
     assert.match(html, /if\(value===null\|\|value===undefined\|\|value===''\) return fallback;/);
     assert.match(html, /teleSpeed=clampTeleSetting\(saved&&saved\.speed,10,120,TELE_DEFAULT_SPEED\)/);
@@ -67,7 +67,7 @@ test('teleprompter document state is exported, restored and reset without transi
     assert.match(html, /teleText\.addEventListener\('input',[\s\S]*scheduleSave\(\)/);
     assert.match(html, /teleSpeedInput\.oninput = \(e\)=>\{ teleSpeed=\+e\.target\.value; if\(autoloadDone\) scheduleSave\(\); \}/);
     assert.match(html, /teleFontInput\.oninput = \(e\)=>\{ teleScroll\.style\.fontSize=e\.target\.value\+'px'; if\(autoloadDone\) scheduleSave\(\); \}/);
-    assert.match(html, /teleColorInput\.oninput = \(e\)=>\{ teleScroll\.style\.color=e\.target\.value; teleText\.style\.color=e\.target\.value; if\(autoloadDone\) scheduleSave\(\); \}/);
+    assert.match(html, /teleColorInput\.oninput = \(e\)=>\{[\s\S]*teleSelectionRange\.collapsed[\s\S]*teleColoredSpans=colorTeleSelection\(teleSelectionRange,e\.target\.value\);[\s\S]*teleColoredSpans\.length[\s\S]*scheduleSave\(\)/);
     assert.match(html, /state\.canvasBackground=DEFAULT_CANVAS_BACKGROUND; applyTeleprompter\(null\);/);
 
     const serialized = html.match(/function currentTeleprompter\(\)\{([\s\S]*?)\n\}/)?.[1] || '';
@@ -75,14 +75,21 @@ test('teleprompter document state is exported, restored and reset without transi
   }
 });
 
-test('teleprompter text color is editable and persists with the document', async () => {
+test('teleprompter selected text color is editable and persists with the document', async () => {
   for (const file of ['whiteboard.html', 'whiteboard-pro.html']) {
     const html = await source(file);
-    assert.match(html, /type="color" id="teleColor" value="#ffffff"/);
+    assert.match(html, /contenteditable="true" role="textbox"/);
+    assert.match(html, /type="color" id="teleColor" value="#ffffff" title="修改选中文字的颜色"/);
     assert.match(html, /const TELE_DEFAULT_SPEED=40, TELE_DEFAULT_FONT_SIZE=22, TELE_DEFAULT_COLOR='#ffffff';/);
     assert.match(html, /\^#\[0-9a-f\]\{6\}\$\/i\.test\(saved\.color\)/);
-    assert.match(html, /teleColorInput\.value=color;/);
-    assert.match(html, /teleScroll\.style\.color=color;/);
-    assert.match(html, /teleText\.style\.color=color;/);
+    assert.match(html, /function sanitizeTeleHtml\(html\)/);
+    assert.match(html, /function colorTeleSelection\(range,color\)/);
+    assert.match(html, /document\.createTreeWalker\(teleText,NodeFilter\.SHOW_TEXT\)/);
+    assert.match(html, /part\.surroundContents\(span\)/);
+    assert.match(html, /teleColorInput\.onchange=\(\)=>\{ teleColoredSpans=\[\]; \}/);
+    assert.doesNotMatch(html, /execCommand\('foreColor'/);
+    assert.match(html, /teleText\.innerHTML=sanitizeTeleHtml\(saved\.html\)/);
+    assert.match(html, /teleScroll\.innerHTML = sanitizeTeleHtml\(teleText\.innerHTML\)/);
+    assert.match(html, /teleText\.addEventListener\('paste'/);
   }
 });
