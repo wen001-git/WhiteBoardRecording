@@ -44,7 +44,7 @@ test('both whiteboard variants expose the compact per-slide transition UI', asyn
   }
 });
 
-test('transition schema normalizes old documents and persists sound settings in v5 history', async () => {
+test('transition schema persists sound settings in v6 history', async () => {
   for (const file of files) {
     const html = await source(file);
     const schema = between(html, 'const SLIDE_TRANSITION_TYPES=', 'function roundRect(');
@@ -60,7 +60,7 @@ test('transition schema normalizes old documents and persists sound settings in 
     assert.equal(context.result.SLIDE_TRANSITION_SPEEDS.gentle.duration, 900);
     assert.deepEqual(Object.keys(context.result.SLIDE_TRANSITION_SOUNDS), ['none', 'page', 'swish', 'soft']);
 
-    assert.match(html, /const DOC_VERSION=5/);
+    assert.match(html, /const DOC_VERSION=6/);
     assert.match(html, /transition:normalizeSlideTransition\(s&&s\.transition\)/);
     assert.match(html, /slideTransitions:state\.slides\.map/);
     assert.match(html, /const transitions=new Map/);

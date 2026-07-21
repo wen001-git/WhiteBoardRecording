@@ -26,6 +26,8 @@ test('both whiteboard variants expose one split control with drawing presets and
     assert.match(controls, /id="slideRevealFloatBtn"/);
     assert.match(controls, /id="slideRevealMenuBtn"[^>]*aria-haspopup="menu"[^>]*aria-expanded="false"/);
     assert.match(controls, /id="slideRevealPopover"[^>]*role="menu"/);
+    assert.match(controls, /id="slideRevealAutoPlay"[^>]*type="checkbox"/);
+    assert.match(controls, /切入时自动播放/);
     assert.deepEqual(
       [...controls.matchAll(/data-slide-reveal-style="([^"]+)"/g)].map(match => match[1]),
       ['pencil', 'ink', 'diagonal', 'legacy', 'text'],
@@ -108,4 +110,36 @@ test('slide reveal UI and rendering implementation stay aligned between both var
   assert.equal(controls(privateApp), controls(commercialTemplate));
   assert.equal(reveal(privateApp), reveal(commercialTemplate));
   assert.equal(interaction(privateApp), interaction(commercialTemplate));
+});
+
+test('per-slide reveal settings persist and autoplay from the transition target frame', async () => {
+  for (const file of files) {
+    const html = await source(file);
+    const reveal = between(html, "const SLIDE_REVEAL_STYLE_KEY=", 'function clearSelection');
+    const select = between(html, 'function selectSlide(index,opts={}){', 'function addSlide(){');
+    const history = between(html, 'function snapshot(){', 'function updateHistoryButtons(){');
+    const interaction = between(html, "const slideRevealFloatBtn=document.getElementById('slideRevealFloatBtn')", "document.getElementById('lockBtn').onclick");
+
+    assert.match(html, /const DOC_VERSION=6/);
+    assert.match(reveal, /function normalizeSlideRevealSetting/);
+    assert.match(reveal, /autoPlay:!!\(value&&value\.autoPlay\)/);
+    assert.match(reveal, /function defaultSlideRevealSetting\(\).*autoPlay:false/);
+    assert.match(reveal, /if\(slideReveal\.waiting\) return 0/);
+    assert.match(reveal, /waiting:waitForTransition/);
+    assert.match(reveal, /if\(!opts\.silent\) showPlanToast/);
+    assert.match(reveal, /activeTransition\.target=captureSlideTransitionSnapshot\(slide\)/);
+    assert.match(reveal, /beginSlideRevealPlayback\(slideId\)/);
+    assert.match(select, /recState!=='paused'/);
+    assert.match(select, /autoReveal=userNavigation&&IS_PRO&&revealSetting\.autoPlay&&!slideRevealReduceMotion/);
+    assert.match(select, /startSlideReveal\(index,revealSetting\.style,\{waiting:true,silent:true\}\)/);
+    assert.ok(select.indexOf('startSlideReveal(index,revealSetting.style') < select.indexOf('const targetSnapshot=captureSlideTransitionSnapshot(s)'));
+    assert.match(select, /if\(revealPrepared&&!transitionStarted\) beginSlideRevealPlayback\(s\.id\)/);
+    assert.match(select, /if\(revealPrepared&&autoloadDone\) scheduleSave\(\)/);
+    assert.match(history, /slideReveals:state\.slides\.map/);
+    assert.match(history, /const reveals=new Map/);
+    assert.match(html, /reveal:normalizeSlideRevealSetting\(s&&s\.reveal\)/);
+    assert.match(interaction, /slide\.reveal=\{\.\.\.current,style:slideRevealStyle\}/);
+    assert.match(interaction, /slide\.reveal=\{\.\.\.current,autoPlay:slideRevealAutoPlay\.checked\}/);
+    assert.match(interaction, /startSlideReveal\(state\.activeSlide,slideRevealFor\(slide\)\.style\)/);
+  }
 });
