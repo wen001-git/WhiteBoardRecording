@@ -79,10 +79,11 @@
 <a id="slides"></a>
 ## Slides — 幻灯片、比例与 DOM 浮层
 
-- 幻灯片数据是 `state.slides[{id,x,y,w,h,backgroundColor}]` 与 `state.activeSlide`；`backgroundColor:null` 表示继承 `state.canvasBackground`。文档 v2 保存全局底色和单页覆盖，旧文档缺字段时回退纯白/继承。
+- 幻灯片数据是 `state.slides[{id,x,y,w,h,backgroundColor,transition}]` 与 `state.activeSlide`；`backgroundColor:null` 表示继承 `state.canvasBackground`，`transition:{type,speed}` 保存进入本页的转场。文档 v4 保存底色、逐页转场和提词器，旧文档缺转场时回退 `none/natural`。
 - `addSlide()` 通过 `createSlideAtSmartPosition()`：当前视野接近 active slide 时在右侧找空位；用户已移动到远处空白时按当前 viewport 中心创建。
 - `insertSlideAt()` 通过 `createSlideForDeckInsert()` 和 `shiftSlidesAndContents()` 线性插入；后续幻灯片及中心落在其中的对象必须一起右移，保持面板顺序、世界坐标从左到右顺序和录制顺序一致。
 - `selectSlide()` 是选中并对焦的单一入口；setup/recording/paused 时还要同步 `recConfig.frame`。比例修改统一走 `setRecordingRatio()` / `setCustomRecordingRatio()`，已有幻灯片由 `resizeSlidesToRatio()` 保持中心重算。
+- 缩略图和左右键以 `{animate:true}` 调用 `selectSlide()`：切换前截取当前 board 合成帧，切换后截取目标页，再由 `drawSlideTransitionOverlay()` 在幻灯片范围内绘制淡化、推入或擦除；方向按页码自动决定，暂停录制时瞬时切页，程序化选页不播放。
 - `#slideFramesLayer`、幻灯片序号、`#slideRevealFloatBtn`、`#minimap` 和比例弹层都是 DOM UI，不得写入 canvas。笔迹播放本身由 `drawSlideRevealOverlay()` 画入 board，才能进入录制。
 - 幻灯片动画菜单的“文字逐行”按文字框本体顶部坐标、再按横坐标排序当前页 `type:'text'` 对象；播放期间在正常场景层序内由 `drawTextRevealObject()` 以 650ms 间隔淡入并轻微上移，因此不改对象数据、不改变原图层关系、可重复播放且会随 board 进入录制。形状内标签不参与此顺序。
 - `#slideRevealControl` 是“主按钮播放当前效果 + 箭头打开预设”的分体入口；正式预设包括彩铅铺色、水墨晕染、左上到右下的铅笔描绘和“斜线推进”。四种效果共用色彩感知线稿：浅色页使用接近纯黑、高不透明度且不扩边的细墨线；原始黑灰文字、发丝和排线只走墨线通道，边缘通道必须避开它们，防止同一笔画两侧重复描边变粗。高饱和度色块只补没有墨线的强边界，深色页改用浅线。统一约 4.4 秒，前 34% 完整起稿；后 66% 从头上色并用 `.62` 次幂加快前段推进。各自的空间动作不变，选择记忆、固定种子、录制链和减少动态效果处理继续生效。
@@ -97,6 +98,7 @@
 
 - `recConfig` 保存比例、背景、白卡片边距/圆角、取景框、摄像头、麦克风、激光笔和文字水印；状态机为 idle → setup → recording → paused。
 - `drawRecFrame()` 顺序：背景 → 白卡片 → 裁剪后的 board → 摄像头 → 激光笔 → 用户文字水印 → 计划/免费版强制水印。`#recordingLaserPointer` 与成品圆点共用 `cursorHighlight/cursorColor/pointInRecordingFrame()`，录制中可由 `#recPointerToggle` 即时开关，不得写入白板文档或撤销历史。
+- 幻灯片转场必须画入 board canvas、不得使用 DOM 遮罩，因此 `drawRecFrame()` 会自然采集转场，而摄像头、激光笔与水印继续稳定叠在转场之上。
 - `#recBar` 是设置、媒体、提词器、激光笔/录屏光标、计时和录制状态操作的统一容器；幻灯片浮动按钮避让必须读取整个容器边界，不能只读取设置按钮。
 - 画布底色与录制壁纸是两套配置：前者属于文档并已画进 `board`，后者属于 `recConfig` 且只装饰白卡片外层；录制设置预览的卡片应显示当前有效画布底色。
 - 可选文字水印使用 `wb_recording_watermark_v1` 本机保存，最多 40 字，支持九宫格预设、预览拖动后的归一化自定义位置、大小与透明度；水印只参与最终合成，不成为白板对象。
@@ -119,8 +121,8 @@
 - 美颜通过固定小工作画布、YCbCr 肤色软掩膜和盒式模糊实现，只平滑肤色。设置预览与录制共用 `drawCamBeautified()` 管线。
 - 浏览器原生 MP4 支持时直接录制；否则先录 webm，用户请求转码时才加载 ffmpeg.wasm。提词器始终是独立 DOM 浮层，不得进入 `drawRecFrame()` 或 `drawScreenFrame()`。
 - 提词器标题栏负责移动，右下角 `#teleResize` 负责同时调整宽高；移动与缩放都必须限制在视口内，缩放下限为 280×300px。右侧 `.slidesPanel` 固定在 `right:14px` 且层级高于提词器，不能再根据提词器显隐移动到其覆盖范围内。
-- v3 白板文档的 `teleprompter{text,html,speed,fontSize}` 同时保存纯文本兜底和只允许安全字色标记的富文本；用户选中文字后才应用颜色，播放态复用清理后的富文本。系统颜色面板会夺走编辑焦点，因此必须保存选区 Range 并直接包装各文本节点，不能依赖 `execCommand('foreColor')`。导入或恢复时必须停止播放、回到编辑态并把滚动位置归零，显隐、窗口位置、播放和滚动进度不得持久化。旧 `color` 整体字色字段仍需迁移成字色 span，缺字段的旧文件使用空讲稿和默认设置。
-- `wb_teleprompter_text_v1` 继续作为两个版本共用的旧讲稿迁移兜底：只有加载缺少 `teleprompter` 的浏览器旧草稿时才迁入 v3，不能让它覆盖用户主动打开的旧文件。输入文字、速度和字号都要触发文档防抖自动保存。
+- v4 白板文档的 `teleprompter{text,html,speed,fontSize}` 同时保存纯文本兜底和只允许安全字色标记的富文本；用户选中文字后才应用颜色，播放态复用清理后的富文本。系统颜色面板会夺走编辑焦点，因此必须保存选区 Range 并直接包装各文本节点，不能依赖 `execCommand('foreColor')`。导入或恢复时必须停止播放、回到编辑态并把滚动位置归零，显隐、窗口位置、播放和滚动进度不得持久化。旧 `color` 整体字色字段仍需迁移成字色 span，缺字段的旧文件使用空讲稿和默认设置。
+- `wb_teleprompter_text_v1` 继续作为两个版本共用的旧讲稿迁移兜底：只有加载缺少 `teleprompter` 的浏览器旧草稿时才迁入当前文档，不能让它覆盖用户主动打开的旧文件。输入文字、速度和字号都要触发文档防抖自动保存。
 
 <a id="stickers"></a>
 ## Stickers — 彩铅人物与图片资源
@@ -143,6 +145,6 @@
 
 | 日期 | 变更内容 |
 |------|----------|
+| 2026-07-21 | 增加逐页幻灯片转场、三档速度、v4 持久化和 board 内合成约束；why：让编辑预览与录制成品共享同一套简洁转场行为 |
 | 2026-07-21 | 为单选和多选对象增加 Ctrl/Cmd+C、V、D，并让外部纯文字粘贴为新文字框；why：让白板元素和外部讲稿都能通过标准快捷键快速复用 |
 | 2026-07-21 | 为幻灯片动画菜单增加文字框从上到下逐行淡入；why：讲解时可按顺序呈现要点并直接录入成品视频 |
-| 2026-07-21 | 将提词器字色改为保存选区后直接包装文字节点，并保存经过清理的局部富文本；why：系统颜色面板夺取焦点后仍能可靠修改选中文字 |
