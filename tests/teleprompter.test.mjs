@@ -56,7 +56,7 @@ test('teleprompter text is restored and saved locally in both editions', async (
 test('teleprompter document state is exported, restored and reset without transient UI state', async () => {
   for (const file of ['whiteboard.html', 'whiteboard-pro.html']) {
     const html = await source(file);
-    assert.match(html, /const DOC_VERSION=4/);
+    assert.match(html, /const DOC_VERSION=5/);
     assert.match(html, /teleprompter:currentTeleprompter\(\)/);
     assert.match(html, /return \{text:telePlainText\(\),html:sanitizeTeleHtml\(teleText\.innerHTML\),speed:teleSpeed,fontSize:Number\(teleFontInput\.value\)\}/);
     assert.match(html, /applyTeleprompter\(doc\.teleprompter\)/);

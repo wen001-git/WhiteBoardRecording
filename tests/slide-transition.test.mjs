@@ -33,25 +33,34 @@ test('both whiteboard variants expose the compact per-slide transition UI', asyn
       [...panel.matchAll(/data-slide-transition-speed="([^"]+)"/g)].map(match => match[1]),
       ['fast', 'natural', 'gentle'],
     );
+    assert.deepEqual(
+      [...between(panel, '<select id="slideTransitionSound"', '</select>').matchAll(/value="([^"]+)"/g)].map(match => match[1]),
+      ['none', 'page', 'swish', 'soft'],
+    );
+    assert.match(panel, /id="slideTransitionSoundPreview"[^>]*disabled/);
+    assert.match(panel, /id="slideTransitionVolume"[^>]*min="0"[^>]*max="100"[^>]*value="60"/);
     assert.match(panel, /应用到全部幻灯片/);
     assert.match(html, /class="slideTransitionMark"/);
   }
 });
 
-test('transition schema normalizes old documents and persists in v4 history', async () => {
+test('transition schema normalizes old documents and persists sound settings in v5 history', async () => {
   for (const file of files) {
     const html = await source(file);
     const schema = between(html, 'const SLIDE_TRANSITION_TYPES=', 'function roundRect(');
     const context = {};
-    vm.runInNewContext(`${schema};globalThis.result={normalizeSlideTransition,SLIDE_TRANSITION_SPEEDS};`, context);
-    assert.deepEqual({ ...context.result.normalizeSlideTransition(null) }, { type: 'none', speed: 'natural' });
-    assert.deepEqual({ ...context.result.normalizeSlideTransition({ type: 'bogus', speed: 'slow' }) }, { type: 'none', speed: 'natural' });
-    assert.deepEqual({ ...context.result.normalizeSlideTransition({ type: 'push', speed: 'gentle' }) }, { type: 'push', speed: 'gentle' });
+    vm.runInNewContext(`${schema};globalThis.result={normalizeSlideTransition,SLIDE_TRANSITION_SPEEDS,SLIDE_TRANSITION_SOUNDS};`, context);
+    assert.deepEqual({ ...context.result.normalizeSlideTransition(null) }, { type: 'none', speed: 'natural', sound: 'none', volume: .6 });
+    assert.deepEqual({ ...context.result.normalizeSlideTransition({ type: 'bogus', speed: 'slow', sound: 'loud', volume: 'bad' }) }, { type: 'none', speed: 'natural', sound: 'none', volume: .6 });
+    assert.deepEqual({ ...context.result.normalizeSlideTransition({ type: 'push', speed: 'gentle', sound: 'page', volume: .75 }) }, { type: 'push', speed: 'gentle', sound: 'page', volume: .75 });
+    assert.equal(context.result.normalizeSlideTransition({ sound: 'soft', volume: 2 }).volume, 1);
+    assert.equal(context.result.normalizeSlideTransition({ sound: 'swish', volume: -1 }).volume, 0);
     assert.equal(context.result.SLIDE_TRANSITION_SPEEDS.fast.duration, 350);
     assert.equal(context.result.SLIDE_TRANSITION_SPEEDS.natural.duration, 600);
     assert.equal(context.result.SLIDE_TRANSITION_SPEEDS.gentle.duration, 900);
+    assert.deepEqual(Object.keys(context.result.SLIDE_TRANSITION_SOUNDS), ['none', 'page', 'swish', 'soft']);
 
-    assert.match(html, /const DOC_VERSION=4/);
+    assert.match(html, /const DOC_VERSION=5/);
     assert.match(html, /transition:normalizeSlideTransition\(s&&s\.transition\)/);
     assert.match(html, /slideTransitions:state\.slides\.map/);
     assert.match(html, /const transitions=new Map/);
@@ -76,7 +85,10 @@ test('user navigation composites transitions into the board recording path', asy
     assert.match(select, /recState!=='paused'/);
     assert.match(select, /captureSlideTransitionSnapshot\(sourceSlide\)/);
     assert.match(select, /lastSlideTransitionSource=/);
-    assert.match(select, /startSlideTransition\(s,sourceSnapshot,targetSnapshot,slideTransitionFor\(s\),direction\)/);
+    assert.match(select, /const transitionSetting=slideTransitionFor\(s\)/);
+    assert.match(select, /startSlideTransition\(s,sourceSnapshot,targetSnapshot,transitionSetting,direction\)/);
+    assert.match(select, /playSlideTransitionSound\(transitionSetting\)/);
+    assert.match(select, /stopSlideTransitionSound\(\)/);
     assert.ok(render.indexOf('drawSlideRevealOverlay()') < render.indexOf('drawSlideTransitionOverlay()'));
     assert.match(recording, /recCtx\.drawImage\(board,/);
     assert.match(html, /selectSlide\(i,\{animate:true\}\)/);
@@ -84,6 +96,31 @@ test('user navigation composites transitions into the board recording path', asy
     assert.match(controls, /pushHistory\(\);\s*slide\.transition=normalized/);
     assert.match(controls, /pushHistory\(\);\s*state\.slides\.forEach/);
     assert.doesNotMatch(controls, /requirePro/);
+  }
+});
+
+test('built-in transition sounds fade on interruption and enter the recording mix', async () => {
+  for (const file of files) {
+    const html = await source(file);
+    const sounds = between(html, 'let transitionPreviewAudioCtx=null;', 'function roundRect(');
+    const controls = between(html, "const slideTransitionBtn=document.getElementById('slideTransitionBtn')", '/* ---- 取景框（setup 状态） ---- */');
+    const recording = between(html, 'async function buildRecordingAudioTracks(', 'function onRecStop()');
+
+    assert.match(sounds, /linearRampToValueAtTime\(0,now\+\.04\)/);
+    assert.match(sounds, /recState==='recording'&&audioCtx&&recordingAudioDestination/);
+    assert.match(sounds, /outputs:\[audioCtx\.destination,recordingAudioDestination\]/);
+    assert.match(sounds, /createBufferSource\(\)/);
+    assert.match(sounds, /createOscillator\(\)/);
+    assert.match(controls, /slideTransitionSoundSelect\?\.addEventListener\('change'/);
+    assert.match(controls, /slideTransitionSoundPreview\?\.addEventListener\('click'/);
+    assert.match(controls, /slideTransitionVolume\?\.addEventListener\('change'/);
+    assert.match(controls, /current\.sound!==setting\.sound\|\|current\.volume!==setting\.volume/);
+    assert.match(recording, /createMediaStreamDestination\(\)/);
+    assert.match(recording, /async function buildBoardAudioTracks\(\)/);
+    assert.match(recording, /const audioTracks = await buildBoardAudioTracks\(\)/);
+    assert.match(recording, /stopSlideTransitionSound\(\)/);
+    assert.match(recording, /recordingAudioDestination=null/);
+    assert.doesNotMatch(html, /<audio[^>]+(?:page|swish|soft)/i);
   }
 });
 
