@@ -82,7 +82,7 @@
 - 幻灯片数据是 `state.slides[{id,x,y,w,h,backgroundColor,transition,reveal}]` 与 `state.activeSlide`；`backgroundColor:null` 表示继承 `state.canvasBackground`，`transition:{type,speed,sound,volume}` 保存进入本页的转场，`reveal:{style,autoPlay}` 保存逐页笔迹样式和切入自动播放开关。文档 v6 保存底色、转场、笔迹和提词器。
 - `addSlide()` 通过 `createSlideAtSmartPosition()`：当前视野接近 active slide 时在右侧找空位；用户已移动到远处空白时按当前 viewport 中心创建。
 - `insertSlideAt()` 通过 `createSlideForDeckInsert()` 和 `shiftSlidesAndContents()` 线性插入；后续幻灯片及中心落在其中的对象必须一起右移，保持面板顺序、世界坐标从左到右顺序和录制顺序一致。
-- `selectSlide()` 是选中并对焦的单一入口；setup/recording/paused 时还要同步 `recConfig.frame`。比例修改统一走 `setRecordingRatio()` / `setCustomRecordingRatio()`；`resizeSlidesToRatio()` 保持第 1 张中心不变，并按列表顺序以 `SLIDE_GAP` 等距重排后续页面。重排前必须按旧页面范围记录对象归属，再让页内对象获得所属页面的水平位移；不得缩放内容或移动页面外对象。
+- `selectSlide()` 是选中并对焦的单一入口；setup/recording/paused 时还要同步 `recConfig.frame`。比例修改统一走 `setRecordingRatio()` / `setCustomRecordingRatio()`；`resizeSlidesToRatio()` 保持第 1 张中心不变，并按列表顺序以 `SLIDE_GAP` 等距重排后续页面。重排前必须按旧页面范围记录对象归属，再让页内对象获得所属页面的水平位移；不得缩放内容或移动页面外对象。比例变化后新增页面必须通过 `currentSlideSize()` 继承当前页实际宽高，插入页面则优先继承相邻页，不能重新使用比例预设的标准像素尺寸。
 - 缩略图和左右键以 `{animate:true}` 调用 `selectSlide()`：切换前截取当前 board 合成帧，切换后截取目标页，再由 `drawSlideTransitionOverlay()` 在幻灯片范围内绘制淡化、推入或擦除；方向按页码自动决定，暂停录制时瞬时切页，程序化选页不播放。
 - 转场声音由 Web Audio 即时合成，不增加外部音频资源：`page/swish/soft` 分别是翻书、轻柔滑动和柔和提示，音量按页保存。选择声音或音量后重播整套转场，“试听”只播放声音；连续快速切页先用 40ms 淡出旧声音，避免叠音和爆音。
 - `#slideFramesLayer`、幻灯片序号、`#slideRevealFloatBtn`、`#minimap` 和比例弹层都是 DOM UI，不得写入 canvas。笔迹播放本身由 `drawSlideRevealOverlay()` 画入 board，才能进入录制。
@@ -149,6 +149,6 @@
 
 | 日期 | 变更内容 |
 |------|----------|
+| 2026-07-22 | 让新增和插入页面继承当前相邻幻灯片的实际宽高；why：保持比例切换后的整套页面绝对尺寸一致 |
 | 2026-07-22 | 增加整屏录制比例预设、全屏、Custom 与统一 16:9 安全边界，并延后比例初始化到预览布局完成后；why：保持临时自由裁剪能力，同时避免菜单入镜和竖屏比例误成全屏 |
 | 2026-07-21 | 比例变化后按列表顺序等距重排幻灯片，并让页内对象跟随所属页面水平位移；why：避免 9:16 改为 4:3 等扩宽操作造成相邻页面重叠或内容与边框分离 |
-| 2026-07-21 | 增加逐页笔迹样式与切入自动播放，并让转场终帧衔接笔迹第 0 帧后再开始内容揭示；why：避免录制切页时先闪出完整内容再手动重播 |

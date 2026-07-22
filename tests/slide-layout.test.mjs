@@ -49,6 +49,24 @@ function runResize(html, slides, scene, ratio) {
   return JSON.parse(JSON.stringify(context.state));
 }
 
+function runSmartSlideCreation(html, slides, activeSlide) {
+  const creation = between(html, 'function slideFromViewportCenter(', 'function rectCenterPoint(');
+  const context = {
+    state: { slides: slides.map(slide => ({ ...slide })), activeSlide },
+    commitText: () => {},
+    getRatioConfig: () => ({ w: 900, h: 1200 }),
+    viewportOverlapsActiveSlide: () => true,
+    findFreeSlideSlot: (active, size) => ({ w: size.w, h: size.h }),
+    toWorld: () => ({ x: 0, y: 0 }),
+    window: { innerWidth: 1000, innerHeight: 800 },
+    slideId: () => 'new',
+    normalizeSlideTransition: value => value,
+    defaultSlideRevealSetting: () => ({}),
+  };
+  vm.runInNewContext(`${creation}\nresult=createSlideAtSmartPosition();`, context);
+  return JSON.parse(JSON.stringify(context.result));
+}
+
 test('ratio expansion reflows every later slide and carries its contents', async () => {
   for (const file of files) {
     const html = await source(file);
@@ -94,6 +112,18 @@ test('ratio contraction closes large gaps while preserving slide order', async (
     assert.deepEqual(result.slides.map(slide => slide.id), ['one', 'two', 'three']);
     closeTo(result.slides[1].x - (result.slides[0].x + result.slides[0].w), 80, `${file} closes the first gap`);
     closeTo(result.slides[2].x - (result.slides[1].x + result.slides[1].w), 80, `${file} closes the second gap`);
+  }
+});
+
+test('new slides inherit the current slide dimensions after a ratio change', async () => {
+  for (const file of files) {
+    const html = await source(file);
+    const created = runSmartSlideCreation(html, [
+      { id: 'one', x: 0, y: 0, w: 540, h: 720 },
+    ], 0);
+
+    assert.equal(created.w, 540, `${file} inherits the resized slide width`);
+    assert.equal(created.h, 720, `${file} inherits the resized slide height`);
   }
 });
 
