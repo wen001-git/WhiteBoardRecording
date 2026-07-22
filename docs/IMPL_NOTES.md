@@ -82,7 +82,7 @@
 - 幻灯片数据是 `state.slides[{id,x,y,w,h,backgroundColor,transition,reveal}]` 与 `state.activeSlide`；`backgroundColor:null` 表示继承 `state.canvasBackground`，`transition:{type,speed,sound,volume}` 保存进入本页的转场，`reveal:{style,autoPlay}` 保存逐页笔迹样式和切入自动播放开关。文档 v6 保存底色、转场、笔迹和提词器。
 - `addSlide()` 通过 `createSlideAtSmartPosition()`：当前视野接近 active slide 时在右侧找空位；用户已移动到远处空白时按当前 viewport 中心创建。
 - `insertSlideAt()` 通过 `createSlideForDeckInsert()` 和 `shiftSlidesAndContents()` 线性插入；后续幻灯片及中心落在其中的对象必须一起右移，保持面板顺序、世界坐标从左到右顺序和录制顺序一致。
-- `selectSlide()` 是选中并对焦的单一入口；setup/recording/paused 时还要同步 `recConfig.frame`。比例修改统一走 `setRecordingRatio()` / `setCustomRecordingRatio()`，已有幻灯片由 `resizeSlidesToRatio()` 保持中心重算。
+- `selectSlide()` 是选中并对焦的单一入口；setup/recording/paused 时还要同步 `recConfig.frame`。比例修改统一走 `setRecordingRatio()` / `setCustomRecordingRatio()`；`resizeSlidesToRatio()` 保持第 1 张中心不变，并按列表顺序以 `SLIDE_GAP` 等距重排后续页面。重排前必须按旧页面范围记录对象归属，再让页内对象获得所属页面的水平位移；不得缩放内容或移动页面外对象。
 - 缩略图和左右键以 `{animate:true}` 调用 `selectSlide()`：切换前截取当前 board 合成帧，切换后截取目标页，再由 `drawSlideTransitionOverlay()` 在幻灯片范围内绘制淡化、推入或擦除；方向按页码自动决定，暂停录制时瞬时切页，程序化选页不播放。
 - 转场声音由 Web Audio 即时合成，不增加外部音频资源：`page/swish/soft` 分别是翻书、轻柔滑动和柔和提示，音量按页保存。选择声音或音量后重播整套转场，“试听”只播放声音；连续快速切页先用 40ms 淡出旧声音，避免叠音和爆音。
 - `#slideFramesLayer`、幻灯片序号、`#slideRevealFloatBtn`、`#minimap` 和比例弹层都是 DOM UI，不得写入 canvas。笔迹播放本身由 `drawSlideRevealOverlay()` 画入 board，才能进入录制。
@@ -113,6 +113,7 @@
 - 录屏光标开关只使用共享视频轨暴露的 `getCapabilities().cursor` 与 `applyConstraints({cursor})`；缺少 `never` 或可恢复的 `always/motion` 时必须禁用并提示，失败时恢复 UI 状态且继续录制。`drawScreenFrame()` 不得再叠白板激光笔，避免共享源已有光标时出现双影。
 - `#screenVideo` 离屏隐藏，仅作 fallback 取帧源；Chrome/Edge 优先用 `MediaStreamTrackProcessor` 的 VideoFrame 驱动 `drawScreenFrame()`，避免页面切后台掉帧。
 - 裁剪使用会话级归一化 `screenCropNorm{x,y,w,h}`，不能复用或持久化白板 `recConfig.frame`。`#screenStage/#screenSnap/#screenCropFrame` 都是 DOM，不进入输出。
+- 整屏来源进入 `#screenCropModes` 后默认读取 `recConfig.ratio/customW/customH`，提供全屏、五种标准比例与 Custom；非全屏预设必须在 `layoutScreenSnap(true)` 后初始化，并统一装入 `screenPresetBounds()` 给出的 16:9 安全边界，避免预览尺寸为 0 时被最小尺寸保护放大成全屏。标准比例拖角锁定宽高比，全屏拖角自动转为 Custom，自由裁剪不得反向改写录制设置；标签页与窗口仍直接完整录制。
 - `drawScreenFrame()` 与白板录制共用 `drawUserWatermark()`，顺序同样在摄像头合成后、计划/免费版强制水印前；设置预览里的 `#previewWatermark` 是 DOM，不得进入来源画面。
 - 录屏时页面摄像头气泡设为不可见但保留解码，防止整屏录制出现双重人脸；摄像头帧泵在屏幕源长期不出帧时补合成，避免头像冻结。
 - 停止流程保留 `recStopping/recStopHandled` 一次性守卫、`requestData()` 和 onstop 超时兜底，防止 Chrome “停止分享”丢失完成页或生成两份结果。
@@ -148,6 +149,6 @@
 
 | 日期 | 变更内容 |
 |------|----------|
+| 2026-07-22 | 增加整屏录制比例预设、全屏、Custom 与统一 16:9 安全边界，并延后比例初始化到预览布局完成后；why：保持临时自由裁剪能力，同时避免菜单入镜和竖屏比例误成全屏 |
+| 2026-07-21 | 比例变化后按列表顺序等距重排幻灯片，并让页内对象跟随所属页面水平位移；why：避免 9:16 改为 4:3 等扩宽操作造成相邻页面重叠或内容与边框分离 |
 | 2026-07-21 | 增加逐页笔迹样式与切入自动播放，并让转场终帧衔接笔迹第 0 帧后再开始内容揭示；why：避免录制切页时先闪出完整内容再手动重播 |
-| 2026-07-21 | 为逐页转场增加程序化声音、音量、试听、快速淡出与录制音轨混合，并升级到 v5；why：无需外部音频资源即可让转场声音稳定进入最终视频 |
-| 2026-07-21 | 增加逐页幻灯片转场、三档速度、v4 持久化和 board 内合成约束；why：让编辑预览与录制成品共享同一套简洁转场行为 |
