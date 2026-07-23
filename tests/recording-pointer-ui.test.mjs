@@ -18,13 +18,23 @@ function between(html, start, end) {
   return html.slice(from, to);
 }
 
+function recordingControls(html) {
+  const from = html.indexOf('<div class="recbar" id="recBar">');
+  const selfCheck = html.indexOf('id="selfCheckBtn"', from);
+  const to = html.indexOf('</div>', selfCheck);
+  assert.notEqual(from, -1, 'missing recBar');
+  assert.notEqual(selfCheck, -1, 'missing selfCheckBtn');
+  assert.notEqual(to, -1, 'missing recBar closing tag');
+  return html.slice(from, to + '</div>'.length);
+}
+
 test('recording controls share one compact framed container', async () => {
   for (const file of files) {
     const html = await source(file);
-    const controls = between(html, '<div class="recbar" id="recBar">', '</div>');
+    const controls = recordingControls(html);
 
     for (const id of [
-      'recSettings', 'mediaToggle', 'teleToggle', 'recPointerToggle', 'timer',
+      'recSettings', 'cameraToggle', 'micToggle', 'teleToggle', 'recPointerToggle', 'timer',
       'recStart', 'recCancel', 'recGo', 'recPause', 'recStop', 'selfCheckBtn',
     ]) {
       assert.match(controls, new RegExp(`id="${id}"`), `${file} is missing ${id} in recBar`);
@@ -77,7 +87,7 @@ test('recording pointer implementation stays aligned between both whiteboard var
   const [privateApp, commercialTemplate] = await Promise.all(files.map(source));
   const liveFeature = html => between(html, 'function pointInRecordingFrame(', "const WATERMARK_STORAGE_KEY=");
   const screenFeature = html => between(html, 'let screenCursorTrack=null', '/* ---- 「自检」画中画');
-  const controls = html => between(html, '<div class="recbar" id="recBar">', '</div>');
+  const controls = recordingControls;
 
   assert.equal(liveFeature(privateApp), liveFeature(commercialTemplate));
   assert.equal(screenFeature(privateApp), screenFeature(commercialTemplate));
