@@ -67,6 +67,43 @@ function runSmartSlideCreation(html, slides, activeSlide) {
   return JSON.parse(JSON.stringify(context.result));
 }
 
+function runRatioSync(html, slide) {
+  const sync = between(html, 'function syncRecordingRatioToSlide(', 'function applyRatioChange(){');
+  const context = {
+    RATIOS: {
+      '16:9': { w: 1280, h: 720 },
+      '4:3': { w: 1024, h: 768 },
+      '3:4': { w: 810, h: 1080 },
+      '9:16': { w: 720, h: 1280 },
+      '1:1': { w: 1000, h: 1000 },
+    },
+    recConfig: { ratio: '16:9', customW: 1080, customH: 1920 },
+  };
+  vm.runInNewContext(`${sync}\nchanged=syncRecordingRatioToSlide(slide);`, {
+    ...context,
+    slide,
+  });
+  return context;
+}
+
+test('restored slides drive the shared slide and recording ratio controls', async () => {
+  for (const file of files) {
+    const html = await source(file);
+    const preset = runRatioSync(html, { w: 810, h: 1080 });
+    assert.equal(preset.recConfig.ratio, '3:4', `${file} restores the 3:4 preset`);
+
+    const custom = runRatioSync(html, { w: 900, h: 1100 });
+    assert.equal(custom.recConfig.ratio, 'custom', `${file} restores a custom ratio`);
+    assert.equal(custom.recConfig.customW, 900);
+    assert.equal(custom.recConfig.customH, 1100);
+
+    const applyDoc = between(html, 'function applyDoc(doc){', 'async function loadAutosave(){');
+    const selectSlide = between(html, 'function selectSlide(index,opts={}){', 'function addSlide(){');
+    assert.match(applyDoc, /syncRecordingRatioToSlide\(state\.slides\[state\.activeSlide\]\)/);
+    assert.match(selectSlide, /syncRecordingRatioToSlide\(s\)/);
+  }
+});
+
 test('ratio expansion reflows every later slide and carries its contents', async () => {
   for (const file of files) {
     const html = await source(file);

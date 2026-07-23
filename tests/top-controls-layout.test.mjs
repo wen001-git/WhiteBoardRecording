@@ -18,11 +18,11 @@ function between(html, start, end) {
   return html.slice(from, to);
 }
 
-test('top controls expose compact document, shape, asset and more menus', async () => {
+test('top controls expose a line-icon main menu, direct save, shape, asset and more menus', async () => {
   for (const file of files) {
     const html = await source(file);
     const toolbar = between(html, '<div class="toolbar" id="toolbar">', '<div id="toolHelp">');
-    const documents = between(html, '<!-- 左上角：文件（新建/打开/保存）+ 自动保存状态 -->', '<input id="fileInput"');
+    const documents = between(html, '<!-- 左上角：主菜单 + 高频保存备份 + 自动保存状态 -->', '<input id="fileInput"');
 
     for (const id of [
       'shapeToolTrigger', 'shapeToolMenu', 'assetToolTrigger', 'assetToolMenu',
@@ -33,12 +33,29 @@ test('top controls expose compact document, shape, asset and more menus', async 
     for (const tool of ['ellipse', 'rect', 'diamond', 'arrow', 'line']) {
       assert.match(toolbar, new RegExp(`data-tool="${tool}"`), `${file} is missing ${tool}`);
     }
-    for (const id of ['docMenuBtn', 'docActions', 'docNew', 'docOpen', 'docSave', 'canvasBgBtn']) {
+    for (const id of ['docMenuBtn', 'docActions', 'docNew', 'docOpen', 'docSave', 'docSaveQuick', 'canvasBgBtn']) {
       assert.match(documents, new RegExp(`id="${id}"`), `${file} is missing ${id}`);
     }
-    assert.match(documents, />新建<\/span>/);
-    assert.match(documents, />打开<\/span>/);
-    assert.match(documents, />保存<\/span>/);
+    assert.match(documents, /id="docMenuBtn"[^>]*aria-label="主菜单"/);
+    assert.match(documents, /M5 7h14M5 12h14M5 17h14/);
+    assert.match(documents, />新建白板<\/span>/);
+    assert.match(documents, />打开文件…<\/span>/);
+    assert.match(documents, />保存到文件…<\/span>/);
+    assert.match(documents, />画布背景…<\/span>/);
+    assert.match(documents, /class="doc-menu-shortcut">Ctrl\/⌘ S<\/span>/);
+    assert.match(html, /\.doc-actions\.show\{display:block;\}/);
+    assert.match(html, /\.doc-actions \.doc-menu-item\{[^}]*min-height:44px/);
+  }
+});
+
+test('direct save, menu save and keyboard shortcut reuse exportDoc', async () => {
+  for (const file of files) {
+    const html = await source(file);
+    assert.match(html, /document\.getElementById\('docSave'\)\.onclick=exportDoc;/);
+    assert.match(html, /document\.getElementById\('docSaveQuick'\)\.onclick=exportDoc;/);
+    assert.match(html, /if\(meta && e\.key\.toLowerCase\(\)==='s'\)\{ e\.preventDefault\(\); exportDoc\(\); return; \}/);
+    assert.match(html, /else\{ closeFileMenu\(\); openCanvasBackgroundPopover\(\); \}/);
+    assert.match(html, /closeCanvasBackgroundPopover\(true\)/);
   }
 });
 
@@ -57,6 +74,7 @@ test('top controls use measured collision layout and viewport observers', async 
     assert.match(feature, /visualViewport\?\./);
     assert.match(feature, /orientationchange/);
     assert.match(feature, /aria-expanded/);
+    assert.match(feature, /\(e\.key==='Enter'\|\|e\.key===' '\)&&index>=0/);
     assert.match(html, /@media \(pointer:coarse\)\{\s*\.toolbar \.tool\{width:44px;height:44px;\}/);
   }
 });
@@ -64,7 +82,7 @@ test('top controls use measured collision layout and viewport observers', async 
 test('responsive top-control implementation stays aligned between both whiteboards', async () => {
   const [privateApp, commercialTemplate] = await Promise.all(files.map(source));
   const toolbar = html => between(html, '<div class="toolbar" id="toolbar">', '<div id="toolHelp">');
-  const documents = html => between(html, '<!-- 左上角：文件（新建/打开/保存）+ 自动保存状态 -->', '<input id="fileInput"');
+  const documents = html => between(html, '<!-- 左上角：主菜单 + 高频保存备份 + 自动保存状态 -->', '<input id="fileInput"');
   const feature = html => between(html, '/* ---------------------- RESPONSIVE TOP CONTROLS ----------------------- */', '// 样式面板');
 
   assert.equal(toolbar(privateApp), toolbar(commercialTemplate));

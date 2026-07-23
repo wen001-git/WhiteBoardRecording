@@ -81,6 +81,7 @@
 
 - 幻灯片数据是 `state.slides[{id,x,y,w,h,backgroundColor,transition,reveal}]` 与 `state.activeSlide`；`backgroundColor:null` 表示继承 `state.canvasBackground`，`transition:{type,speed,sound,volume}` 保存进入本页的转场，`reveal:{style,autoPlay}` 保存逐页笔迹样式和切入自动播放开关。文档 v6 保存底色、转场、笔迹和提词器。
 - `addSlide()` 通过 `createSlideAtSmartPosition()`：当前视野接近 active slide 时在右侧找空位；用户已移动到远处空白时按当前 viewport 中心创建。
+- 自动恢复或打开文档后，`syncRecordingRatioToSlide()` 必须从当前幻灯片的真实 `w/h` 反推标准比例或 Custom，并同步右侧幻灯片尺寸与录制设置；不得让未持久化的 `recConfig.ratio` 默认值 16:9 覆盖已恢复的页面比例。切换到历史上尺寸不同的页面时也以当前页为准。
 - `insertSlideAt()` 通过 `createSlideForDeckInsert()` 和 `shiftSlidesAndContents()` 线性插入；后续幻灯片及中心落在其中的对象必须一起右移，保持面板顺序、世界坐标从左到右顺序和录制顺序一致。
 - `selectSlide()` 是选中并对焦的单一入口；setup/recording/paused 时还要同步 `recConfig.frame`。比例修改统一走 `setRecordingRatio()` / `setCustomRecordingRatio()`；`resizeSlidesToRatio()` 保持第 1 张中心不变，并按列表顺序以 `SLIDE_GAP` 等距重排后续页面。重排前必须按旧页面范围记录对象归属，再让页内对象获得所属页面的水平位移；不得缩放内容或移动页面外对象。比例变化后新增页面必须通过 `currentSlideSize()` 继承当前页实际宽高，插入页面则优先继承相邻页，不能重新使用比例预设的标准像素尺寸。
 - 缩略图和左右键以 `{animate:true}` 调用 `selectSlide()`：切换前截取当前 board 合成帧，切换后截取目标页，再由 `drawSlideTransitionOverlay()` 在幻灯片范围内绘制淡化、推入或擦除；方向按页码自动决定，暂停录制时瞬时切页，程序化选页不播放。
@@ -91,7 +92,7 @@
 - `#slideRevealControl` 是“主按钮播放当前效果 + 箭头打开预设”的分体入口；正式预设包括彩铅铺色、水墨晕染、左上到右下的铅笔描绘和“斜线推进”。四种效果共用色彩感知线稿：浅色页使用接近纯黑、高不透明度且不扩边的细墨线；原始黑灰文字、发丝和排线只走墨线通道，边缘通道必须避开它们，防止同一笔画两侧重复描边变粗。高饱和度色块只补没有墨线的强边界，深色页改用浅线。统一约 4.4 秒，前 34% 完整起稿；后 66% 从头上色并用 `.62` 次幂加快前段推进。各自的空间动作不变，选择记忆、固定种子、录制链和减少动态效果处理继续生效。
 - 背景渲染顺序固定为全局底色 → 单页覆盖 → 对象；背景改动进入扩展后的对象撤销快照，但不改变幻灯片增删的既有撤销行为。鸟瞰图和笔迹播放必须使用 `effectiveSlideBackground()`，深色页的笔迹提取需排除背景并改用浅色轮廓。
 - 层级约束：录制框之上仍需看见幻灯片边框，笔迹按钮再高一层；打开的贴纸工具面板必须继续覆盖二者，避免幻灯片标签、边框或笔迹按钮穿透工具面板。`applyFrameStyle()` 不能为了 UI 按钮缩短最终取景框。
-- 顶部文件、绘画与录制控件通过 `syncTopControlsLayout()` 按真实矩形避让；电脑与 iPad 始终用“文件”菜单收纳新建/打开/保存，空间不足时再折叠形状/素材/清空工具，并以单行滚动兜底。不得改回彼此无感知的固定定位或按 iPad 用户代理写死偏移；两个 HTML 版本必须同步。
+- 顶部文件、绘画与录制控件通过 `syncTopControlsLayout()` 按真实矩形避让；电脑与 iPad 的左上角固定为单色线框主菜单和高频保存，竖向菜单收纳新建/打开/保存/画布背景，空间不足时再折叠形状/素材/清空工具并以单行滚动兜底。不得改回彼此无感知的固定定位或按 iPad 用户代理写死偏移；两个 HTML 版本必须同步。
 - `.slidesList` 必须保持 `overflow-x:hidden`，否则纵向滚动条会引发横向溢出；删除角标负偏移依赖列表 padding，调整窄面板尺寸时需同时验证二者。
 
 <a id="recording"></a>
@@ -100,9 +101,10 @@
 ### 白板录制
 
 - `recConfig` 保存比例、背景、白卡片边距/圆角、取景框、摄像头、麦克风、激光笔和文字水印；状态机为 idle → setup → recording → paused。
+- `recConfig.quality` 与幻灯片 `ratio/customW/customH` 解耦，并通过 `wb_recording_quality_v1` 记住本机选择；`recordingOutputSize()` 只在开始白板录制时把当前比例装入 1080p、720p 或 480p 边界并修正为偶数像素，不得因切换清晰度调用 `resizeSlidesToRatio()`。录屏继续使用共享源裁剪尺寸，不读取该清晰度。白板优先使用 `captureStream(0)` 配合 30 FPS 定时合成后逐帧 `requestFrame()`，不支持手动取帧才回退 `captureStream(30)`，避免原生 MP4 把静止画面压成过短时间轴。
 - `drawRecFrame()` 顺序：背景 → 白卡片 → 裁剪后的 board → 摄像头 → 激光笔 → 用户文字水印 → 计划/免费版强制水印。`#recordingLaserPointer` 与成品圆点共用 `cursorHighlight/cursorColor/pointInRecordingFrame()`，录制中可由 `#recPointerToggle` 即时开关，不得写入白板文档或撤销历史。
 - 幻灯片转场必须画入 board canvas、不得使用 DOM 遮罩，因此 `drawRecFrame()` 会自然采集转场，而摄像头、激光笔与水印继续稳定叠在转场之上。
-- 白板和录屏录制都通过 `buildRecordingAudioTracks()` 建立 Web Audio `MediaStreamDestination`；麦克风、系统声和转场提示音汇入同一录制音轨。正式录制时转场声同时输出到扬声器供讲解者监听；暂停切页和程序化定位不得把声音写入成品。
+- 白板和录屏录制都通过 `buildRecordingAudioTracks()` 建立 Web Audio `MediaStreamDestination`；麦克风、系统声和转场提示音汇入同一录制音轨。没有摄像头/麦克风时仍须用约 −80 dB 的非零 `ConstantSourceNode` 保持连续且实际编码的音频时钟，不能改成全零信号（可能被 AAC 优化掉），从而避免 Chrome 原生 MP4 只按降帧后的视频轨推算时长；`AudioContext.resume()` 使用短超时，不能卡住开始录制。正式录制时转场声同时输出到扬声器供讲解者监听；暂停切页和程序化定位不得把声音写入成品。
 - `#recBar` 是设置、媒体、提词器、激光笔/录屏光标、计时和录制状态操作的统一容器；幻灯片浮动按钮避让必须读取整个容器边界，不能只读取设置按钮。
 - 画布底色与录制壁纸是两套配置：前者属于文档并已画进 `board`，后者属于 `recConfig` 且只装饰白卡片外层；录制设置预览的卡片应显示当前有效画布底色。
 - 可选文字水印使用 `wb_recording_watermark_v1` 本机保存，最多 40 字，支持九宫格预设、预览拖动后的归一化自定义位置、大小与透明度；水印只参与最终合成，不成为白板对象。
@@ -117,14 +119,14 @@
 - 整屏来源进入 `#screenCropModes` 后默认读取 `recConfig.ratio/customW/customH`，提供全屏、五种标准比例与 Custom；非全屏预设必须在 `layoutScreenSnap(true)` 后初始化，并统一装入 `screenPresetBounds()` 给出的 16:9 安全边界，避免预览尺寸为 0 时被最小尺寸保护放大成全屏。标准比例拖角锁定宽高比，全屏拖角自动转为 Custom，自由裁剪不得反向改写录制设置；标签页与窗口仍直接完整录制。
 - `drawScreenFrame()` 与白板录制共用 `drawUserWatermark()`，顺序同样在摄像头合成后、计划/免费版强制水印前；设置预览里的 `#previewWatermark` 是 DOM，不得进入来源画面。
 - 录屏时页面摄像头气泡设为不可见但保留解码，防止整屏录制出现双重人脸；摄像头帧泵在屏幕源长期不出帧时补合成，避免头像冻结。
-- 停止流程保留 `recStopping/recStopHandled` 一次性守卫、`requestData()` 和 onstop 超时兜底，防止 Chrome “停止分享”丢失完成页或生成两份结果。
+- 停止流程保留 `recStopping/recStopHandled` 一次性守卫和 onstop 超时兜底；WebM 可在停止前 `requestData()` 保留已生成分片，原生 MP4 不得提前分片，防止 Chrome “停止分享”丢失完成页、生成两份结果或写出错误时长。
 
 ### 摄像头效果与导出
 
 - 摄像头位置为四角配置；亮度通过固定 320px 工作画布内的 gamma 曲线实现，不能改回 screen 白层或每帧 `ctx.filter`：前者会产生雾面，后者曾导致真实录制卡顿。工作画布不能降回 240px，否则放大头像会因二次插值而失去皮肤纹理。
 - 页面摄像头框的最大边长按当前视口短边动态计算并保留 8px 安全边距；放大触及右/下边界时会自动向左/上收回，录屏合成尺寸也必须限制在输出画布内。
 - 美颜通过固定小工作画布、YCbCr 肤色软掩膜和色度/亮度纹理分离实现：低频层只均匀肤色色斑与泛红，原始亮度纹理继续保留毛孔和五官，亮度层最多轻柔化 22%；黑眼圈/暗沉通过模糊后的邻域肤色掩膜只抬高柔和暗部，眼球、睫毛等硬边缘由 `edgeProtect` 排除；红润只调整肤色掩膜。不得重新直接把原图混入模糊层。原始 `#camVideo` 只负责解码，页面头像显示 `#camFxLive`，设置预览直接复制该共享画布，白板录制与录屏则复用 `drawCamBeautified()`，四处参数必须一致。
-- 浏览器原生 MP4 支持时直接录制；否则先录 webm，用户请求转码时才加载 ffmpeg.wasm。提词器始终是独立 DOM 浮层，不得进入 `drawRecFrame()` 或 `drawScreenFrame()`。
+- 浏览器原生 MP4 支持时直接录制，并且必须使用无 timeslice 的 `MediaRecorder.start()`、停止前不得调用 `requestData()`，由浏览器一次性写入 MP4 索引和完整时长；不能把每 200ms 产生的 MP4 碎片直接拼 Blob，否则 12 秒录制可能只显示其中约 5 秒。WebM 才保留 200ms 分片和异常停止兜底；需要 MP4 时由用户触发 ffmpeg.wasm 转码。提词器始终是独立 DOM 浮层，不得进入 `drawRecFrame()` 或 `drawScreenFrame()`。
 - 提词器标题栏负责移动，右下角 `#teleResize` 负责同时调整宽高；移动与缩放都必须限制在视口内，缩放下限为 280×300px。右侧 `.slidesPanel` 固定在 `right:14px` 且层级高于提词器，不能再根据提词器显隐移动到其覆盖范围内。
 - v6 白板文档的 `teleprompter{text,html,speed,fontSize}` 同时保存纯文本兜底和只允许安全字色标记的富文本；用户选中文字后才应用颜色，播放态复用清理后的富文本。系统颜色面板会夺走编辑焦点，因此必须保存选区 Range 并直接包装各文本节点，不能依赖 `execCommand('foreColor')`。导入或恢复时必须停止播放、回到编辑态并把滚动位置归零，显隐、窗口位置、播放和滚动进度不得持久化。
 - `wb_teleprompter_text_v1` 继续作为两个版本共用的旧讲稿迁移兜底：只有加载缺少 `teleprompter` 的浏览器旧草稿时才迁入当前文档，不能让它覆盖用户主动打开的旧文件。输入文字、速度和字号都要触发文档防抖自动保存。
@@ -150,6 +152,6 @@
 
 | 日期 | 变更内容 |
 |------|----------|
-| 2026-07-23 | 记录顶部三分区控件的统一文件菜单、真实碰撞避让、分级折叠与触控兜底；why：防止文件按钮覆盖绘画工具并保持电脑和 iPad 一致 |
-| 2026-07-22 | 将摄像头提亮改为保高光曲线，并用共享效果画布同步纹理保留美颜、柔和暗沉淡化与红润肤色；why：改善黑眼圈和脸色，同时保留眼睛、毛孔与五官细节 |
-| 2026-07-22 | 让新增和插入页面继承当前相邻幻灯片的实际宽高；why：保持比例切换后的整套页面绝对尺寸一致 |
+| 2026-07-23 | 记录原生 MP4 采用整段封装并辅以无媒体静音时钟；why：避免分片 MP4 被播放器只识别部分时长 |
+| 2026-07-23 | 记录白板录制清晰度与幻灯片尺寸解耦、三档输出边界、本机记忆及目标 30 FPS 可变帧率；why：提高默认清晰度、避免切档重排，并让静止内容节省编码资源 |
+| 2026-07-23 | 记录顶部三分区控件的线框主菜单、高频保存、背景收纳、真实碰撞避让与触控兜底；why：防止文件按钮覆盖绘画工具，并兼顾电脑和 iPad 的备份效率 |
