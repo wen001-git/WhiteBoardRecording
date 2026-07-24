@@ -72,6 +72,10 @@
 
 ### 手绘与动态线条
 
+- 新建画笔对象使用 `strokeDynamics:'natural'`、`points[{x,y}]`、`pressures[]`、`simulatePressure` 与 `lastCommittedPoint`。三档基础宽度固定为 `1/2/4`（细/粗/特粗），默认中档；Perfect Freehand 的 `size` 使用 `width*4.25`，并固定 `thinning:.6/smoothing:.5/streamline:.5` 与正弦压力缓动。
+- pointerdown 的 `pressure===0.5` 时按相邻点距离渐进模拟压力，否则保存与点一一对应的真实压力；不展开 `getCoalescedEvents()`，也不按事件时间直接计算速度倍率。绘制期间锁定 pointerId，忽略手掌或第二触点。
+- 实线必须由 Perfect Freehand 一次生成左右轮廓、急转圆角和首尾圆帽，再以二次曲线闭合填充；不能另画端点圆形。命中和边界使用最终轮廓，缩放坐标时保留点附加字段、压力及完成点。
+- v8 继续读取旧固定宽度笔画；实验性 v7 `{x,y,f}` 自然笔画忽略错误的 `f`，仅按旧坐标重新模拟压力，因此不会延续过粗和收尾鼓包。
 - 形状使用 `mulberry32(seed)` 和 `roughLine/roughRect/roughEllipse/roughDiamond/roughArrow`，对象创建时保存稳定 seed，重绘不能重新随机。
 - `strokeStyle`、`roughness` 和 `strokeMotion` 相互独立；`strokeMotion:'flow'` 是覆盖层，不替换原线条。
 - 仅在存在 flow 对象时启动动画循环；动画帧调用 `render({skipSave:true})`，避免动画持续触发自动保存。
@@ -79,7 +83,7 @@
 <a id="slides"></a>
 ## Slides — 幻灯片、比例与 DOM 浮层
 
-- 幻灯片数据是 `state.slides[{id,x,y,w,h,backgroundColor,transition,reveal}]` 与 `state.activeSlide`；`backgroundColor:null` 表示继承 `state.canvasBackground`，`transition:{type,speed,sound,volume}` 保存进入本页的转场，`reveal:{style,autoPlay}` 保存逐页笔迹样式和切入自动播放开关。文档 v6 保存底色、转场、笔迹和提词器。
+- 幻灯片数据是 `state.slides[{id,x,y,w,h,backgroundColor,transition,reveal}]` 与 `state.activeSlide`；`backgroundColor:null` 表示继承 `state.canvasBackground`，`transition:{type,speed,sound,volume}` 保存进入本页的转场，`reveal:{style,autoPlay}` 保存逐页笔迹样式和切入自动播放开关。文档 v8 保存底色、转场、笔迹、提词器和自然笔触压力。
 - `addSlide()` 通过 `createSlideAtSmartPosition()`：当前视野接近 active slide 时在右侧找空位；用户已移动到远处空白时按当前 viewport 中心创建。
 - 自动恢复或打开文档后，`syncRecordingRatioToSlide()` 必须从当前幻灯片的真实 `w/h` 反推标准比例或 Custom，并同步右侧幻灯片尺寸与录制设置；不得让未持久化的 `recConfig.ratio` 默认值 16:9 覆盖已恢复的页面比例。切换到历史上尺寸不同的页面时也以当前页为准。
 - `insertSlideAt()` 通过 `createSlideForDeckInsert()` 和 `shiftSlidesAndContents()` 线性插入；后续幻灯片及中心落在其中的对象必须一起右移，保持面板顺序、世界坐标从左到右顺序和录制顺序一致。
@@ -92,7 +96,8 @@
 - `#slideRevealControl` 是“主按钮播放当前效果 + 箭头打开预设”的分体入口；正式预设包括彩铅铺色、水墨晕染、左上到右下的铅笔描绘和“斜线推进”。四种效果共用色彩感知线稿：浅色页使用接近纯黑、高不透明度且不扩边的细墨线；原始黑灰文字、发丝和排线只走墨线通道，边缘通道必须避开它们，防止同一笔画两侧重复描边变粗。高饱和度色块只补没有墨线的强边界，深色页改用浅线。统一约 4.4 秒，前 34% 完整起稿；后 66% 从头上色并用 `.62` 次幂加快前段推进。各自的空间动作不变，选择记忆、固定种子、录制链和减少动态效果处理继续生效。
 - 背景渲染顺序固定为全局底色 → 单页覆盖 → 对象；背景改动进入扩展后的对象撤销快照，但不改变幻灯片增删的既有撤销行为。鸟瞰图和笔迹播放必须使用 `effectiveSlideBackground()`，深色页的笔迹提取需排除背景并改用浅色轮廓。
 - 层级约束：录制框之上仍需看见幻灯片边框，笔迹按钮再高一层；打开的贴纸工具面板必须继续覆盖二者，避免幻灯片标签、边框或笔迹按钮穿透工具面板。`applyFrameStyle()` 不能为了 UI 按钮缩短最终取景框。
-- 顶部文件、绘画与录制控件通过 `syncTopControlsLayout()` 按真实矩形避让；电脑与 iPad 的左上角固定为线框主菜单、彩色调色盘和高频保存，画布背景按钮用角落色点显示当前有效底色并一步打开调色板，竖向菜单只收纳新建/打开/保存；空间不足时再折叠形状/素材/清空工具并以单行滚动兜底。不得改回彼此无感知的固定定位或按 iPad 用户代理写死偏移；两个 HTML 版本必须同步。
+- 顶部文件、绘画与录制控件通过 `syncTopControlsLayout()` 按真实矩形避让；电脑与 iPad 的左上角固定为线框主菜单、彩色调色盘和高频保存，画布背景按钮用角落色点显示当前有效底色并一步打开调色板，主菜单展开本机画布管理面板；空间不足时再折叠形状/素材/清空工具并以单行滚动兜底。不得改回彼此无感知的固定定位或按 iPad 用户代理写死偏移；两个 HTML 版本必须同步。
+- 左上主菜单现在是本机“画布管理”面板：`boardLibrary` 只保存画布 id、名称、更新时间和轻量预览，完整 v8 文档按 `board:<id>` 分开写入 IndexedDB（不可用时回退 localStorage）。首次打开会把旧 `current` / `whiteboard-doc` 单存档无损迁移为“画布-1”；新建和导入都增加新画布，不覆盖当前内容，切换前必须立即保存当前文档。清空只重置当前画布内容并保留卡片；删除按钮属于各自卡片并按画布 id 操作，不得先切换画布，删除非当前画布时当前内容必须保持不变，删除当前画布才回退相邻画布。只剩一张时不渲染删除按钮，两项危险操作都使用 `#boardConfirmOverlay` 二次确认。录制或取景期间禁止新建、导入、切换、清空和删除。
 - `.slidesList` 必须保持 `overflow-x:hidden`，否则纵向滚动条会引发横向溢出；删除角标负偏移依赖列表 padding，调整窄面板尺寸时需同时验证二者。
 
 <a id="recording"></a>
@@ -129,7 +134,7 @@
 - 美颜通过固定小工作画布、YCbCr 肤色软掩膜和色度/亮度纹理分离实现：低频层只均匀肤色色斑与泛红，原始亮度纹理继续保留毛孔和五官，亮度层最多轻柔化 22%；黑眼圈/暗沉通过模糊后的邻域肤色掩膜只抬高柔和暗部，眼球、睫毛等硬边缘由 `edgeProtect` 排除；红润只调整肤色掩膜。不得重新直接把原图混入模糊层。原始 `#camVideo` 只负责解码，页面头像显示 `#camFxLive`，设置预览直接复制该共享画布，白板录制与录屏则复用 `drawCamBeautified()`，四处参数必须一致。
 - 浏览器原生 MP4 支持时直接录制，并且必须使用无 timeslice 的 `MediaRecorder.start()`、停止前不得调用 `requestData()`，由浏览器一次性写入 MP4 索引和完整时长；不能把每 200ms 产生的 MP4 碎片直接拼 Blob，否则 12 秒录制可能只显示其中约 5 秒。WebM 才保留 200ms 分片和异常停止兜底；需要 MP4 时由用户触发 ffmpeg.wasm 转码。提词器始终是独立 DOM 浮层，不得进入 `drawRecFrame()` 或 `drawScreenFrame()`。
 - 提词器标题栏负责移动，右下角 `#teleResize` 负责同时调整宽高；移动与缩放都必须限制在视口内，缩放下限为 280×300px。右侧 `.slidesPanel` 固定在 `right:14px` 且层级高于提词器，不能再根据提词器显隐移动到其覆盖范围内。
-- v6 白板文档的 `teleprompter{text,html,speed,fontSize}` 同时保存纯文本兜底和只允许安全字色标记的富文本；用户选中文字后才应用颜色，播放态复用清理后的富文本。系统颜色面板会夺走编辑焦点，因此必须保存选区 Range 并直接包装各文本节点，不能依赖 `execCommand('foreColor')`。导入或恢复时必须停止播放、回到编辑态并把滚动位置归零，显隐、窗口位置、播放和滚动进度不得持久化。
+- v8 白板文档的 `teleprompter{text,html,speed,fontSize}` 同时保存纯文本兜底和只允许安全字色标记的富文本；用户选中文字后才应用颜色，播放态复用清理后的富文本。系统颜色面板会夺走编辑焦点，因此必须保存选区 Range 并直接包装各文本节点，不能依赖 `execCommand('foreColor')`。导入或恢复时必须停止播放、回到编辑态并把滚动位置归零，显隐、窗口位置、播放和滚动进度不得持久化。
 - `wb_teleprompter_text_v1` 继续作为两个版本共用的旧讲稿迁移兜底：只有加载缺少 `teleprompter` 的浏览器旧草稿时才迁入当前文档，不能让它覆盖用户主动打开的旧文件。输入文字、速度和字号都要触发文档防抖自动保存。
 
 <a id="stickers"></a>
@@ -153,6 +158,6 @@
 
 | 日期 | 变更内容 |
 |------|----------|
+| 2026-07-24 | 记录本机多画布存储、旧草稿迁移及卡片级删除边界；why：确保删除目标无需先切换且非当前画布删除不影响正在编辑的内容 |
+| 2026-07-24 | 将自然笔触改为 Excalicord 同款 Perfect Freehand 参数、压力结构和一体化轮廓并升级 v8；why：消除自定义速度倍率造成的整体过粗与首尾鼓包，同时保持鼠标丝滑和真实笔压 |
 | 2026-07-24 | 记录画布背景改为彩色调色盘直达按钮并显示当前底色、保存入口统一使用软盘图标；why：减少背景设置步骤、提升颜色入口辨识度并避免下载箭头弱化保存语义 |
-| 2026-07-23 | 记录摄像头与麦克风独立分段、单一摄像头状态、动态麦克风混音和设置页音量反馈；why：避免重复开关造成误解，并支持仅画面、仅声音与录制中静音 |
-| 2026-07-23 | 记录原生 MP4 采用整段封装并辅以无媒体静音时钟；why：避免分片 MP4 被播放器只识别部分时长 |

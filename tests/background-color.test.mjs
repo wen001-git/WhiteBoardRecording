@@ -47,7 +47,7 @@ test('canvas background data is normalized, inherited, saved and undoable', asyn
     const behavior = between(
       html,
       '/* ----------------------- 画布背景颜色 ---------------------------------- */',
-      '/* ---------------- 存档：自动保存(IndexedDB，回退 localStorage) + 导出/导入 .json ---------------- */',
+      '/* ---------------- 存档：本机多画布 + 自动保存 + 导出/导入 .json ---------------- */',
     );
 
     assert.match(html, /const DEFAULT_CANVAS_BACKGROUND='#ffffff'/);
@@ -61,7 +61,7 @@ test('canvas background data is normalized, inherited, saved and undoable', asyn
     assert.match(behavior, /slide\.backgroundColor=null/);
     assert.match(behavior, /canvasColorContrast\(state\.color,current\)<3/);
     assert.doesNotMatch(behavior, /state\.color\s*=/);
-    assert.match(html, /const DOC_VERSION=6/);
+    assert.match(html, /const DOC_VERSION=8/);
     assert.match(html, /canvasBackground:state\.canvasBackground/);
     assert.match(html, /normalizeCanvasColor\(doc\.canvasBackground,DEFAULT_CANVAS_BACKGROUND\)/);
     assert.match(html, /backgroundColor:normalizeCanvasColor\(s&&s\.backgroundColor,null\)/);
@@ -103,7 +103,7 @@ test('canvas background implementation stays aligned between both variants', asy
   const behavior = html => between(
     html,
     '/* ----------------------- 画布背景颜色 ---------------------------------- */',
-    '/* ---------------- 存档：自动保存(IndexedDB，回退 localStorage) + 导出/导入 .json ---------------- */',
+    '/* ---------------- 存档：本机多画布 + 自动保存 + 导出/导入 .json ---------------- */',
   );
 
   assert.equal(controls(privateApp), controls(commercialTemplate));

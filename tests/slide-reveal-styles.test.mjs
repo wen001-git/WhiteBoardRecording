@@ -120,7 +120,7 @@ test('per-slide reveal settings persist and autoplay from the transition target 
     const history = between(html, 'function snapshot(){', 'function updateHistoryButtons(){');
     const interaction = between(html, "const slideRevealFloatBtn=document.getElementById('slideRevealFloatBtn')", "document.getElementById('lockBtn').onclick");
 
-    assert.match(html, /const DOC_VERSION=6/);
+    assert.match(html, /const DOC_VERSION=8/);
     assert.match(reveal, /function normalizeSlideRevealSetting/);
     assert.match(reveal, /autoPlay:!!\(value&&value\.autoPlay\)/);
     assert.match(reveal, /function defaultSlideRevealSetting\(\).*autoPlay:false/);

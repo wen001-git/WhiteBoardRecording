@@ -56,7 +56,7 @@ test('teleprompter text is restored and saved locally in both editions', async (
 test('teleprompter document state is exported, restored and reset without transient UI state', async () => {
   for (const file of ['whiteboard.html', 'whiteboard-pro.html']) {
     const html = await source(file);
-    assert.match(html, /const DOC_VERSION=6/);
+    assert.match(html, /const DOC_VERSION=8/);
     assert.match(html, /teleprompter:currentTeleprompter\(\)/);
     assert.match(html, /return \{text:telePlainText\(\),html:sanitizeTeleHtml\(teleText\.innerHTML\),speed:teleSpeed,fontSize:Number\(teleFontInput\.value\)\}/);
     assert.match(html, /applyTeleprompter\(doc\.teleprompter\)/);
@@ -68,8 +68,10 @@ test('teleprompter document state is exported, restored and reset without transi
     assert.match(html, /teleSpeedInput\.oninput = \(e\)=>\{ teleSpeed=\+e\.target\.value; if\(autoloadDone\) scheduleSave\(\); \}/);
     assert.match(html, /teleFontInput\.oninput = \(e\)=>\{ teleScroll\.style\.fontSize=e\.target\.value\+'px'; if\(autoloadDone\) scheduleSave\(\); \}/);
     assert.match(html, /teleColorInput\.oninput = \(e\)=>\{[\s\S]*teleSelectionRange\.collapsed[\s\S]*teleColoredSpans=colorTeleSelection\(teleSelectionRange,e\.target\.value\);[\s\S]*teleColoredSpans\.length[\s\S]*scheduleSave\(\)/);
-    assert.match(html, /state\.canvasBackground=DEFAULT_CANVAS_BACKGROUND;/);
-    assert.match(html, /applyTeleprompter\(null\);/);
+    assert.match(html, /function emptyBoardDoc\(\)/);
+    assert.match(html, /canvasBackground:DEFAULT_CANVAS_BACKGROUND/);
+    assert.match(html, /teleprompter:null/);
+    assert.match(html, /applyDoc\(emptyBoardDoc\(\)\)/);
 
     const serialized = html.match(/function currentTeleprompter\(\)\{([\s\S]*?)\n\}/)?.[1] || '';
     assert.doesNotMatch(serialized, /display|scroll|position|playing|left|top/);
