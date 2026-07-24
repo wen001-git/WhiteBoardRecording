@@ -18,7 +18,7 @@ function between(html, start, end) {
   return html.slice(from, to);
 }
 
-test('top controls expose a line-icon main menu, direct save, shape, asset and more menus', async () => {
+test('top controls expose a main menu, colorful direct background, direct save, shape, asset and more menus', async () => {
   for (const file of files) {
     const html = await source(file);
     const toolbar = between(html, '<div class="toolbar" id="toolbar">', '<div id="toolHelp">');
@@ -41,7 +41,12 @@ test('top controls expose a line-icon main menu, direct save, shape, asset and m
     assert.match(documents, />新建白板<\/span>/);
     assert.match(documents, />打开文件…<\/span>/);
     assert.match(documents, />保存到文件…<\/span>/);
-    assert.match(documents, />画布背景…<\/span>/);
+    assert.match(documents, /class="iconbtn direct-canvas-bg" id="canvasBgBtn"/);
+    assert.match(documents, /class="canvas-bg-indicator"/);
+    for (const color of ['#ff8c8c', '#f2c94c', '#6fcf97', '#7a76e8']) {
+      assert.match(documents, new RegExp(`fill:${color}`));
+    }
+    assert.equal((documents.match(/M5 3h12l2 2v16H5z/g) || []).length, 2);
     assert.match(documents, /class="doc-menu-shortcut">Ctrl\/⌘ S<\/span>/);
     assert.match(html, /\.doc-actions\.show\{display:block;\}/);
     assert.match(html, /\.doc-actions \.doc-menu-item\{[^}]*min-height:44px/);
@@ -55,6 +60,7 @@ test('direct save, menu save and keyboard shortcut reuse exportDoc', async () =>
     assert.match(html, /document\.getElementById\('docSaveQuick'\)\.onclick=exportDoc;/);
     assert.match(html, /if\(meta && e\.key\.toLowerCase\(\)==='s'\)\{ e\.preventDefault\(\); exportDoc\(\); return; \}/);
     assert.match(html, /else\{ closeFileMenu\(\); openCanvasBackgroundPopover\(\); \}/);
+    assert.match(html, /indicator\.style\.background=current/);
     assert.match(html, /closeCanvasBackgroundPopover\(true\)/);
   }
 });
