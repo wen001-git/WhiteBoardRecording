@@ -33,9 +33,11 @@ npm start                            # 账号 API；需先配置 .env
 7. 保持现有简单、方便的账号架构，不擅自增加复杂安全流程；但任何密钥和明文账号不得进入 Git。
 8. 默认不用 subagent；先用 `rg` 定位，再小范围读取。只在用户明确要求或真正跨目录、可并行的开放探索时使用。
 9. `whiteboard.html` 是创作者自用完整版：除登录、账号管理和用户权限控制外，所有白板、录制与导出功能都必须完整开放；对应核心功能需与 `whiteboard-pro.html` 同步。
+10. 双语词典以 `locales/` 为唯一编辑源；修改 i18n 后必须运行 `node scripts/sync-whiteboard-i18n.mjs`，不得直接手改两个白板的 `WB_I18N_BUNDLE` 生成区，也不得让白板运行时依赖外部 locale 文件。
 
-## 当前状态（2026-07-24）
+## 当前状态（2026-07-26）
 
+- `whiteboard.html` 与 `whiteboard-pro.html` 已完成中英文双语：首次打开按浏览器首选语言选择中文或英文，主菜单可切换“跟随浏览器 / 中文 / English”并跨页面持久化；静态 DOM、动态菜单/提示、录制设置、贴纸和 Pro 专属界面统一由共享词典翻译，用户白板文字与提词器自定义内容不被改写。两个白板通过 `scripts/sync-whiteboard-i18n.mjs` 内嵌相同运行时与词典，仍保持独立单 HTML。
 - 两个白板版本的左上主菜单已升级为本机多画布管理：旧单一自动存档会无损迁移为“画布-1”，新建与导入会保留现有画布并生成可切换卡片，当前画布可独立导出或清空；每张卡片右上角提供带确认的删除按钮，删除未选中画布不会切换当前内容，删除当前画布才回退相邻画布，只剩一张时不显示删除。
 - 两个白板版本的新画笔已改用 Excalicord 同款 Perfect Freehand 核心：三档为细/粗/特粗（1/2/4，默认粗），固定使用 4.25 size 系数、0.6 thinning、0.5 smoothing/streamline 和正弦压力缓动；鼠标按点距渐进模拟压力，Apple Pencil 保存真实压力，首尾与急转圆角由一次闭合轮廓生成。v8 数据参与选择、擦除、缩放、复制和录制，旧固定笔画及实验性 v7 `f` 笔画保持可打开。
 - 两个白板版本的左上角画布背景已从主菜单移为彩色调色盘直达按钮，点击即可打开颜色面板且角落色点实时显示当前有效底色；保存到文件与高频备份入口统一使用软盘图标，避免被误解为普通下载。
@@ -100,6 +102,7 @@ npm start                            # 账号 API；需先配置 .env
 | 幻灯片、比例、鸟瞰图、DOM 浮层 | [`IMPL_NOTES · Slides`](docs/IMPL_NOTES.md#slides) |
 | 摄像头、麦克风、白板录制、录屏、导出 | [`IMPL_NOTES · Recording`](docs/IMPL_NOTES.md#recording) |
 | 彩铅人物贴纸和图片资源 | [`IMPL_NOTES · Stickers`](docs/IMPL_NOTES.md#stickers) |
+| 中英文、浏览器语言检测、手动切换、词典同步 | [`IMPL_NOTES · I18n`](docs/IMPL_NOTES.md#i18n) |
 | 产品范围、里程碑、完整手测清单 | 按需读取 [`docs/PROJECT_PLAN.md`](docs/PROJECT_PLAN.md) |
 
 ## 文件地图
@@ -109,6 +112,7 @@ npm start                            # 账号 API；需先配置 .env
 - `accounts.json` / `paywall.json` / `account-admin1.html` — 静态哈希账号、独立购买配置与离线生成工具。
 - `account-admin.html` / `server/` — Neon 管理页与 Node 账号 API。
 - `scripts/build-static.mjs` / `tests/` / `render.yaml` — 发布白名单、自动测试与部署配置。
+- `locales/` / `scripts/sync-whiteboard-i18n.mjs` — 双语运行时、词典、原文短语对照与两个单 HTML 的内嵌同步器。
 - `docs/IMPL_NOTES.md` — 当前实现细节；`docs/PROJECT_PLAN.md` — 产品与里程碑；历史看 Git。
 
 ## 维护规则
@@ -122,6 +126,6 @@ npm start                            # 账号 API；需先配置 .env
 
 | 日期 | 变更内容 |
 |------|----------|
+| 2026-07-26 | 两个白板完成浏览器语言检测、主菜单手动切换和完整中英文覆盖，并以共享词典生成自包含内嵌包；why：兼顾首次语言体验、运行中切换、两版一致性与独立单 HTML 约束 |
 | 2026-07-24 | 为 iPad 和手机加入以双指中心为锚点的画布捏合缩放与平移，并在手势切换时回滚第一触点的临时编辑；why：补齐移动端基础导航，同时避免捏合前误画、误擦或误移动对象 |
 | 2026-07-24 | 多画布删除入口移至各卡片右上角并保留二次确认；why：无需先切换目标画布，减少操作步骤且避免删除非当前画布时打断正在编辑的内容 |
-| 2026-07-24 | 自然画笔替换为 Excalicord 同款 Perfect Freehand 压力、平滑和一体化轮廓算法，文档升至 v8；why：修正自定义速度倍率导致的整体过粗与首尾鼓包，并让鼠标和手写笔手感与参考实现一致 |

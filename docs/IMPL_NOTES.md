@@ -149,6 +149,13 @@
 - 素材以内联透明 PNG/WebP 保存，不新增外部运行时文件。优化单 HTML 体积时不得降低透明边缘质量或改变角色一致性。
 - 贴纸弹窗和普通绘图工具的选中态互斥；关闭弹窗时恢复 `state.tool`，选择普通工具时先关闭贴纸弹窗。
 
+<a id="i18n"></a>
+## I18n — 中英文与单 HTML 同步
+
+- `locales/i18n.js` 是共享运行时，语言优先级为用户保存的 `wb.lang`（`zh-CN` / `en-US`）高于浏览器；`auto` 或无保存值时按 `navigator.languages` 的第一个受支持语言选择，其他语言回退英文。主菜单 `#langSwitch` 提供“跟随浏览器 / 中文 / English”，切换会更新 `<html lang>`、现有 DOM 和后续动态 DOM。
+- `locales/zh-CN.js`、`locales/en-US.js` 保存显式键；`locales/whiteboard-phrases.js` 将大单 HTML 中的中文原文与英文放在同一对照表，运行时同时支持完整短语、占位参数和安全的长片段替换。`contenteditable` 用户内容不参与通用翻译；仅 `data-i18n-seed="tele.seed"` 的未编辑提词器示例可随语言切换。
+- 两个白板的 `WB_I18N_BUNDLE_START/END` 区域是生成物。修改任一 locale 后运行 `node scripts/sync-whiteboard-i18n.mjs`；`tests/i18n-shared-core.test.mjs` 断言内嵌副本与源文件完全相同，`tests/i18n-whiteboard-coverage.test.mjs` 断言静态中文 UI 均有英文对照且白板不依赖外部 locale 文件。
+
 ## 维护约定
 
 - 这里只写“当前入口 + 当前红线”。功能历史、旧实现、测试过程和截图结论不写入本文。
@@ -159,6 +166,6 @@
 
 | 日期 | 变更内容 |
 |------|----------|
+| 2026-07-26 | 增加双语运行时、原文短语映射、浏览器/手动语言优先级及单 HTML 生成区约束；why：避免两个超大 HTML 逐节点翻译后漂移，同时保护用户内容和独立运行能力 |
 | 2026-07-24 | 记录移动端双指捏合的中心锚定、首触点回滚和剩余触点抑制边界；why：避免后续触控改动重新引入无法缩放或手势结束误画的问题 |
 | 2026-07-24 | 记录本机多画布存储、旧草稿迁移及卡片级删除边界；why：确保删除目标无需先切换且非当前画布删除不影响正在编辑的内容 |
-| 2026-07-24 | 将自然笔触改为 Excalicord 同款 Perfect Freehand 参数、压力结构和一体化轮廓并升级 v8；why：消除自定义速度倍率造成的整体过粗与首尾鼓包，同时保持鼠标丝滑和真实笔压 |

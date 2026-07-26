@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>白板录制工具</title>
+  <title data-i18n="login.heading">白板录制工具</title>
   <style>
     :root{--ink:#1e1e1e;--muted:#77736d;--line:#e8e5df;--accent:#5b57d6;--soft:#f3f2f8;--danger:#d92d20}
     *{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink);background:#f7f6f3}
@@ -18,49 +18,59 @@
     .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.buy{margin-top:18px;padding:14px;border:1px solid var(--line);border-radius:10px;background:#fff}.buy-title{font-size:12px;color:var(--muted);text-align:center;margin-bottom:10px}.buy-row{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--muted)}.buy-row b{color:var(--ink);font-size:14px;user-select:all}.wechat-action{min-height:34px;border:1px solid var(--line);border-radius:7px;background:#fff;color:var(--ink);padding:0 10px;font-size:12px;font-weight:700;cursor:pointer;transition:background .14s ease,border-color .14s ease,color .14s ease}.wechat-action:hover{border-color:#cbc6bd;background:var(--soft);color:var(--accent)}.wechat-action:active{transform:translateY(1px)}.wechat-action:focus-visible{outline:2px solid var(--accent);outline-offset:2px}.wechat-action.copied{border-color:#b9dfc6;background:#eef8f1;color:#176b36}.wechat-qr{display:none;text-align:center;padding-top:14px}.wechat-qr.show{display:block}.wechat-qr img{display:block;width:144px;max-width:100%;aspect-ratio:1;object-fit:contain;margin:0 auto 8px;border:1px solid var(--line);background:#fff}.wechat-qr p{margin:0;color:var(--muted);font-size:11px;line-height:1.55}
     @media(prefers-reduced-motion:reduce){.wechat-action{transition:none}}
     @media(max-width:760px){body{padding:5px}.shell{grid-template-columns:1fr}.intro{padding:34px 24px;min-height:auto}.intro h1{font-size:32px}.login{border-left:0;border-top:1px solid var(--line);padding:30px 24px}.actions>*{flex:1}}
-  </style>
+  
+  /* i18n language switcher (floating button) */
+  .langSwitch{position:fixed;right:14px;bottom:14px;z-index:60;display:flex;gap:4px;padding:4px;border-radius:999px;background:rgba(255,255,255,.85);border:1px solid var(--line);box-shadow:0 4px 14px rgba(0,0,0,.08);font-size:12px;font-weight:700;backdrop-filter:blur(6px);user-select:none}
+  .langSwitch button{padding:5px 9px;border-radius:999px;border:1px solid transparent;background:transparent;cursor:pointer;color:var(--ink)}
+  .langSwitch button[aria-pressed=true]{background:var(--accent);color:#fff}
+  .langSwitch button:hover:not([aria-pressed=true]){background:var(--soft)}
+</style>
 </head>
-<body class="auth-checking">
-  <div class="auth-loading" id="authLoading" role="status" aria-live="polite">正在检查登录状态…</div>
+<body class="auth-checking" data-i18n-class="body.auth-checking">
+  <div class="auth-loading" id="authLoading" role="status" aria-live="polite" data-i18n="login.status.checking">正在检查登录状态…</div>
   <main class="shell">
     <section class="intro">
       <div class="eyebrow">WHITEBOARD RECORDER</div>
-      <h1>把想法讲清楚，也录下来。</h1>
-      <p>在无限白板上写画、整理幻灯片，并把白板、声音和摄像头合成为一个视频。</p>
+      <h1 data-i18n="login.heading">把想法讲清楚，也录下来。</h1>
+      <p data-i18n="login.subheading">在无限白板上写画、整理幻灯片，并把白板、声音和摄像头合成为一个视频。</p>
       <div class="features">
-        <div class="feature"><i>✓</i>完整白板编辑和文件保存</div>
-        <div class="feature"><i>✓</i>白板、标签页与窗口录制</div>
-        <div class="feature"><i>✓</i>无需账号即可开始免费创作</div>
+        <div class="feature" data-i18n="login.feature.handwritten"><i>✓</i>完整白板编辑和文件保存</div>
+        <div class="feature" data-i18n="login.feature.teleprompter"><i>✓</i>白板、标签页与窗口录制</div>
+        <div class="feature" data-i18n="login.feature.noinstall"><i>✓</i>无需账号即可开始免费创作</div>
       </div>
       <div class="actions">
-        <button class="primary" id="freeBtn">开始免费使用</button>
-        <button class="secondary" id="focusLoginBtn">登录 Pro</button>
+        <button class="primary" id="freeBtn" data-i18n="login.continueFree">开始免费使用</button>
+        <button class="secondary" id="focusLoginBtn" data-i18n="login.title">登录 Pro</button>
       </div>
     </section>
     <section class="login" id="loginPanel">
-      <h2>登录 Pro</h2>
-      <div class="sub">已购买的用户可在这里登录。优先校验本地静态账号，未匹配时再连接账号服务。</div>
+      <h2 data-i18n="login.title">登录 Pro</h2>
+      <div class="sub" data-i18n="login.sub">已购买的用户可在这里登录。优先校验本地静态账号，未匹配时再连接账号服务。</div>
       <form id="loginForm">
-        <div class="field"><label for="username">账号</label><input id="username" autocomplete="username" required></div>
-        <div class="field"><label for="password">密码</label><div class="password-field"><input id="password" type="password" autocomplete="current-password" required minlength="4"><button class="password-toggle" id="passwordToggle" type="button" data-password-toggle="password" aria-controls="password" aria-label="显示密码" aria-pressed="false" title="显示密码"><svg class="password-eye" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.5"/></svg><svg class="password-eye-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.5"/><path d="m4 4 16 16"/></svg></button></div></div>
-        <button class="primary" id="loginBtn" type="submit">登录并打开 Pro</button>
+        <div class="field"><label for="username" data-i18n="login.username.label">账号</label><input id="username" autocomplete="username" required data-i18n-placeholder="login.username.placeholder"></div>
+        <div class="field"><label for="password" data-i18n="login.password.label">密码</label><div class="password-field"><input id="password" type="password" autocomplete="current-password" required minlength="4" data-i18n-placeholder="login.password.placeholder"><button class="password-toggle" id="passwordToggle" type="button" data-password-toggle="password" aria-controls="password" aria-label="" aria-pressed="false" title="" data-i18n-aria="login.showPassword" data-i18n-title="login.showPassword"><svg class="password-eye" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.5"/></svg><svg class="password-eye-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.5"/><path d="m4 4 16 16"/></svg></button></div></div>
+        <button class="primary" id="loginBtn" type="submit" data-i18n="login.submit">登录并打开 Pro</button>
       </form>
       <div class="status" id="status" aria-live="polite"></div>
       <div class="buy">
-        <div class="buy-title">还没有账号？添加微信购买 Pro</div>
+        <div class="buy-title" data-i18n="login.contact.invite">还没有账号？添加微信购买 Pro</div>
         <div class="buy-row">
-          <span>微信号：<b id="purchaseWechat">leewen2017</b></span>
-          <button class="wechat-action" id="copyPurchaseWechat" type="button" aria-label="复制微信号">复制</button>
-          <button class="wechat-action" id="togglePurchaseQr" type="button" aria-expanded="false" aria-controls="purchaseWechatQr">扫码添加</button>
+          <span><span data-i18n="login.contact.wechat">微信号</span>：<b id="purchaseWechat">leewen2017</b></span>
+          <button class="wechat-action" id="copyPurchaseWechat" type="button" data-i18n-aria="login.contact.copyWechat" data-i18n="common.copy">复制</button>
+          <button class="wechat-action" id="togglePurchaseQr" type="button" aria-expanded="false" aria-controls="purchaseWechatQr" data-i18n="login.contact.showQR">扫码添加</button>
         </div>
         <div class="wechat-qr" id="purchaseWechatQr" aria-hidden="true">
-          <img id="purchaseWechatQrImage" alt="添加作者微信二维码">
-          <p>打开微信扫码，或复制微信号后在微信中搜索添加</p>
+          <img id="purchaseWechatQrImage" alt="" data-i18n-alt="login.contact.invite">
+          <p data-i18n="login.contact.support">打开微信扫码，或复制微信号后在微信中搜索添加</p>
         </div>
         <span id="purchaseWechatFeedback" class="sr-only" aria-live="polite"></span>
       </div>
     </section>
   </main>
+  <script src="./locales/i18n.js"></script>
+  <script src="./locales/zh-CN.js"></script>
+  <script src="./locales/en-US.js"></script>
+  <script src="./locales/index-init.js"></script>
   <script>
     const STATIC_ACCOUNTS_URL='./accounts.json';
     const FILE_STATIC_ACCOUNTS_URL='https://record.leewen.work/accounts.json';
@@ -88,7 +98,7 @@
     const DEVICE_KEY='wb_pro_device_id';
     function wirePasswordToggle(button,inputId){
       const input=document.getElementById(inputId);if(!button||!input)return;
-      button.addEventListener('click',()=>{const show=input.type==='password',label=show?'隐藏密码':'显示密码';input.type=show?'text':'password';button.title=label;button.setAttribute('aria-label',label);button.setAttribute('aria-pressed',String(show));});
+      button.addEventListener('click',()=>{const show=input.type==='password',label=show?i18n.t('login.hidePassword'):i18n.t('login.showPassword');input.type=show?'text':'password';button.title=label;button.setAttribute('aria-label',label);button.setAttribute('aria-pressed',String(show));});
     }
     async function copyTextWithFallback(value){
       if(navigator.clipboard?.writeText){
@@ -102,8 +112,8 @@
     }
     function showCopyFeedback(button,success,feedback){
       const original=button.dataset.originalLabel||button.textContent;button.dataset.originalLabel=original;
-      button.textContent=success?'已复制':'请手动复制';button.classList.toggle('copied',success);
-      if(feedback)feedback.textContent=success?'微信号已复制，可打开微信搜索添加。':'自动复制失败，请长按微信号手动复制。';
+      button.textContent=success?i18n.t('login.contact.copiedWechat'):i18n.t('common.copy');button.classList.toggle('copied',success);
+      if(feedback)feedback.textContent=success?i18n.t('login.contact.copiedWechat'):i18n.t('login.contact.copyFailed');
       clearTimeout(button._copyFeedbackTimer);button._copyFeedbackTimer=setTimeout(()=>{button.textContent=original;button.classList.remove('copied')},1800);
     }
     function wireWechatContact(){
@@ -115,7 +125,7 @@
       const qrImage=document.getElementById('purchaseWechatQrImage');
       if(qrImage)qrImage.src=WECHAT_QR_DATA_URL;
       copyButton?.addEventListener('click',async()=>showCopyFeedback(copyButton,await copyTextWithFallback(String(wechat?.textContent||'').trim()),feedback));
-      toggleButton?.addEventListener('click',()=>{const expanded=toggleButton.getAttribute('aria-expanded')!=='true';toggleButton.setAttribute('aria-expanded',String(expanded));toggleButton.textContent=expanded?'收起二维码':'扫码添加';qrPanel?.classList.toggle('show',expanded);qrPanel?.setAttribute('aria-hidden',String(!expanded));});
+      toggleButton?.addEventListener('click',()=>{const expanded=toggleButton.getAttribute('aria-expanded')!=='true';toggleButton.setAttribute('aria-expanded',String(expanded));toggleButton.textContent=expanded?i18n.t('login.contact.hideQR'):i18n.t('login.contact.showQR');qrPanel?.classList.toggle('show',expanded);qrPanel?.setAttribute('aria-hidden',String(!expanded));});
     }
     function setStatus(message,error=false){const el=document.getElementById('status');el.textContent=message;el.classList.toggle('error',error)}
     function normalizeUsername(value){return String(value||'').trim().toLowerCase()}
@@ -147,7 +157,7 @@
       localStorage.removeItem(STATIC_SESSION_KEY);return null;
     }
     async function sha256Hex(text){
-      if(!crypto.subtle)throw new Error('当前浏览器不支持安全哈希，请使用 Chrome/Edge/Firefox 并通过 localhost 或 https 打开。');
+      if(!crypto.subtle)throw new Error(i18n.t('alert.secureContext.missing'));
       const bytes=new TextEncoder().encode(text);
       const digest=await crypto.subtle.digest('SHA-256',bytes);
       return [...new Uint8Array(digest)].map(byte=>byte.toString(16).padStart(2,'0')).join('');
@@ -194,8 +204,8 @@
       return './whiteboard-pro.html';
     }
     async function openStaticPro(){
-      const loading=document.getElementById('authLoading');if(loading)loading.textContent='正在打开 Pro 白板…';
-      setStatus('正在打开 Pro 白板…');
+      const loading=document.getElementById('authLoading');if(loading)loading.textContent=i18n.t('login.status.openingPro');
+      setStatus(i18n.t('login.status.opening'));
       location.replace(await staticAppPath());
     }
     function auditStaticLoginInBackground(username,password){
@@ -207,18 +217,18 @@
         auditStaticLoginInBackground(username,password);
         return {source:'static',session:localSession};
       }
-      setStatus('本地账号未匹配，正在连接账号服务…');
+      setStatus(i18n.t('login.status.connecting'));
       let response;
       try{
         response=await api('/api/login',{method:'POST',body:JSON.stringify({username,password,deviceId:deviceId(),deviceName:navigator.platform||'浏览器设备'})});
       }catch(_error){
-        throw new Error('本地账号未匹配，账号服务暂时无法连接');
+        throw new Error(i18n.t('login.status.fallbackNoService'));
       }
       const data=await response.json().catch(()=>({}));
-      if(!response.ok)throw new Error(data.message||'账号或密码不正确');
+      if(!response.ok)throw new Error(data.message||i18n.t('login.status.failed'));
       return {source:'server',session:data};
     }
-    function showGateway(message='未登录。你仍可直接使用免费版。'){
+    function showGateway(message=i18n.t('login.status.notSignedIn')){
       document.body.classList.remove('auth-checking');
       setStatus(message);
     }
@@ -232,22 +242,51 @@
         if(response.ok){await openStaticPro();return true}
       }catch(_error){}
       finally{clearTimeout(timeoutId)}
-      showGateway();return false;
+      showGateway(i18n.t('login.status.notSignedIn'));return false;
     }
     document.getElementById('freeBtn').onclick=async()=>{location.href=await staticAppPath()};
     document.getElementById('focusLoginBtn').onclick=()=>document.getElementById('username').focus();
     document.getElementById('loginForm').addEventListener('submit',async event=>{
       event.preventDefault();const button=document.getElementById('loginBtn');button.disabled=true;
       try{
-        setStatus('正在校验本地 Pro 账号…');
+        setStatus(i18n.t('login.status.verifying'));
         await loginPro(document.getElementById('username').value,document.getElementById('password').value);
         await openStaticPro();
-      }catch(error){setStatus(error.message||'登录失败',true);button.disabled=false}
+      }catch(error){setStatus(error.message||i18n.t('login.status.failed'),true);button.disabled=false}
     });
     wirePasswordToggle(document.getElementById('passwordToggle'),'password');
     wireWechatContact();
     loadPaywallConfig();
     checkSession();
+
+    // i18n: 完成字典加载后启动
+    if(window.i18n){ i18n.initI18n({ default: "zh-CN", storageKey: "wb_lang" }); }
+
+  <script>(function(){
+    const root=document.getElementById('langSwitch');
+    if(!root)return;
+    const btns=root.querySelectorAll('button');
+    function refresh(){
+      const cur=(window.i18n&&i18n.currentLang&&i18n.currentLang())||'zh-CN';
+      btns.forEach(b=>b.setAttribute('aria-pressed', String(b.dataset.lang===cur)));
+    }
+    btns.forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        if(window.i18n&&i18n.setLanguage){
+          i18n.setLanguage(btn.dataset.lang,{persist:true});
+          refresh();
+        }
+      });
+    });
+    if(window.i18n&&i18n.onChange) i18n.onChange(refresh);
+    document.addEventListener('DOMContentLoaded',refresh);
+  })();
   </script>
+  </script>
+
+  <div class="langSwitch" id="langSwitch" aria-label="Language switcher" role="group">
+    <button type="button" data-lang="zh-CN" aria-pressed="false" title="中文">中</button>
+    <button type="button" data-lang="en-US" aria-pressed="false" title="English">A</button>
+  </div>
 </body>
 </html>
