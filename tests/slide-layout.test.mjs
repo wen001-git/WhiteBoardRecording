@@ -178,9 +178,66 @@ test('selectSlide keeps the user-chosen zoom / pan when recording is active', as
     const html = await source(file);
     // 切页这块选择 fitViewToRect 调用周围的上下文
     const fn = between(html, 'function selectSlide(', 'function addSlide(){');
-    assert.match(fn, /if\(recState==='idle'\) fitViewToRect\(s\)/,
-      `${file} only auto-fits the view when the recorder is idle, keeping recording zoom in place`);
-    assert.doesNotMatch(fn, /recState!=='setup' \? fitViewToRect\(s\) : null/,
-      `${file} does not invert the gate by mistake`);
+    assert.match(fn, /if\(recState==='idle' && !opts\.animate\)[\s\S]{0,80}fitViewToRect\(s\)/,
+      `${file} only auto-fits the view when the recorder is idle AND it is not a user navigation`);
+    assert.doesNotMatch(fn, /if\(recState==='idle'\) fitViewToRect\(s\)/,
+      `${file} no longer fits the view on plain idle anymore (avoid shrinking on right-rail click)`);
+  }
+});
+
+test('user-driven navigation recenters horizontally without changing scale or vertical pan', async () => {
+  for (const file of files) {
+    const html = await source(file);
+    const fn = between(html, 'function selectSlide(', 'function addSlide(){');
+    assert.match(fn, /opts\.animate\s*&&\s*state\.slides\.length\)[\s\S]*?state\.view\.x=window\.innerWidth\/2 - cx\*state\.view\.scale/,
+      `${file} recenters horizontally when the user clicks a slide in the rail`);
+    // 用户主动切页时不调整缩放（不能出现 state.view.scale = ...）
+    assert.doesNotMatch(fn, /opts\.animate[\s\S]{0,200}state\.view\.scale\s*=/,
+      `${file} leaves state.view.scale untouched when the user picks a slide manually`);
+    // 用户主动切页时 view.y 完全不写——保护用户的滚动位置
+    assert.doesNotMatch(fn, /opts\.animate[\s\S]{0,200}state\.view\.y\s*=/,
+      `${file} leaves state.view.y untouched when the user picks a slide manually`);
+  }
+});
+
+test('addSlide and insertSlideAt reuse the user-driven navigation path so they share the same view', async () => {
+  for (const file of files) {
+    const html = await source(file);
+    // addSlide 末尾调 selectSlide 时带上 {animate:true}
+    assert.match(html, /function addSlide\(\)\{[\s\S]*?selectSlide\(state\.slides\.length-1,\s*\{animate:true\}\)/,
+      `${file} addSlide selects the new slide with the animate flag so view / scale stay untouched`);
+    // insertSlideAt 末尾也用 animate:true
+    assert.match(html, /function insertSlideAt\(targetIndex\)\{[\s\S]*?selectSlide\(targetIndex,\s*\{animate:true\}\)/,
+      `${file} insertSlideAt also opts in to the same navigation path`);
+    // deleteSlide 末尾：删除后仍走 animate:true，保留 zoom 与 view.y
+    const deleteBlock = between(html, 'function deleteSlide(', 'function resizeSlidesToRatio');
+    assert.match(deleteBlock, /selectSlide\(state\.activeSlide,\s*\{animate:true\}\)/,
+      `${file} deleteSlide re-selects the surviving slide with the animate flag`);
+    // 反向：四条路径中任何"无 animate 的 selectSlide"都不能存在，否则会触发 fit
+    assert.doesNotMatch(html, /function addSlide\(\)\{[\s\S]*?selectSlide\(state\.slides\.length-1\);/,
+      `${file} addSlide does not silently fall back to the fit-view branch`);
+    assert.doesNotMatch(html, /function insertSlideAt\(targetIndex\)\{[\s\S]*?selectSlide\(targetIndex\);/,
+      `${file} insertSlideAt does not silently fall back to the fit-view branch`);
+    assert.doesNotMatch(deleteBlock, /selectSlide\(state\.activeSlide\);\s*\n\s*else render\(\)/,
+      `${file} deleteSlide does not silently fall back to the fit-view branch`);
+  }
+});
+
+test('all slide-navigation entry points use the same "left justify, no fit" shape', async () => {
+  for (const file of files) {
+    const html = await source(file);
+    // 同一姿势：带 animate 与不带 animate 的 selectSlide 调用必须互斥；带 animate 的用于用户切换，不带的只用于初始化
+    // 用户级切页入口：rail click / addSlide / insertSlideAt / deleteSlide / 键盘翻页 → 全部带 animate
+    assert.match(html, /item\.addEventListener\('click',[\s\S]*?selectSlide\(i,\s*\{animate:true\}\)/,
+      `${file} rail click uses animate:true`);
+    assert.match(html, /selectSlide\(Math\.max\(0,\s*Math\.min\(state\.slides\.length-1,\s*cur\+dir\)\),\{animate:true\}\)/,
+      `${file} keyboard arrow navigation uses animate:true`);
+    // 初始化入口：enterSetup 与 resizeSlidesToRatio 内部仍用无 animate 的 selectSlide（这是为了让 fit 行为生效）
+    const enterSetup = between(html, 'function enterSetup(', '\n}');
+    assert.match(enterSetup, /selectSlide\(state\.activeSlide>=0 \? state\.activeSlide : 0\)\s*;/,
+      `${file} enterSetup still calls fit-branch selectSlide for the initial framing`);
+    const resize = between(html, 'function resizeSlidesToRatio', 'function updateSlideRatioButton');
+    assert.match(resize, /if\(state\.activeSlide>=0\)\s*selectSlide\(state\.activeSlide\);/,
+      `${file} resizeSlidesToRatio still calls fit-branch selectSlide after a ratio change`);
   }
 });
