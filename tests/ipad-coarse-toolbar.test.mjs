@@ -39,6 +39,24 @@ test('toolbar uses a coarse-pointer media query to flatten the compact tool grou
       `${file} drops the popup floating positioning on coarse pointers`);
     assert.match(coarse, /\.compact-tool-trigger\s+\.chev\{display:none/,
       `${file} hides the chevron indicator when the trigger itself is hidden`);
+    // 触屏下不再进入 compact/scroll 模式，多行铺开所有工具按钮
+    assert.match(coarse, /\.toolbar,\s*\.toolbar\.compact-mode,\s*\.toolbar\.scroll-mode\{flex-wrap:wrap/,
+      `${file} lets the toolbar wrap onto multiple rows on coarse pointers`);
+    assert.match(coarse, /\.toolbar\.scroll-mode\{overflow:visible\s*!important/,
+      `${file} disables horizontal scroll on coarse pointers so nothing is clipped off`);
+  }
+});
+
+test('syncTopControlsLayout backs out of compact / scroll mode on coarse pointers', async () => {
+  for (const file of files) {
+    const html = await source(file);
+    const fn = section(html, 'function syncTopControlsLayout(', '\n}\nfunction queueTopControlsLayout');
+    assert.match(fn, /matchMedia\('\(pointer:coarse\)'\)\.matches/,
+      `${file} checks pointer:coarse in the layout sync`);
+    assert.match(fn, /coarse[^]*?topToolbar\.classList\.remove\('compact-mode','scroll-mode'\)/,
+      `${file} drops compact / scroll mode classes on coarse pointers`);
+    assert.match(fn, /coarse[^]*?topToolbar\.style\.maxWidth=''/,
+      `${file} clears the inline maxWidth on coarse pointers so the toolbar can wrap`);
   }
 });
 
@@ -88,9 +106,10 @@ test('touch click fallback is wired to tool buttons, compact triggers and the tr
 test('coarse-toolbar changes stay byte-aligned between the creator and the pro template', async () => {
   const [a, b] = await Promise.all(files.map(source));
   const slice = html => [
-    window(html, '@media (pointer:coarse){', 1000),
+    window(html, '@media (pointer:coarse){', 1100),
     /\.compact-tool-trigger \.chev\{position:absolute[^}]*\}/.exec(html)?.[0] || '',
     section(html, 'function synthesizeClickForTouch(', 'function applyTouchClickFallback('),
+    section(html, 'function syncTopControlsLayout(', '\n}\nfunction queueTopControlsLayout'),
   ].join('\n');
   assert.equal(slice(a), slice(b));
 });
