@@ -213,6 +213,14 @@ test('addSlide and insertSlideAt reuse the user-driven navigation path so they s
     const deleteBlock = between(html, 'function deleteSlide(', 'function resizeSlidesToRatio');
     assert.match(deleteBlock, /selectSlide\(state\.activeSlide,\s*\{animate:true\}\)/,
       `${file} deleteSlide re-selects the surviving slide with the animate flag`);
+    // 删除后续幻灯片要凑上来：shiftSlidesAndContents 把 index 之后的整段左移 - (width + gap)
+    assert.match(deleteBlock, /shiftSlidesAndContents\(index,\s*-\(removed\.w\s*\+\s*SLIDE_GAP\),\s*0\)/,
+      `${file} deleteSlide closes the gap left by the removed slide`);
+    // 删除幻灯片时把页内对象一起删掉：用 objectBelongsToSlide 筛出来再 splice scene
+    assert.match(deleteBlock, /objectBelongsToSlide\(state\.scene\[i\][\s\S]{0,40}slide\)/,
+      `${file} deleteSlide checks whether each object belongs to the removed slide`);
+    assert.match(deleteBlock, /removedObjectIndices\.forEach\(i=>state\.scene\.splice\(i,1\)\)/,
+      `${file} deleteSlide splices out the slide's objects from state.scene`);
     // 反向：四条路径中任何"无 animate 的 selectSlide"都不能存在，否则会触发 fit
     assert.doesNotMatch(html, /function addSlide\(\)\{[\s\S]*?selectSlide\(state\.slides\.length-1\);/,
       `${file} addSlide does not silently fall back to the fit-view branch`);

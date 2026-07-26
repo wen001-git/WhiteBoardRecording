@@ -28,6 +28,13 @@ test('selection box hosts a touch-friendly trash button', async () => {
       `${file} styles the trash button as a 44px touch-friendly circle`);
     assert.match(html, /#selectionTrash:hover,#selectionTrash:active\{background:#e15151;color:#fff;\}/,
       `${file} reddens the trash button on hover / active`);
+    // iPad / 触屏修复核心：#selectionBox 自带 pointer-events:none，#selectionTrash 必须显式覆盖到 auto
+    // 否则 iPad Safari 上 tap 直接穿透，看似"按钮失效"
+    assert.match(/pointer-events:auto/.exec(html)?.[0] || '', /pointer-events:auto/,
+      `${file} sets pointer-events:auto on the trash button itself`);
+    const trashRule = (/#selectionTrash\{[^}]*\}/.exec(html)?.[0]) || '';
+    assert.match(trashRule, /pointer-events:auto/,
+      `${file} overrides the parent's pointer-events:none so the trash button is tappable on touch`);
 
     // DOM：按钮挂在 #selectionBox 内，含 aria-label。selectionBox 内有嵌套的 </div>，从 <div id="selectionBox"> 到 selectionBox 关闭的 400 字符窗口
     const boxStart = html.indexOf('<div id="selectionBox">');
