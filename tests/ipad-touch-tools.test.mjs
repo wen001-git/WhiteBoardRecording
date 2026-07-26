@@ -48,22 +48,26 @@ test('openTextInput triggers an extra click + caret for iPad Safari', async () =
   }
 });
 
-test('endAction accepts tap-sized shapes on touch screens with an 8px floor', async () => {
+test('endAction creates shapes from a zero-distance iPad tap and from a small drag', async () => {
   for (const file of files) {
     const html = await source(file);
     const fn = section(html, 'function endAction(', '\n}\nboard.addEventListener(\'pointerup\'');
 
-    // 不再用 2px 硬阈值；应该引用 minScreen，按 state.view.scale 换算
+    // 桌面保留 2px 阈值；触屏切换成单独的 minScreen 分支
+    assert.match(fn, /isTouch\s*=\s*!!\(e && e\.pointerType==='touch'\)/,
+      `${file} derives isTouch from the pointer event`);
+    assert.match(fn, /isTouch \? Math\.max\(8, 8\/\(state\.view\.scale\|\|1\)\) : 2/,
+      `${file} keeps a 2px desktop floor and an 8 screen-pixel touch floor`);
+    // 触屏箭头 / 直线零长度视为有效（生成默认长度的水平线）
+    assert.match(fn, /len===0 && isTouch/,
+      `${file} accepts a zero-length touch tap for arrow and line`);
+    // 过小形状扩展到最小尺寸时以 start 为中心，而不是按原 draft.x/.y 留下空锚
+    assert.match(fn, /start\.x - px\/2/,
+      `${file} centers auto-sized shapes on the tap point`);
     assert.doesNotMatch(fn, /Math\.hypot\(draft\.x2-draft\.x1,draft\.y2-draft\.y1\)>2/,
       `${file} no longer uses the 2px arrow/line floor`);
     assert.doesNotMatch(fn, /Math\.abs\(draft\.w\)>2 && Math\.abs\(draft\.h\)>2/,
       `${file} no longer uses the 2px shape floor`);
-    assert.match(fn, /minScreen\s*=\s*Math\.max\(8/,
-      `${file} enforces an 8 screen-pixel floor for shapes`);
-    assert.match(fn, /state\.view\.scale\s*\|\|\s*1/,
-      `${file} reads state.view.scale with a 1 fallback`);
-    // 过小形状要以 (x,y) 为锚放大到最小尺寸，而不是简单丢弃
-    assert.match(fn, /draft\.w\s*=\s*px\*dirX/, `${file} expands too-small shapes to the floor`);
   }
 });
 
