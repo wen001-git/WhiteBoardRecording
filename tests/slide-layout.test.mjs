@@ -172,3 +172,15 @@ test('slide reflow implementation stays aligned between both variants', async ()
   ].join('\n');
   assert.equal(behavior(privateApp), behavior(commercialTemplate));
 });
+
+test('selectSlide keeps the user-chosen zoom / pan when recording is active', async () => {
+  for (const file of files) {
+    const html = await source(file);
+    // 切页这块选择 fitViewToRect 调用周围的上下文
+    const fn = between(html, 'function selectSlide(', 'function addSlide(){');
+    assert.match(fn, /if\(recState==='idle'\) fitViewToRect\(s\)/,
+      `${file} only auto-fits the view when the recorder is idle, keeping recording zoom in place`);
+    assert.doesNotMatch(fn, /recState!=='setup' \? fitViewToRect\(s\) : null/,
+      `${file} does not invert the gate by mistake`);
+  }
+});
