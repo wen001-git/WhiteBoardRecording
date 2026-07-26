@@ -52,10 +52,15 @@ test('trash click handler reuses deleteSelectedObject and stops pointerdown bubb
     const block = section(html, "const selectionTrash=document.getElementById('selectionTrash');",
       "board.addEventListener('contextmenu'");
 
-    assert.match(block, /selectionTrash\.addEventListener\('click',\s*e=>\{[\s\S]*?if\(deleteSelectedObject\(\)\)/,
-      `${file} calls deleteSelectedObject on click`);
+    assert.match(block, /selectionTrash\.addEventListener\('click',\s*e=>\{[\s\S]*?performSelectionTrash\(\)/,
+      `${file} routes click through performSelectionTrash`);
+    assert.match(block, /performSelectionTrash[\s\S]*?if\(deleteSelectedObject\(\)\)/,
+      `${file} performSelectionTrash actually deletes the selection`);
     assert.match(block, /selectionTrash\.addEventListener\('pointerdown',\s*e=>e\.stopPropagation\(\)\)/,
       `${file} stops pointerdown so the trash tap does not deselect`);
+    // 触屏兜底：pointerup 直接同步调用 performSelectionTrash，不依赖 iOS Safari 合成 click
+    assert.match(block, /selectionTrash\.addEventListener\('pointerup',\s*e=>\{[\s\S]*?if\(e\.pointerType!=='touch'\)[\s\S]*?performSelectionTrash\(\)/,
+      `${file} handles touch pointerup as a guaranteed delete trigger`);
   }
 });
 
