@@ -36,12 +36,26 @@ function embeddedSticker(html, name) {
 test('public build publishes the commercial free app and excludes private source apps', async () => {
   await execFileAsync(process.execPath, [resolve(root, 'scripts/build-static.mjs')], { cwd: root });
   const files = (await readdir(resolve(root, '.render-static'))).sort();
-  assert.deepEqual(files, ['account-admin.html', 'account-admin1.html', 'accounts.json', 'app.html', 'index.html', 'paywall.json']);
+  assert.deepEqual(files, ['account-admin.html', 'account-admin1.html', 'accounts.json', 'app.html', 'index.html', 'locales', 'paywall.json']);
   assert.equal(await source('.render-static/app.html'), await source('whiteboard-pro.html'));
   assert.equal(await source('.render-static/accounts.json'), await source('accounts.json'));
   assert.equal(await source('.render-static/paywall.json'), await source('paywall.json'));
   await assert.rejects(access(resolve(root, '.render-static/whiteboard.html')));
   await assert.rejects(access(resolve(root, '.render-static/whiteboard-pro.html')));
+});
+
+test('gateway scripts are syntactically valid and local script sources exist', async () => {
+  const html = await source('index.html');
+  const inlineScripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)]
+    .map((match) => match[1])
+    .filter((script) => script.trim());
+  assert.ok(inlineScripts.length >= 2);
+  for (const script of inlineScripts) assert.doesNotThrow(() => new vm.Script(script));
+
+  const localSources = [...html.matchAll(/<script[^>]+src=["'](\.\/[^"']+)["'][^>]*><\/script>/gi)]
+    .map((match) => match[1].slice(2));
+  assert.ok(localSources.length >= 3);
+  for (const file of localSources) await access(resolve(root, file));
 });
 
 test('gateway prefers static accounts and falls back to the account service', async () => {

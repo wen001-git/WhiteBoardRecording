@@ -83,6 +83,7 @@ function runtime(fetchImpl, initialStorage = {}, locationOverrides = {}, { sessi
     clearTimeout,
     navigator: { platform: 'Test' },
     location: runtimeLocation,
+    i18n: { t(key) { return key; } },
     crypto: { subtle: webcrypto.subtle, randomUUID },
     fetch: fetchImpl,
     localStorage: {

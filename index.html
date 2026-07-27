@@ -67,6 +67,10 @@
       </div>
     </section>
   </main>
+  <div class="langSwitch" id="langSwitch" aria-label="Language switcher" role="group">
+    <button type="button" data-lang="zh-CN" aria-pressed="false" title="中文">中</button>
+    <button type="button" data-lang="en-US" aria-pressed="false" title="English">A</button>
+  </div>
   <script src="./locales/i18n.js"></script>
   <script src="./locales/zh-CN.js"></script>
   <script src="./locales/en-US.js"></script>
@@ -258,11 +262,9 @@
     wireWechatContact();
     loadPaywallConfig();
     checkSession();
-
-    // i18n: 完成字典加载后启动
-    if(window.i18n){ i18n.initI18n({ default: "zh-CN", storageKey: "wb_lang" }); }
-
-  <script>(function(){
+  </script>
+  <script>
+  (function(){
     const root=document.getElementById('langSwitch');
     if(!root)return;
     const btns=root.querySelectorAll('button');
@@ -282,11 +284,5 @@
     document.addEventListener('DOMContentLoaded',refresh);
   })();
   </script>
-  </script>
-
-  <div class="langSwitch" id="langSwitch" aria-label="Language switcher" role="group">
-    <button type="button" data-lang="zh-CN" aria-pressed="false" title="中文">中</button>
-    <button type="button" data-lang="en-US" aria-pressed="false" title="English">A</button>
-  </div>
 </body>
 </html>
