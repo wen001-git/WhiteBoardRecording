@@ -61,7 +61,7 @@ test('canvas background data is normalized, inherited, saved and undoable', asyn
     assert.match(behavior, /slide\.backgroundColor=null/);
     assert.match(behavior, /canvasColorContrast\(state\.color,current\)<3/);
     assert.doesNotMatch(behavior, /state\.color\s*=/);
-    assert.match(html, /const DOC_VERSION=8/);
+    assert.match(html, /const DOC_VERSION=9/);
     assert.match(html, /canvasBackground:state\.canvasBackground/);
     assert.match(html, /normalizeCanvasColor\(doc\.canvasBackground,DEFAULT_CANVAS_BACKGROUND\)/);
     assert.match(html, /backgroundColor:normalizeCanvasColor\(s&&s\.backgroundColor,null\)/);
@@ -75,7 +75,7 @@ test('rendering, minimap, reveal and recording preview share the effective backg
     const html = await source(file);
     const render = between(html, 'function render(opts={}){', 'function worldToScreen(');
     assert.ok(render.indexOf('clearBg()') < render.indexOf('drawSlideBackgrounds()'));
-    assert.ok(render.indexOf('drawSlideBackgrounds()') < render.indexOf('drawObject(state.scene[i])'));
+    assert.ok(render.indexOf('drawSlideBackgrounds()') < render.indexOf('drawObject(state.scene[i],{alpha:elementCueObjectAlpha(state.scene[i])})'));
 
     const minimap = between(html, 'function updateMinimap(){', 'if(minimapToggle){');
     assert.match(minimap, /c\.fillStyle=state\.canvasBackground/);

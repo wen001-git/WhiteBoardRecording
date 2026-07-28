@@ -28,7 +28,12 @@ test('each HTML entry point loads or embeds the shared i18n sources', async () =
       assert.match(src, /\.\/locales\/zh-CN\.js/, `${f} must load locales/zh-CN.js`);
       assert.match(src, /\.\/locales\/en-US\.js/, `${f} must load locales/en-US.js`);
     }
-    assert.match(src, /i18n\.initI18n\(/, `${f} must call initI18n at least once`);
+    if(f==='index.html'){
+      assert.match(src, /\.\/locales\/index-init\.js/, `${f} must load locales/index-init.js`);
+      assert.match(await readFile(resolve(root,'locales/index-init.js'),'utf8'), /i18n\.initI18n\(/, 'index initializer must call initI18n');
+    }else{
+      assert.match(src, /i18n\.initI18n\(/, `${f} must call initI18n at least once`);
+    }
     // 防回归：脚本块必须正确闭合，避免调试标记泄漏到 DOM
     const opens = (src.match(/<script\b/g) || []).length;
     const closes = (src.match(/<\/script>/g) || []).length;

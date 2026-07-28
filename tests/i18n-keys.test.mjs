@@ -64,6 +64,11 @@ test('entry pages load shared locales and whiteboards embed the same source bund
 test('every HTML seed the init with i18n.initI18n(...)', async () => {
   for (const file of files) {
     const html = await source(file);
-    assert.match(html, /i18n\.initI18n\(/, `${file} boots i18n once`);
+    if(file==='index.html'){
+      assert.match(html, /<script src="\.\/locales\/index-init\.js"><\/script>/, `${file} loads its shared i18n initializer`);
+      assert.match(await source('locales/index-init.js'), /i18n\.initI18n\(/, 'shared index initializer boots i18n');
+    }else{
+      assert.match(html, /i18n\.initI18n\(/, `${file} boots i18n once`);
+    }
   }
 });

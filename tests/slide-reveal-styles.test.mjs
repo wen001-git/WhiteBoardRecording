@@ -67,7 +67,7 @@ test('reveal presets use a color-aware outline followed by a separate color phas
     assert.match(reveal, /当前幻灯片没有可播放的独立文字框/);
     assert.match(reveal, /function drawTextRevealObject/);
     assert.match(reveal, /elapsed-order\*650/);
-    assert.match(reveal, /drawObject\(o,\{alpha:amount,offsetY:/);
+    assert.match(reveal, /drawObject\(o,\{alpha:amount\*elementCueObjectAlpha\(o\),offsetY:/);
     assert.match(reveal, /function makeOutlineCanvasFromSnapshot/);
     assert.doesNotMatch(reveal, /function makeInkCanvasFromSnapshot/);
     assert.match(reveal, /const maxPixels=2400000/);
@@ -120,7 +120,7 @@ test('per-slide reveal settings persist and autoplay from the transition target 
     const history = between(html, 'function snapshot(){', 'function updateHistoryButtons(){');
     const interaction = between(html, "const slideRevealFloatBtn=document.getElementById('slideRevealFloatBtn')", "document.getElementById('lockBtn').onclick");
 
-    assert.match(html, /const DOC_VERSION=8/);
+    assert.match(html, /const DOC_VERSION=9/);
     assert.match(reveal, /function normalizeSlideRevealSetting/);
     assert.match(reveal, /autoPlay:!!\(value&&value\.autoPlay\)/);
     assert.match(reveal, /function defaultSlideRevealSetting\(\).*autoPlay:false/);
