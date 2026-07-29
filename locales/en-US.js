@@ -129,6 +129,14 @@
     'slide.cue.diamond': 'Diamond',
     'slide.cue.arrow': 'Arrow',
     'slide.cue.line': 'Line',
+    'slide.cue.sound.title': 'Element reveal sound',
+    'slide.cue.sound.help': 'Plays when an element appears and is included in recordings',
+    'slide.cue.sound.none': 'No sound',
+    'slide.cue.sound.click': 'Light click',
+    'slide.cue.sound.soft': 'Soft chime',
+    'slide.cue.sound.swish': 'Gentle swish',
+    'slide.cue.sound.preview': 'Preview action sound',
+    'slide.cue.sound.volume': 'Volume',
 
     /* ---- Teleprompter ---- */
     'tele.title': 'Teleprompter',

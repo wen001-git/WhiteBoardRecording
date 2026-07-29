@@ -179,10 +179,16 @@ student002:MyPass-002"></textarea>
       <div class="account-list" id="accountList"></div>
     </div>
   </section>
-</main><script>
+</main>
+  <div class="langSwitch" id="langSwitch" aria-label="Language switcher" role="group">
+    <button type="button" data-lang="zh-CN" aria-pressed="false" title="中文">中</button>
+    <button type="button" data-lang="en-US" aria-pressed="false" title="English">A</button>
+  </div>
+
   <script src="./locales/i18n.js"></script>
   <script src="./locales/zh-CN.js"></script>
   <script src="./locales/en-US.js"></script>
+  <script>
     (function(){
       try { i18n.initI18n({ select: '[data-i18n], [data-i18n-aria], [data-i18n-title], [data-i18n-placeholder], [data-i18n-alt], [data-i18n-class], [data-i18n-target]', applyClass: true, storageKey: 'wb.lang' }); } catch(_e) {}
     })();
@@ -678,10 +684,5 @@ loadExisting();
 loadPaywall();
 </script>
 
-  <div class="langSwitch" id="langSwitch" aria-label="Language switcher" role="group">
-    <button type="button" data-lang="zh-CN" aria-pressed="false" title="中文">中</button>
-    <button type="button" data-lang="en-US" aria-pressed="false" title="English">A</button>
-  </div>
 </body>
 </html>
-

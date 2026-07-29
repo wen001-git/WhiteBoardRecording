@@ -101,7 +101,7 @@ test('outline owns its rounded caps without separate endpoint circles', async ()
   assert.match(extractFunction(html, 'drawNaturalPenOutline'), /ctx\.closePath\(\);ctx\.fill\(\)/);
 });
 
-test('capture, v9 persistence, transforms, bounds, and legacy fallback stay aligned', async () => {
+test('capture, v10 persistence, transforms, bounds, and legacy fallback stay aligned', async () => {
   const htmls = await Promise.all(variants.map(file => readFile(file, 'utf8')));
   for (const html of htmls) {
     assert.doesNotMatch(html, /getCoalescedEvents/);
@@ -115,7 +115,7 @@ test('capture, v9 persistence, transforms, bounds, and legacy fallback stay alig
     assert.match(html, /const outline=perfectFreehandStroke\(o\)\.outline/);
     assert.match(html, /return \{\.\.\.p,x:/);
     assert.match(html, /target\.lastCommittedPoint=mapPointBetweenBoxes/);
-    assert.match(html, /const DOC_VERSION=9/);
+    assert.match(html, /const DOC_VERSION=10/);
     assert.match(html, /else if\(roughness === 'clean'/);
   }
   for (const name of [

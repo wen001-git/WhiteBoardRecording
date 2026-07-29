@@ -21,6 +21,12 @@ test('both whiteboard variants expose a per-slide element cue bar', async () => 
     assert.match(html, /id="elementCueItems"/);
     assert.match(html, /id="elementCueHideAll"[^>]*data-i18n="slide\.cue\.hideAll"/);
     assert.match(html, /id="elementCueShowAll"[^>]*data-i18n="slide\.cue\.showAll"/);
+    assert.deepEqual(
+      [...between(html, '<select id="elementCueSound"', '</select>').matchAll(/value="([^"]+)"/g)].map(match => match[1]),
+      ['none', 'click', 'soft', 'swish']
+    );
+    assert.match(html, /id="elementCueSoundPreview"[^>]*disabled/);
+    assert.match(html, /id="elementCueVolume"[^>]*type="range"/);
     assert.match(html, /\.element-cue-items?|#elementCueItems/);
     assert.match(html, /#elementCueItems\{[^}]*flex-wrap:wrap[^}]*overflow:visible/);
     assert.doesNotMatch(html, /#elementCueItems\{[^}]*overflow-x:auto/);
@@ -28,18 +34,43 @@ test('both whiteboard variants expose a per-slide element cue bar', async () => 
   }
 });
 
-test('v9 documents persist stable object IDs and cue bindings, not runtime visibility', async () => {
+test('v10 documents persist stable object IDs, cue bindings and per-slide cue audio, not runtime visibility', async () => {
   for (const file of variants) {
     const html = await source(file);
-    assert.match(html, /const DOC_VERSION=9/);
+    assert.match(html, /const DOC_VERSION=10/);
     assert.match(html, /function ensureSceneObjectIds\(scene=state\.scene\)/);
     assert.match(html, /function normalizeElementCues\(value,validIds=null\)/);
+    assert.match(html, /function normalizeElementCueAudio\(value\)/);
     assert.match(html, /elementCues:normalizeElementCues\(s&&s\.elementCues,validObjectIds\)/);
     assert.match(html, /slideElementCues:state\.slides\.map/);
+    assert.match(html, /slideElementCueAudio:state\.slides\.map/);
+    assert.match(html, /elementCueAudio:normalizeElementCueAudio\(s&&s\.elementCueAudio\)/);
     assert.match(html, /elementCueHiddenBySlide\.clear\(\)/);
     const currentDoc = between(html, 'function currentDoc(){', 'function flashStatus(');
     assert.match(currentDoc, /slides:state\.slides/);
     assert.doesNotMatch(currentDoc, /elementCueHiddenBySlide/);
+  }
+});
+
+test('cue reveal sounds use Web Audio, enter the recording mix, and only fire for newly shown objects', async () => {
+  for (const file of variants) {
+    const html = await source(file);
+    const sound = between(html, 'function stopElementCueSound(){', 'function roundRect(');
+    assert.match(sound, /async function playElementCueSound\(slide\)/);
+    assert.match(sound, /const route=await transitionAudioRoute\(\)/);
+    assert.match(sound, /outputs\.forEach\(output=>master\.connect\(output\)\)/);
+    assert.match(sound, /setting\.sound==='click'/);
+    assert.match(sound, /setting\.sound==='soft'/);
+    assert.match(sound, /setting\.sound==='swish'/);
+    const reveal = between(html, 'function revealElementCue(slide,cue){', 'function renameElementCue(');
+    assert.match(reveal, /if\(!ids\.length\) return/);
+    assert.match(reveal, /startElementCueFade\(ids\);\s*playElementCueSound\(slide\)/);
+    assert.match(reveal, /if\(ids\.length\)\{ startElementCueFade\(ids\); playElementCueSound\(slide\); \}/);
+    assert.match(reveal, /if\(revealIds\.length\)\{ startElementCueFade\(revealIds\); playElementCueSound\(slide\); \}/);
+    assert.equal((reveal.match(/playElementCueSound\(slide\)/g)||[]).length, 3);
+    const route = between(html, 'async function transitionAudioRoute(){', 'function transitionNoiseBuffer(');
+    assert.match(route, /recState==='recording'.*outputs:\[audioCtx\.destination,recordingAudioDestination\]/s);
+    assert.match(route, /outputs:\[transitionPreviewAudioCtx\.destination\]/);
   }
 });
 

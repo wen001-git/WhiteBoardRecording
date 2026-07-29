@@ -133,6 +133,14 @@
     'slide.cue.diamond': '菱形',
     'slide.cue.arrow': '箭头',
     'slide.cue.line': '直线',
+    'slide.cue.sound.title': '元素出现音效',
+    'slide.cue.sound.help': '点击显示元素时播放，并在录制中进入成品',
+    'slide.cue.sound.none': '无音效',
+    'slide.cue.sound.click': '轻点',
+    'slide.cue.sound.soft': '柔和提示',
+    'slide.cue.sound.swish': '轻柔滑动',
+    'slide.cue.sound.preview': '试听动作音效',
+    'slide.cue.sound.volume': '音量',
 
     /* ---- Teleprompter ---- */
     'tele.title': '提词器',
