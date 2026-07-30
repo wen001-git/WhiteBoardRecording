@@ -120,11 +120,15 @@
 
 ### 录屏
 
-- `getDisplayMedia()` 后读取 `displaySurface`：browser/window 使用完整来源并直接开始；monitor 或未知来源进入冻结预览和独立区域裁剪。
+- 支持 Document Picture-in-Picture 时，第一次点“录制”只调用 `documentPictureInPicture.requestWindow()` 打开置顶裁剪器，用户必须在该小窗中第二次点击“选择窗口 / 屏幕”，并立即从 `screenCropPipWin.navigator.mediaDevices` 调用 `getDisplayMedia()`，确保消费的是 PiP 按钮产生的 transient user activation；两个权限入口不能在第一次点击后连续自动弹出。PiP 分支使用同一 Window realm 的 `CaptureController` 并预设 `focus-captured-surface`，让 Chrome 在共享成功后聚焦 ChatGPT 等被录窗口；WhiteBoard 降级分支继续请求 `focus-capturing-application`。
+- Chrome 会记住上一轮 Document PiP 的窗口尺寸，而录制控制条会缩至 330×150；每次 `openScreenCropPipLauncher()` 必须以 760×590、`preferInitialWindowPlacement:true` 请求新窗，并在 Promise 返回后同一用户手势链内调用 `resizeTo(760,590)`，防止第二次录制仍得到小型裁剪器。旧版 Chrome 忽略未知 option 时仍由 `resizeTo()` 兜底。
+- 共享成功后 PiP 小窗切换为冻结预览、比例按钮和绿色框。确认窗口/标签页录制时不得关闭创建共享流的 PiP 文档，否则后台 `MediaStreamTrackProcessor`/VideoFrame 可能失效并输出持续黑底；应把小窗缩成暂停/停止控制条，录制结束再随 `stopScreenStream()` 关闭。用户在录制中手动关闭控制窗时必须安全停止录制。
+- monitor 来源不能直接关闭 PiP 后继续使用原 realm 的轨道。应先逐轨 `clone()`，再由主文档 realm 的 `structuredClone(track,{transfer:[track]})` 接管，成功后停止原轨并设置 `screenStreamDetachedFromPip=true`，之后才能关闭辅助窗而不黑屏；若当前 Chromium 不支持 MediaStreamTrack transfer，则保留紧凑控制窗作为兼容降级，优先保证画面不黑。browser/window 已保留 PiP 创建文档，WhiteBoard 录制不经过此链路。
+- Document PiP 不支持、打开失败或用户在裁剪阶段手动关闭时，降级为 WhiteBoard 内的 `#screenStage`。此时 `getDisplayMedia()` 按能力传入会话级 `CaptureController`，并在系统选择器前预设、共享 Promise 返回后首次异步等待前再次请求 `focus-capturing-application`，同时用 `window.focus()` 尽力回焦。browser、window、monitor 与未知来源都必须进入同一裁剪确认流程；PiP 不能与录制中的摄像头自检窗口共用状态。
 - 录屏光标开关只使用共享视频轨暴露的 `getCapabilities().cursor` 与 `applyConstraints({cursor})`；缺少 `never` 或可恢复的 `always/motion` 时必须禁用并提示，失败时恢复 UI 状态且继续录制。`drawScreenFrame()` 不得再叠白板激光笔，避免共享源已有光标时出现双影。
-- `#screenVideo` 离屏隐藏，仅作 fallback 取帧源；Chrome/Edge 优先用 `MediaStreamTrackProcessor` 的 VideoFrame 驱动 `drawScreenFrame()`，避免页面切后台掉帧。
+- `#screenVideo` 离屏隐藏并作为通用 fallback 取帧源；Chrome/Edge 优先用 `MediaStreamTrackProcessor` 的 VideoFrame 驱动 `drawScreenFrame()`，但构造失败或异步 `reader.read()` 拒绝时都必须只启动一次 30 FPS video 定时取帧，不能静默停泵后让窗口、标签页或整屏成品停在黑帧。
 - 裁剪使用会话级归一化 `screenCropNorm{x,y,w,h}`，不能复用或持久化白板 `recConfig.frame`。`#screenStage/#screenSnap/#screenCropFrame` 都是 DOM，不进入输出。
-- 整屏来源进入 `#screenCropModes` 后默认读取 `recConfig.ratio/customW/customH`，提供全屏、五种标准比例与 Custom；非全屏预设必须在 `layoutScreenSnap(true)` 后初始化，并统一装入 `screenPresetBounds()` 给出的 16:9 安全边界，避免预览尺寸为 0 时被最小尺寸保护放大成全屏。标准比例拖角锁定宽高比，全屏拖角自动转为 Custom，自由裁剪不得反向改写录制设置；标签页与窗口仍直接完整录制。
+- 所有共享来源进入 `#screenCropModes` 后默认读取 `recConfig.ratio/customW/customH`，提供完整来源、五种标准比例与 Custom；非完整来源预设必须在 `layoutScreenSnap(true)` 后初始化，并统一装入 `screenPresetBounds()` 给出的 16:9 安全边界，避免预览尺寸为 0 时被最小尺寸保护放大成完整来源。标准比例拖角锁定宽高比，完整来源拖角自动转为 Custom，自由裁剪不得反向改写录制设置。
 - `drawScreenFrame()` 与白板录制共用 `drawUserWatermark()`，顺序同样在摄像头合成后、计划/免费版强制水印前；设置预览里的 `#previewWatermark` 是 DOM，不得进入来源画面。
 - 录屏时页面摄像头气泡设为不可见但保留解码，防止整屏录制出现双重人脸；摄像头帧泵在屏幕源长期不出帧时补合成，避免头像冻结。
 - 停止流程保留 `recStopping/recStopHandled` 一次性守卫和 onstop 超时兜底；WebM 可在停止前 `requestData()` 保留已生成分片，原生 MP4 不得提前分片，防止 Chrome “停止分享”丢失完成页、生成两份结果或写出错误时长。
@@ -167,6 +171,6 @@
 
 | 日期 | 变更内容 |
 |------|----------|
+| 2026-07-30 | 修复第二次录制复用 330×150 PiP 控制窗尺寸；why：Chrome 会记住上一轮窗口大小，新会话必须显式恢复 760×590 裁剪器 |
+| 2026-07-30 | 让窗口、标签页与整屏共享统一进入比例裁剪确认页；why：用户选择窗口后也能调整成品范围、位置与标准宽高比 |
 | 2026-07-29 | 记录元素动作音效的 v10 逐页设置、播放去重和录制/暂停混流边界；why：保证音效只伴随真实揭示并正确进入成品，不在重录准备或批量显示时产生叠音 |
-| 2026-07-28 | 记录元素操作栏的 v9 绑定模型、会话显隐状态、canvas 淡入录制链、失效引用清理及“笔迹”按钮上方换行布局；why：避免后续把临时显隐误存进文档、让隐藏对象仍可命中或重新引入横向滚动 |
-| 2026-07-26 | 增加双语运行时、原文短语映射、浏览器/手动语言优先级及单 HTML 生成区约束；why：避免两个超大 HTML 逐节点翻译后漂移，同时保护用户内容和独立运行能力 |

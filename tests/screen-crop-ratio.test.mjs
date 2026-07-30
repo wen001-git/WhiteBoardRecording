@@ -20,7 +20,7 @@ function between(html, start, end) {
 }
 
 function cropHarness(html, width, height, expression) {
-  const feature = between(html, 'function clampScreenCrop(n){', 'function updateScreenPrivacyHint(){');
+  const feature = between(html, 'function clampScreenCrop(n,rect){', 'function updateScreenPrivacyHint(){');
   const sandbox = {
     result: null,
     screenSnap: { getBoundingClientRect: () => ({ width, height }) },
@@ -39,6 +39,7 @@ function cropHarness(html, width, height, expression) {
     screenStage: { classList: { contains: () => true } },
     recState: 'setup',
     positionScreenCropFrame() {},
+    updateScreenCropPipModeUI() {},
   };
   vm.runInNewContext(`${feature}\nresult=(${expression});`, sandbox);
   return structuredClone(sandbox.result);
@@ -62,7 +63,65 @@ test('screen crop toolbar exposes full screen, presets and Custom in both varian
     assert.match(html, /screenCropMode==='full'/);
     assert.match(html, /else if\(screenCropMode==='custom'\)/);
     assert.match(html, /recState==='setup' && recConfig\.source==='board'/);
-    assert.match(html, /screenDisplaySurface==='browser'\|\|screenDisplaySurface==='window'/);
+  }
+});
+
+test('window and browser sources use the same adjustable crop setup as full-screen sources', async () => {
+  for (const file of files) {
+    const html = await source(file);
+    const setup = between(html, 'async function enterScreenSetup(){', '(function bindScreenCropFrame(){');
+    const captureAt = setup.indexOf('await captureMediaDevices.getDisplayMedia(displayMediaOptions)');
+    const preparedFocusAt = setup.indexOf('captureController.setFocusBehavior(preferredCaptureFocus)');
+    const appliedFocusAt = setup.lastIndexOf('captureController.setFocusBehavior(preferredCaptureFocus)');
+    const playbackAt = setup.indexOf('await screenVideo.play()');
+    const pipEditorAt = setup.indexOf('if(!showScreenCropPipEditor())');
+    const stageFocusAt = setup.indexOf("screenStage.classList.add('show');", pipEditorAt);
+
+    assert.match(setup, /const canOpenScreenCropPip=!screenCropPipUnavailable/);
+    assert.match(setup, /if\(!screenCropPipWin && canOpenScreenCropPip\)\{\s*await openScreenCropPipLauncher\(\);\s*return;/);
+    assert.match(setup, /const usingScreenCropPip=!!screenCropPipWin;/);
+    assert.match(setup, /const captureNavigator=usingScreenCropPip \? screenCropPipWin\.navigator : navigator;/);
+    assert.match(setup, /const captureMediaDevices=captureNavigator && captureNavigator\.mediaDevices;/);
+    assert.match(setup, /const CaptureControllerCtor=\(usingScreenCropPip && screenCropPipWin\.CaptureController\) \|\| window\.CaptureController;/);
+    assert.match(setup, /const preferredCaptureFocus=usingScreenCropPip\?'focus-captured-surface':'focus-capturing-application';/);
+    assert.match(setup, /typeof CaptureControllerCtor==='function'/);
+    assert.match(setup, /displayMediaOptions\.controller=captureController/);
+    assert.ok(preparedFocusAt >= 0 && preparedFocusAt < captureAt, `${file} prepares focus before opening the system picker`);
+    assert.ok(appliedFocusAt > captureAt, `${file} reapplies focus after capture selection`);
+    assert.ok(playbackAt > appliedFocusAt, `${file} sets focus before awaiting captured video playback`);
+    assert.match(setup, /if\(!usingScreenCropPip\)\{[\s\S]*try\{ window\.focus\(\); \}/);
+    assert.ok(pipEditorAt > playbackAt, `${file} shows the always-on-top crop editor after captured video playback`);
+    assert.ok(stageFocusAt > pipEditorAt, `${file} keeps the WhiteBoard crop stage as fallback`);
+    assert.match(setup.slice(stageFocusAt), /requestAnimationFrame\(\(\)=>\{[\s\S]*positionScreenCropFrame\(\);[\s\S]*window\.focus\(\)/);
+    assert.match(setup, /选择窗口或标签页后，将在置顶小窗中调整绿色录制框/);
+    assert.match(setup, /screenCropMode=recConfig\.ratio;\s*screenCropNorm=null;/);
+    assert.match(setup, /layoutScreenSnap\(true\);[\s\S]*screenCropNorm=screenCropForAspect\(screenCropAspect\(screenCropMode\)\);[\s\S]*showScreenCropPipEditor\(\)/);
+    assert.doesNotMatch(setup, /if\(screenDisplaySurface==='browser'\|\|screenDisplaySurface==='window'\)[\s\S]*startScreenRecording\(\)/);
+  }
+});
+
+test('Document PiP launcher keeps crop controls visible above the selected app', async () => {
+  for (const file of files) {
+    const html = await source(file);
+    const pip = between(html, 'function screenCropPipCopy(zh,en){', '// 把当前屏幕一帧画到快照 canvas');
+    const start = between(html, 'async function startScreenRecording(){', 'async function startRecording(){');
+
+    assert.match(pip, /const launcherSize=\{width:760,height:590\};/);
+    assert.match(pip, /documentPictureInPicture\.requestWindow\(\{[\s\S]*\.\.\.launcherSize,[\s\S]*preferInitialWindowPlacement:true/);
+    assert.match(pip, /win\.resizeTo\(launcherSize\.width,launcherSize\.height\)/);
+    assert.match(pip, /function detachCapturedStreamFromPip\(stream\)/);
+    assert.match(pip, /structuredClone\(clone,\{transfer:\[clone\]\}\)/);
+    assert.match(pip, /screenCropPipUI\.choose\.addEventListener\('click',async\(\)=>\{[\s\S]*await enterScreenSetup\(\)/);
+    for (const mode of ['full', '16:9', '4:3', '3:4', '9:16', '1:1', 'custom']) {
+      assert.match(pip, new RegExp(`\\['${mode.replace(':', '\\:')}'`));
+    }
+    assert.match(pip, /doc\.querySelector\('\.confirm'\)\.addEventListener\('click',\(\)=>startScreenRecording\(\)\)/);
+    assert.match(pip, /function showScreenCropPipRecording\(\)/);
+    assert.match(pip, /recording-pause[\s\S]*recording-stop/);
+    assert.match(pip, /if\(recState==='recording'\|\|recState==='paused'\)[\s\S]*stopRecording\(\);[\s\S]*else showMainScreenCropFallback\(\)/);
+    assert.match(pip, /screenCropPipUnavailable=true;[\s\S]*请再次点击“录制”使用白板裁剪页/);
+    assert.match(start, /const keepScreenCropPip=!!screenCropPipWin && !screenStreamDetachedFromPip;/);
+    assert.match(start, /if\(keepScreenCropPip\) showScreenCropPipRecording\(\);\s*else closeScreenCropPip\(true\);/);
   }
 });
 
@@ -139,16 +198,23 @@ test('standard preset corner resizing stays locked to the selected source-pixel 
 
 test('screen crop implementation stays aligned between both whiteboard variants', async () => {
   const [privateApp, commercialTemplate] = await Promise.all(files.map(source));
-  const cropFeature = html => between(html, 'function clampScreenCrop(n){', 'let lastCompositeTs=0;');
+  const pipFeature = html => between(html, 'function screenCropPipCopy(zh,en){', '// 把当前屏幕一帧画到快照 canvas');
+  const cropFeature = html => between(html, 'function clampScreenCrop(n,rect){', 'let lastCompositeTs=0;');
+  const compositeFeature = html => between(html, 'function startScreenComposite(){', 'async function buildRecordingAudioTracks(');
   const toolbar = html => between(html, '<div id="screenCropModes"', '<div class="stage-hint">');
 
+  assert.equal(pipFeature(privateApp), pipFeature(commercialTemplate));
   assert.equal(cropFeature(privateApp), cropFeature(commercialTemplate));
+  assert.equal(compositeFeature(privateApp), compositeFeature(commercialTemplate));
   assert.equal(toolbar(privateApp), toolbar(commercialTemplate));
+  assert.match(compositeFeature(privateApp), /\.catch\(error=>\{[\s\S]*startVideoFallback\(\);/);
+  assert.match(compositeFeature(privateApp), /recLoop=setInterval\(drawScreenFrame,1000\/30\)/);
 
   for (const [file, html] of files.map((file, index) => [file, [privateApp, commercialTemplate][index]])) {
     const setup = between(html, 'async function enterScreenSetup(){', '(function bindScreenCropFrame(){');
     const layoutAt = setup.lastIndexOf('layoutScreenSnap(true)');
     const cropAt = setup.lastIndexOf('screenCropNorm=screenCropForAspect');
     assert.ok(layoutAt >= 0 && cropAt > layoutAt, `${file} must size the preview before initializing the preset crop`);
+    assert.match(setup, /if\(usingScreenCropPip && screenDisplaySurface==='monitor'\)\{[\s\S]*detachCapturedStreamFromPip\(selectedScreenStream\)[\s\S]*screenStreamDetachedFromPip=true/);
   }
 });
