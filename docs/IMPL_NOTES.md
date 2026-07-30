@@ -121,9 +121,9 @@
 ### 录屏
 
 - 支持 Document Picture-in-Picture 时，第一次点“录制”只调用 `documentPictureInPicture.requestWindow()` 打开置顶裁剪器，用户必须在该小窗中第二次点击“选择窗口 / 屏幕”，并立即从 `screenCropPipWin.navigator.mediaDevices` 调用 `getDisplayMedia()`，确保消费的是 PiP 按钮产生的 transient user activation；两个权限入口不能在第一次点击后连续自动弹出。PiP 分支使用同一 Window realm 的 `CaptureController` 并预设 `focus-captured-surface`，让 Chrome 在共享成功后聚焦 ChatGPT 等被录窗口；WhiteBoard 降级分支继续请求 `focus-capturing-application`。
-- Chrome 会记住上一轮 Document PiP 的窗口尺寸，而录制控制条会缩至 330×150；每次 `openScreenCropPipLauncher()` 必须以 760×590、`preferInitialWindowPlacement:true` 请求新窗，并在 Promise 返回后同一用户手势链内调用 `resizeTo(760,590)`，防止第二次录制仍得到小型裁剪器。旧版 Chrome 忽略未知 option 时仍由 `resizeTo()` 兜底。
-- 共享成功后 PiP 小窗切换为冻结预览、比例按钮和绿色框。确认窗口/标签页录制时不得关闭创建共享流的 PiP 文档，否则后台 `MediaStreamTrackProcessor`/VideoFrame 可能失效并输出持续黑底；应把小窗缩成暂停/停止控制条，录制结束再随 `stopScreenStream()` 关闭。用户在录制中手动关闭控制窗时必须安全停止录制。
-- monitor 来源不能直接关闭 PiP 后继续使用原 realm 的轨道。应先逐轨 `clone()`，再由主文档 realm 的 `structuredClone(track,{transfer:[track]})` 接管，成功后停止原轨并设置 `screenStreamDetachedFromPip=true`，之后才能关闭辅助窗而不黑屏；若当前 Chromium 不支持 MediaStreamTrack transfer，则保留紧凑控制窗作为兼容降级，优先保证画面不黑。browser/window 已保留 PiP 创建文档，WhiteBoard 录制不经过此链路。
+- Chrome 会记住上一轮 Document PiP 的窗口尺寸；每次 `openScreenCropPipLauncher()` 必须以 760×590、`preferInitialWindowPlacement:true` 请求新窗，并在 Promise 返回后同一用户手势链内调用 `resizeTo(760,590)`，防止第二次录制复用上一轮提词器尺寸。旧版 Chrome 忽略未知 option 时仍由 `resizeTo()` 兜底。
+- 共享成功后 PiP 小窗先切换为冻结预览、比例按钮和绿色框，确认后再自动切换为 560×480 的“提词器＋暂停/停止”置顶窗。提词器复用文档内已清理的富文本、字号和速度，拥有独立播放/回顶状态；它只供讲解者查看，不得由 `drawScreenFrame()` 二次合成。monitor 来源开始时只显示一次保守提示，不持续检测 PiP 与绿色框坐标，避免给录制增加额外负担。
+- 从 PiP 文档创建的 browser、window 与 monitor 共享轨都应先逐轨 `clone()`，再由主文档 realm 的 `structuredClone(track,{transfer:[track]})` 接管；成功后停止原轨并设置 `screenStreamDetachedFromPip=true`。点击“收起提词器”只隐藏讲稿并缩成 360×150 控制条，暂停/继续、停止和重新展开始终可用；若用户通过原生关闭按钮关掉整个 PiP，已转移流继续录制，未转移流则安全停止以避免黑屏。
 - Document PiP 不支持、打开失败或用户在裁剪阶段手动关闭时，降级为 WhiteBoard 内的 `#screenStage`。此时 `getDisplayMedia()` 按能力传入会话级 `CaptureController`，并在系统选择器前预设、共享 Promise 返回后首次异步等待前再次请求 `focus-capturing-application`，同时用 `window.focus()` 尽力回焦。browser、window、monitor 与未知来源都必须进入同一裁剪确认流程；PiP 不能与录制中的摄像头自检窗口共用状态。
 - 录屏光标开关只使用共享视频轨暴露的 `getCapabilities().cursor` 与 `applyConstraints({cursor})`；缺少 `never` 或可恢复的 `always/motion` 时必须禁用并提示，失败时恢复 UI 状态且继续录制。`drawScreenFrame()` 不得再叠白板激光笔，避免共享源已有光标时出现双影。
 - `#screenVideo` 离屏隐藏并作为通用 fallback 取帧源；Chrome/Edge 优先用 `MediaStreamTrackProcessor` 的 VideoFrame 驱动 `drawScreenFrame()`，但构造失败或异步 `reader.read()` 拒绝时都必须只启动一次 30 FPS video 定时取帧，不能静默停泵后让窗口、标签页或整屏成品停在黑帧。
@@ -171,6 +171,6 @@
 
 | 日期 | 变更内容 |
 |------|----------|
+| 2026-07-30 | 为窗口、标签页和整屏录制加入置顶提词器及安全隐藏路径；why：讲解者切到被录内容后仍能看稿和控制录制，同时避免关闭流所属 PiP 文档导致黑屏 |
 | 2026-07-30 | 修复第二次录制复用 330×150 PiP 控制窗尺寸；why：Chrome 会记住上一轮窗口大小，新会话必须显式恢复 760×590 裁剪器 |
 | 2026-07-30 | 让窗口、标签页与整屏共享统一进入比例裁剪确认页；why：用户选择窗口后也能调整成品范围、位置与标准宽高比 |
-| 2026-07-29 | 记录元素动作音效的 v10 逐页设置、播放去重和录制/暂停混流边界；why：保证音效只伴随真实揭示并正确进入成品，不在重录准备或批量显示时产生叠音 |

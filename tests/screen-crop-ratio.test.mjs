@@ -118,10 +118,14 @@ test('Document PiP launcher keeps crop controls visible above the selected app',
     assert.match(pip, /doc\.querySelector\('\.confirm'\)\.addEventListener\('click',\(\)=>startScreenRecording\(\)\)/);
     assert.match(pip, /function showScreenCropPipRecording\(\)/);
     assert.match(pip, /recording-pause[\s\S]*recording-stop/);
-    assert.match(pip, /if\(recState==='recording'\|\|recState==='paused'\)[\s\S]*stopRecording\(\);[\s\S]*else showMainScreenCropFallback\(\)/);
+    assert.match(pip, /tele-warning[\s\S]*tele-text[\s\S]*tele-play[\s\S]*hide-tele/);
+    assert.match(pip, /screenCropPipUI\.teleText\.innerHTML=sanitizeTeleHtml\(teleText\.innerHTML\)/);
+    assert.match(pip, /screenCropPipUI\.teleWarning\.hidden=screenDisplaySurface!=='monitor'/);
+    assert.match(pip, /function hideScreenCropPipTele\(\)[\s\S]*screenCropPipTeleCollapsed=!screenCropPipTeleCollapsed[\s\S]*teleText\.hidden=screenCropPipTeleCollapsed[\s\S]*teleActionLeft\.hidden=screenCropPipTeleCollapsed[\s\S]*resizeTo\(360,150\)/);
+    assert.match(pip, /收起讲稿并保留暂停、停止控制/);
+    assert.match(pip, /if\(\(recState==='recording'\|\|recState==='paused'\) && !screenStreamDetachedFromPip\)[\s\S]*stopRecording\(\);[\s\S]*else if\(recState==='setup'\) showMainScreenCropFallback\(\)/);
     assert.match(pip, /screenCropPipUnavailable=true;[\s\S]*请再次点击“录制”使用白板裁剪页/);
-    assert.match(start, /const keepScreenCropPip=!!screenCropPipWin && !screenStreamDetachedFromPip;/);
-    assert.match(start, /if\(keepScreenCropPip\) showScreenCropPipRecording\(\);\s*else closeScreenCropPip\(true\);/);
+    assert.match(start, /if\(screenCropPipWin\) showScreenCropPipRecording\(\);/);
   }
 });
 
@@ -215,6 +219,6 @@ test('screen crop implementation stays aligned between both whiteboard variants'
     const layoutAt = setup.lastIndexOf('layoutScreenSnap(true)');
     const cropAt = setup.lastIndexOf('screenCropNorm=screenCropForAspect');
     assert.ok(layoutAt >= 0 && cropAt > layoutAt, `${file} must size the preview before initializing the preset crop`);
-    assert.match(setup, /if\(usingScreenCropPip && screenDisplaySurface==='monitor'\)\{[\s\S]*detachCapturedStreamFromPip\(selectedScreenStream\)[\s\S]*screenStreamDetachedFromPip=true/);
+    assert.match(setup, /if\(usingScreenCropPip\)\{[\s\S]*detachCapturedStreamFromPip\(selectedScreenStream\)[\s\S]*screenStreamDetachedFromPip=true/);
   }
 });
