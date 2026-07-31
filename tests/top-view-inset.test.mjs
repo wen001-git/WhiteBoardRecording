@@ -44,8 +44,8 @@ test('fitViewToRect also shrinks the available height by the inset', async () =>
     const fn = section(html, 'function fitViewToRect(', '\n}\n\nfunction '); // 抓整段函数体直到下一个 function
     assert.match(fn, /availH=\(window\.innerHeight-TOP_VIEW_INSET_PX\)\*marginRatio/,
       `${file} trims the available vertical area by TOP_VIEW_INSET_PX`);
-    assert.match(fn, /state\.view\.y=\(window\.innerHeight-TOP_VIEW_INSET_PX\)\/2 - cy\*scale/,
-      `${file} shifts the vertically-centered world point by the inset`);
+    assert.match(fn, /state\.view\.y=TOP_VIEW_INSET_PX\+\(window\.innerHeight-TOP_VIEW_INSET_PX\)\/2 - cy\*scale/,
+      `${file} centers the fitted slide inside the viewport below the top inset`);
   }
 });
 

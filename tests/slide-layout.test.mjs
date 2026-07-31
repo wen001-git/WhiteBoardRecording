@@ -173,39 +173,52 @@ test('slide reflow implementation stays aligned between both variants', async ()
   assert.equal(behavior(privateApp), behavior(commercialTemplate));
 });
 
-test('selectSlide keeps the user-chosen zoom / pan when recording is active', async () => {
+test('selectSlide auto-fits an overflowing target only while idle', async () => {
   for (const file of files) {
     const html = await source(file);
-    // 切页这块选择 fitViewToRect 调用周围的上下文
     const fn = between(html, 'function selectSlide(', 'function addSlide(){');
-    assert.match(fn, /if\(recState==='idle' && !opts\.animate\)[\s\S]{0,80}fitViewToRect\(s\)/,
-      `${file} only auto-fits the view when the recorder is idle AND it is not a user navigation`);
-    assert.doesNotMatch(fn, /if\(recState==='idle'\) fitViewToRect\(s\)/,
-      `${file} no longer fits the view on plain idle anymore (avoid shrinking on right-rail click)`);
+    assert.match(fn, /if\(recState==='idle' && \(!opts\.animate \|\| !slideFitsViewportAtCurrentScale\(s\)\)\)[\s\S]{0,80}fitViewToRect\(s\)/,
+      `${file} fits initialization and overflowing user-selected slides while idle`);
+    assert.doesNotMatch(fn, /recState!=='idle'[\s\S]{0,100}fitViewToRect\(s\)/,
+      `${file} does not auto-fit during setup or recording`);
   }
 });
 
-test('user-driven navigation recenters horizontally without changing scale or vertical pan', async () => {
+test('slide fit check uses the same safe viewport as fitViewToRect', async () => {
+  for (const file of files) {
+    const html = await source(file);
+    const fn = between(html, 'function slideFitsViewportAtCurrentScale(', 'function selectSlide(');
+    const context = {
+      window: { innerWidth: 1600, innerHeight: 1000 },
+      TOP_VIEW_INSET_PX: 110,
+      state: { view: { scale: 1 } },
+    };
+    vm.runInNewContext(`${fn}\nfits=slideFitsViewportAtCurrentScale({w:720,h:1280});`, context);
+    assert.equal(context.fits, false, `${file} detects a 9:16 slide overflowing at 100%`);
+
+    context.state.view.scale = 0.59;
+    vm.runInNewContext(`${fn}\nfits=slideFitsViewportAtCurrentScale({w:720,h:1280});`, context);
+    assert.equal(context.fits, true, `${file} accepts the same slide after it is fitted`);
+  }
+});
+
+test('user-driven navigation preserves zoom / vertical pan when the target already fits', async () => {
   for (const file of files) {
     const html = await source(file);
     const fn = between(html, 'function selectSlide(', 'function addSlide(){');
     assert.match(fn, /opts\.animate\s*&&\s*state\.slides\.length\)[\s\S]*?state\.view\.x=window\.innerWidth\/2 - cx\*state\.view\.scale/,
       `${file} recenters horizontally when the user clicks a slide in the rail`);
-    // 用户主动切页时不调整缩放（不能出现 state.view.scale = ...）
-    assert.doesNotMatch(fn, /opts\.animate[\s\S]{0,200}state\.view\.scale\s*=/,
-      `${file} leaves state.view.scale untouched when the user picks a slide manually`);
-    // 用户主动切页时 view.y 完全不写——保护用户的滚动位置
-    assert.doesNotMatch(fn, /opts\.animate[\s\S]{0,200}state\.view\.y\s*=/,
-      `${file} leaves state.view.y untouched when the user picks a slide manually`);
+    assert.match(fn, /!slideFitsViewportAtCurrentScale\(s\)/,
+      `${file} only enters fit mode when the target would overflow`);
   }
 });
 
-test('addSlide and insertSlideAt reuse the user-driven navigation path so they share the same view', async () => {
+test('addSlide and insertSlideAt reuse the overflow-aware user navigation path', async () => {
   for (const file of files) {
     const html = await source(file);
     // addSlide 末尾调 selectSlide 时带上 {animate:true}
     assert.match(html, /function addSlide\(\)\{[\s\S]*?selectSlide\(state\.slides\.length-1,\s*\{animate:true\}\)/,
-      `${file} addSlide selects the new slide with the animate flag so view / scale stay untouched`);
+      `${file} addSlide selects the new slide through overflow-aware navigation`);
     // insertSlideAt 末尾也用 animate:true
     assert.match(html, /function insertSlideAt\(targetIndex\)\{[\s\S]*?selectSlide\(targetIndex,\s*\{animate:true\}\)/,
       `${file} insertSlideAt also opts in to the same navigation path`);
@@ -231,10 +244,10 @@ test('addSlide and insertSlideAt reuse the user-driven navigation path so they s
   }
 });
 
-test('all slide-navigation entry points use the same "left justify, no fit" shape', async () => {
+test('all slide-navigation entry points use the same overflow-aware selection path', async () => {
   for (const file of files) {
     const html = await source(file);
-    // 同一姿势：带 animate 与不带 animate 的 selectSlide 调用必须互斥；带 animate 的用于用户切换，不带的只用于初始化
+    // 带 animate 的入口用于用户切换，并由 selectSlide 决定保留视图或在溢出时 fit；不带 animate 的入口用于初始化并始终 fit。
     // 用户级切页入口：rail click / addSlide / insertSlideAt / deleteSlide / 键盘翻页 → 全部带 animate
     assert.match(html, /item\.addEventListener\('click',[\s\S]*?selectSlide\(i,\s*\{animate:true\}\)/,
       `${file} rail click uses animate:true`);

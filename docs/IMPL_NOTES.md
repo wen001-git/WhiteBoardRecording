@@ -89,7 +89,7 @@
 - `addSlide()` 通过 `createSlideAtSmartPosition()`：当前视野接近 active slide 时在右侧找空位；用户已移动到远处空白时按当前 viewport 中心创建。
 - 自动恢复或打开文档后，`syncRecordingRatioToSlide()` 必须从当前幻灯片的真实 `w/h` 反推标准比例或 Custom，并同步右侧幻灯片尺寸与录制设置；不得让未持久化的 `recConfig.ratio` 默认值 16:9 覆盖已恢复的页面比例。切换到历史上尺寸不同的页面时也以当前页为准。
 - `insertSlideAt()` 通过 `createSlideForDeckInsert()` 和 `shiftSlidesAndContents()` 线性插入；后续幻灯片及中心落在其中的对象必须一起右移，保持面板顺序、世界坐标从左到右顺序和录制顺序一致。
-- `selectSlide()` 是选中并对焦的单一入口；setup/recording/paused 时还要同步 `recConfig.frame`。比例修改统一走 `setRecordingRatio()` / `setCustomRecordingRatio()`；`resizeSlidesToRatio()` 保持第 1 张中心不变，并按列表顺序以 `SLIDE_GAP` 等距重排后续页面。重排前必须按旧页面范围记录对象归属，再让页内对象获得所属页面的水平位移；不得缩放内容或移动页面外对象。比例变化后新增页面必须通过 `currentSlideSize()` 继承当前页实际宽高，插入页面则优先继承相邻页，不能重新使用比例预设的标准像素尺寸。
+- `selectSlide()` 是选中并对焦的单一入口；idle 状态下新增或切换页面时，若目标页按当前缩放会超出与 `fitViewToRect()` 相同的安全视区，则自动缩小并完整居中到顶部工具栏预留区下方，已经能完整显示时才保留用户缩放和纵向位置并只做水平居中；setup/recording/paused 时不得触发该自动缩放，并继续同步 `recConfig.frame`。比例修改统一走 `setRecordingRatio()` / `setCustomRecordingRatio()`；`resizeSlidesToRatio()` 保持第 1 张中心不变，并按列表顺序以 `SLIDE_GAP` 等距重排后续页面。重排前必须按旧页面范围记录对象归属，再让页内对象获得所属页面的水平位移；不得缩放内容或移动页面外对象。比例变化后新增页面必须通过 `currentSlideSize()` 继承当前页实际宽高，插入页面则优先继承相邻页，不能重新使用比例预设的标准像素尺寸。
 - 缩略图和左右键以 `{animate:true}` 调用 `selectSlide()`：切换前截取当前 board 合成帧，切换后截取目标页，再由 `drawSlideTransitionOverlay()` 在幻灯片范围内绘制淡化、推入或擦除；方向按页码自动决定，暂停录制时瞬时切页，程序化选页不播放。
 - 转场声音由 Web Audio 即时合成，不增加外部音频资源：`page/swish/soft` 分别是翻书、轻柔滑动和柔和提示，音量按页保存。选择声音或音量后重播整套转场，“试听”只播放声音；连续快速切页先用 40ms 淡出旧声音，避免叠音和爆音。
 - `#slideFramesLayer`、幻灯片序号、`#slideRevealFloatBtn`、`#minimap` 和比例弹层都是 DOM UI，不得写入 canvas。笔迹播放本身由 `drawSlideRevealOverlay()` 画入 board，才能进入录制。
@@ -172,6 +172,6 @@
 
 | 日期 | 变更内容 |
 |------|----------|
+| 2026-07-31 | 新增和切换到超出安全视区的幻灯片时自动适应屏幕；why：9:16 页面在 100% 下不应超出浏览器而看不到完整边界 |
 | 2026-07-30 | 放大并加宽长细箭头的头部，统一干净与手绘绘制参数；why：原先头部只按线宽计算，长箭头仍像末端小折线 |
 | 2026-07-30 | 为窗口、标签页和整屏录制加入置顶提词器及安全隐藏路径；why：讲解者切到被录内容后仍能看稿和控制录制，同时避免关闭流所属 PiP 文档导致黑屏 |
-| 2026-07-30 | 修复第二次录制复用 330×150 PiP 控制窗尺寸；why：Chrome 会记住上一轮窗口大小，新会话必须显式恢复 760×590 裁剪器 |
