@@ -67,6 +67,9 @@
     'tool.eraser': 'Eraser',
     'tool.eraser.title': 'Eraser (E / 9)',
     'tool.eraser.label': 'Eraser',
+    'tool.magnifier': 'Magnifier',
+    'tool.magnifier.title': 'Magnifier (M)',
+    'tool.magnifier.label': 'Magnifier',
     'tool.sticker': 'Colored pencil stickers',
     'tool.sticker.title': 'Colored pencil stickers',
     'tool.sticker.label': 'Colored pencil stickers',
@@ -86,6 +89,10 @@
     'toolbar.redo.label': 'Redo',
     'toolbar.clear.title': 'Clear',
     'toolbar.clear.label': 'Clear',
+    'magnifier.zoom': 'Zoom',
+    'magnifier.hint': 'Click to place; drag the frame to move it; drag a corner to freely adjust the selected area.',
+    'magnifier.reset': 'Reset size and zoom',
+    'magnifier.adjust.label': 'Magnifier adjustment frame',
 
     /* ---- Recording / top-right control box ---- */
     'rec.start.label': 'Start recording',

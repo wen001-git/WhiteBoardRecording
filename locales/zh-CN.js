@@ -71,6 +71,9 @@
     'tool.eraser': '橡皮擦',
     'tool.eraser.title': '橡皮擦 (E / 9)',
     'tool.eraser.label': '橡皮擦',
+    'tool.magnifier': '放大镜',
+    'tool.magnifier.title': '放大镜 (M)',
+    'tool.magnifier.label': '放大镜',
     'tool.sticker': '彩铅漫画贴纸',
     'tool.sticker.title': '彩铅漫画贴纸',
     'tool.sticker.label': '彩铅漫画贴纸',
@@ -90,6 +93,10 @@
     'toolbar.redo.label': '重做',
     'toolbar.clear.title': '清空',
     'toolbar.clear.label': '清空',
+    'magnifier.zoom': '倍率',
+    'magnifier.hint': '点击放置；拖动镜框移动；拖动四角自由调整框选范围。',
+    'magnifier.reset': '恢复默认大小和倍率',
+    'magnifier.adjust.label': '放大镜调整框',
 
     /* ---- Recording / top-right control box ---- */
     'rec.start.label': '开始录制',
