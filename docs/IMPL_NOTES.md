@@ -61,7 +61,7 @@
 - 图层顺序就是 `state.scene[]` 的绘制顺序：索引越大越靠上。`reorderSelectedLayer()` 支持置底、下移、上移和置顶；多选重排必须保持组内顺序、恢复新的选中索引，并且每次操作只调用一次 `pushHistory()`。
 - 缩放/旋转基准使用 `transformBounds()` 的对象本体框，不能使用带 UI padding 的选择框，否则图片和文字尺寸会漂移。
 - 移动端画布双指手势由 `canvasTouchPoints/canvasPinchGesture` 管理，以两指中心对应的世界坐标为锚点同时缩放和平移；第二指落下时必须恢复第一指开始前的场景、历史栈、选区、待放图片与视图，取消临时笔迹/框选，手势结束前不得让剩余单指重新进入绘画逻辑。
-- 放大镜是 `state.tool==='magnifier'` 下的临时演示状态，不属于 `state.scene`：点击或拖动更新世界坐标目标，`#magnifierBox` 四角只负责自由调整屏幕宽高，倍率通过 `wb_magnifier_preferences_v1` 在 1.2×–5× 间保存。第二指升级为双指手势时要随触屏 baseline 恢复放大镜，切换工具、幻灯片或文档时隐藏；位置和显隐不得进入撤销、自动保存或 v10 文档。
+- 放大镜是 `state.tool==='magnifier'` 下的临时演示状态，不属于 `state.scene`：点击或拖动更新世界坐标目标，`#magnifierBox` 四角只负责自由调整屏幕宽高，倍率通过 `wb_magnifier_preferences_v1` 在 1.2×–5× 间保存。第二指升级为双指手势时要随触屏 baseline 恢复放大镜，切换工具、幻灯片或文档时隐藏；位置和显隐不得进入撤销、自动保存或 v10 文档。镜框内最上层是完全不透明且原图分辨率更高的图片时，`redrawMagnifierImageFromSource()` 按当前视图和对象旋转直接从 `imageCache` 原图重绘；动画、半透明、上层对象或原图不可用时必须回退到已合成 board，避免高清层遮住标注或破坏转场。
 - 图片对象为 `{type:'image',src,x,y,w,h}`，`src` 是 data URL；`imageCache` 缓存解码结果。导入和粘贴先裁透明/近白空边，再走 `beginPendingImage()` 放置流程。
 
 ### 富文本
@@ -113,7 +113,7 @@
 - `recConfig.quality` 与幻灯片 `ratio/customW/customH` 解耦，并通过 `wb_recording_quality_v1` 记住本机选择；`recordingOutputSize()` 只在开始白板录制时把当前比例装入 1080p、720p 或 480p 边界并修正为偶数像素，不得因切换清晰度调用 `resizeSlidesToRatio()`。录屏继续使用共享源裁剪尺寸，不读取该清晰度。白板优先使用 `captureStream(0)` 配合 30 FPS 定时合成后逐帧 `requestFrame()`，不支持手动取帧才回退 `captureStream(30)`，避免原生 MP4 把静止画面压成过短时间轴。
 - `drawRecFrame()` 顺序：背景 → 白卡片 → 裁剪后的 board → 摄像头 → 激光笔 → 用户文字水印 → 计划/免费版强制水印。`#recordingLaserPointer` 与成品圆点共用 `cursorHighlight/cursorColor/pointInRecordingFrame()`，录制中可由 `#recPointerToggle` 即时开关，不得写入白板文档或撤销历史。
 - 幻灯片转场必须画入 board canvas、不得使用 DOM 遮罩，因此 `drawRecFrame()` 会自然采集转场，而摄像头、激光笔与水印继续稳定叠在转场之上。
-- `drawMagnifierOverlay()` 在对象、笔迹揭示与转场之后，从尚未包含放大镜的 board 中只截取目标附近的小块像素，再绘制圆角矩形放大内容与实线镜框；因此白板录制会自然采集镜框和内容，而 `#magnifierBox` 的虚线辅助框与四角手柄保持为 DOM、不进入成品。不得直接从已含放大镜的画面递归采样，也不得为此复制整张高分辨率画布。
+- `drawMagnifierOverlay()` 在对象、笔迹揭示与转场之后，从尚未包含放大镜的 board 中只截取目标附近的小块像素到镜框最终输出分辨率，再按条件用原始图片覆盖对应高清内容并绘制圆角实线镜框；因此白板录制会自然采集高清镜框内容，而 `#magnifierBox` 的虚线辅助框与四角手柄保持为 DOM、不进入成品。不得直接从已含放大镜的画面递归采样，也不得为此复制整张高分辨率画布。
 - 白板和录屏录制都通过 `buildRecordingAudioTracks()` 建立 Web Audio `MediaStreamDestination`；麦克风、系统声和转场提示音汇入同一录制音轨。没有摄像头/麦克风时仍须用约 −80 dB 的非零 `ConstantSourceNode` 保持连续且实际编码的音频时钟，不能改成全零信号（可能被 AAC 优化掉），从而避免 Chrome 原生 MP4 只按降帧后的视频轨推算时长；`AudioContext.resume()` 使用短超时，不能卡住开始录制。正式录制时转场声同时输出到扬声器供讲解者监听；暂停切页和程序化定位不得把声音写入成品。
 - `#recBar` 是设置、媒体、提词器、激光笔/录屏光标、计时和录制状态操作的统一容器；`#cameraToggle/#micToggle` 共用紧凑双分段线框胶囊，但分别控制 `cameraStream/microphoneStream`，录制中也可独立开关。幻灯片浮动按钮避让必须读取整个容器边界，不能只读取设置按钮。
 - 画布底色与录制壁纸是两套配置：前者属于文档并已画进 `board`，后者属于 `recConfig` 且只装饰白卡片外层；录制设置预览的卡片应显示当前有效画布底色。
@@ -174,6 +174,6 @@
 
 | 日期 | 变更内容 |
 |------|----------|
-| 2026-07-31 | 记录圆角矩形放大镜的临时状态、自由框选、触屏回滚与录制渲染边界；why：避免把演示工具误存为对象或让辅助手柄进入成品 |
+| 2026-07-31 | 记录圆角矩形放大镜的临时状态、自由框选、原图高清取样、触屏回滚与录制渲染边界；why：既避免辅助手柄进入成品，也避免财报小字被二次放大后过度模糊 |
 | 2026-07-31 | 新增和切换到超出安全视区的幻灯片时自动适应屏幕；why：9:16 页面在 100% 下不应超出浏览器而看不到完整边界 |
 | 2026-07-30 | 放大并加宽长细箭头的头部，统一干净与手绘绘制参数；why：原先头部只按线宽计算，长箭头仍像末端小折线 |

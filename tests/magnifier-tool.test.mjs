@@ -27,18 +27,37 @@ test('both whiteboards expose the adjustable rounded-rectangle magnifier',async(
   }
 });
 
-test('magnifier samples the composed board before drawing its own overlay',async()=>{
+test('magnifier samples the composed board at output resolution before drawing its own overlay',async()=>{
   for(const file of files){
     const html=await source(file);
     const renderer=between(html,'function render(opts={}){','function worldToScreen(');
     assert.match(renderer,/drawSlideRevealOverlay\(\);\s*drawSlideTransitionOverlay\(\);\s*drawMagnifierOverlay\(\);/);
     const magnifier=between(html,'function drawMagnifierOverlay(){','function render(opts={}){');
     assert.match(magnifier,/r\.w\/magnifier\.zoom\*dpr/);
-    assert.match(magnifier,/magnifierSampleCtx\.drawImage\(board/);
+    assert.match(magnifier,/const outputW=Math\.max\(1,Math\.round\(r\.w\*dpr\)\)/);
+    assert.match(magnifier,/magnifierSampleCtx\.drawImage\(board,sourceX,sourceY,sourceW,sourceH,0,0,outputW,outputH\)/);
+    assert.match(magnifier,/const usedOriginalSource=redrawMagnifierImageFromSource\(sourceX,sourceY,sourceW,sourceH,outputW,outputH\)/);
+    assert.match(magnifier,/magnifierBox\.dataset\.sourceQuality=usedOriginalSource\?'original':'canvas'/);
     assert.match(magnifier,/roundRectPath\(ctx/);
     assert.match(magnifier,/ctx\.drawImage\(magnifierSampleCanvas/);
     const recording=between(html,'function drawRecFrame(){','function drawPlanWatermarks(');
     assert.match(recording,/recCtx\.drawImage\(board/);
+  }
+});
+
+test('magnifier redraws a topmost opaque image from its original bitmap',async()=>{
+  for(const file of files){
+    const html=await source(file);
+    const sourcePicker=between(html,'function magnifierHighResolutionImage(sourceWorldRect){','function redrawMagnifierImageFromSource(');
+    assert.match(sourcePicker,/for\(let i=state\.scene\.length-1;i>=0;i--\)/);
+    assert.match(sourcePicker,/o\.type!==\'image\'/);
+    assert.match(sourcePicker,/slideReveal\|\|slideTransition\|\|draft\|\|pendingImage/);
+    assert.match(sourcePicker,/\(o\.opacity\?\?1\)<\.999\|\|elementCueObjectAlpha\(o\)<\.999/);
+    assert.match(sourcePicker,/item\.img\.naturalWidth<=renderedW\*1\.05/);
+    const sourceRenderer=between(html,'function redrawMagnifierImageFromSource(','function drawMagnifierOverlay(){');
+    assert.match(sourceRenderer,/magnifierSampleCtx\.setTransform\(/);
+    assert.match(sourceRenderer,/objectRotation\(o\)/);
+    assert.match(sourceRenderer,/magnifierSampleCtx\.drawImage\(item\.img,o\.x,o\.y,o\.w,o\.h\)/);
   }
 });
 
