@@ -22,7 +22,7 @@ test('both whiteboard variants expose the local canvas library controls', async 
   for (const file of files) {
     const html = await source(file);
     const controls = between(html, '<div class="doc-actions" id="docActions"', '<div class="canvas-bg-popover"');
-    for (const id of ['boardLibraryCount', 'boardLibraryList', 'docNew', 'docOpen', 'docSave', 'boardClear', 'boardConfirmOverlay']) {
+    for (const id of ['boardLibraryCount', 'boardLibraryList', 'docNew', 'docOpen', 'docSave', 'boardDuplicate', 'boardClear', 'boardConfirmOverlay']) {
       assert.match(controls, new RegExp(`id="${id}"`));
     }
     assert.doesNotMatch(controls, /id="boardDelete"/);
@@ -39,6 +39,10 @@ test('canvas library preserves boards and separates clear from delete', async ()
     assert.match(storage, /let boardLibrary=\{version:1,activeId:'',boards:\[\]\}/);
     assert.match(storage, /function boardStorageKey\(id\)/);
     assert.match(storage, /async function switchBoard\(id\)/);
+    assert.match(storage, /async function duplicateCurrentBoard\(\)/);
+    assert.match(storage, /duplicateBoardName\(source\.name\)/);
+    assert.match(storage, /structuredClone\(sourceDoc\)/);
+    assert.match(storage, /preview:source\.preview\|\|''/);
     assert.match(storage, /async function clearCurrentBoard\(\)/);
     assert.match(storage, /async function deleteBoardById\(id\)/);
     assert.match(storage, /boardLibrary\.boards\.length<=1/);
