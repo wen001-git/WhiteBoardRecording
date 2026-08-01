@@ -28,7 +28,7 @@ test('both whiteboard variants expose the canvas background popover', async () =
     );
 
     assert.match(html, /id="canvasBgBtn"[^>]*aria-expanded="false"/);
-    assert.equal((controls.match(/data-canvas-bg="#[0-9a-f]{6}"/g) || []).length, 5);
+    assert.equal((controls.match(/data-canvas-bg="#[0-9a-f]{6}"/g) || []).length, 10);
     for (const color of ['#ffffff', '#f8f9fa', '#f5faff', '#fffce8', '#fdf8f6']) {
       assert.match(controls, new RegExp(`data-canvas-bg="${color}"`));
     }
@@ -55,7 +55,15 @@ test('canvas background data is normalized, inherited, saved and undoable', asyn
     assert.match(html, /canvasBackground: DEFAULT_CANVAS_BACKGROUND/);
     assert.match(html, /function effectiveSlideBackground\(slide\)/);
     assert.match(html, /backgroundColor:null/);
-    assert.match(behavior, /function applyCanvasBackgroundColor\(value\)/);
+    assert.match(behavior, /function applyCanvasBackgroundColor\(value,texture='none'\)/);
+    assert.match(html, /data-canvas-bg="#2b7fd8"/);
+    assert.match(html, /data-canvas-bg="#14213d"/);
+    assert.match(html, /data-canvas-bg="#2cb1bc"/);
+    assert.match(html, /data-canvas-bg="#f28c5b"/);
+    assert.match(html, /data-canvas-bg-texture="paper"/);
+    assert.match(html, /canvasBackgroundTexture:state\.canvasBackgroundTexture/);
+    assert.match(html, /function drawPaperTexture\(/);
+    assert.match(html, /effectiveSlideBackgroundTexture\(slide\)/);
     assert.match(behavior, /canvasBgGesturePushed/);
     assert.match(behavior, /pushHistory\(\)/);
     assert.match(behavior, /slide\.backgroundColor=null/);
@@ -80,6 +88,7 @@ test('rendering, minimap, reveal and recording preview share the effective backg
     const minimap = between(html, 'function updateMinimap(){', 'if(minimapToggle){');
     assert.match(minimap, /c\.fillStyle=state\.canvasBackground/);
     assert.match(minimap, /c\.fillStyle=effectiveSlideBackground\(s\)/);
+    assert.match(minimap, /drawPaperTexture\(c/);
 
     const reveal = between(html, 'function makeOutlineCanvasFromSnapshot(', 'function clearSelection(){');
     assert.match(reveal, /const bg=canvasColorRgb\(bgColor\)/);
