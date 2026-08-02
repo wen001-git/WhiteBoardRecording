@@ -162,6 +162,7 @@
 
 - `locales/i18n.js` 是共享运行时，语言优先级为用户保存的 `wb.lang`（`zh-CN` / `en-US`）高于浏览器；`auto` 或无保存值时按 `navigator.languages` 的第一个受支持语言选择，其他语言回退英文。主菜单 `#langSwitch` 提供“跟随浏览器 / 中文 / English”，切换会更新 `<html lang>`、现有 DOM 和后续动态 DOM。
 - `locales/zh-CN.js`、`locales/en-US.js` 保存显式键；`locales/whiteboard-phrases.js` 将大单 HTML 中的中文原文与英文放在同一对照表，运行时同时支持完整短语、占位参数和安全的长片段替换。`contenteditable` 用户内容不参与通用翻译；仅 `data-i18n-seed="tele.seed"` 的未编辑提词器示例可随语言切换。
+- 运行时拼接的幻灯片内容动画标签不能依赖 DOM 完整短语替换；`syncSlideRevealStyleUI()` 必须用 `slide.reveal.*` 显式键分别翻译类型、效果、自动播放状态与提示，并在语言切换回调中重绘。
 - 两个白板的 `WB_I18N_BUNDLE_START/END` 区域是生成物。修改任一 locale 后运行 `node scripts/sync-whiteboard-i18n.mjs`；`tests/i18n-shared-core.test.mjs` 断言内嵌副本与源文件完全相同，`tests/i18n-whiteboard-coverage.test.mjs` 断言静态中文 UI 均有英文对照且白板不依赖外部 locale 文件。
 
 ## 维护约定
@@ -174,6 +175,6 @@
 
 | 日期 | 变更内容 |
 |------|----------|
+| 2026-08-02 | 记录动态幻灯片动画标签必须使用显式双语键并响应语言切换；why：组合文本无法由完整短语观察器可靠翻译 |
 | 2026-08-01 | 记录画布复制的保存、深拷贝、自动命名与切换约束；why：让中英文版本彼此独立且不丢失正在编辑的文字 |
 | 2026-08-01 | 记录书页纸纹的独立持久化字段与渲染顺序；why：确保纹理在撤销、单页继承、缩略图和录制路径中保持一致 |
-| 2026-07-31 | 记录圆角矩形放大镜的临时状态、自由框选、原图高清取样、触屏回滚与录制渲染边界；why：既避免辅助手柄进入成品，也避免财报小字被二次放大后过度模糊 |
