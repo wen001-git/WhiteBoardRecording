@@ -32,7 +32,7 @@ test('six system diary layouts are independently composed for three ratios',asyn
   const html=await source('whiteboard.html');
   const functions=between(html,'function templateText(','function resolveTemplateDynamicFields(');
   const make=new Function(`
-    const RATIOS={'9:16':{w:720,h:1280},'16:9':{w:1280,h:720},'3:4':{w:810,h:1080}};
+    const RATIOS={'9:16':{w:720,h:1280},'16:9':{w:1280,h:720},'3:4':{w:960,h:1280}};
     const templateT=k=>({
       'template.slide.title.vertical':'视频\\n日记','template.slide.title':'视频日记',
       'template.prompt.event':'今天发生了什么','template.prompt.feeling':'我有什么感受','template.prompt.action':'明天做什么',
@@ -46,7 +46,7 @@ test('six system diary layouts are independently composed for three ratios',asyn
     ${functions}
     return systemDiaryTemplate;
   `)();
-  const expected={'9:16':[720,1280],'16:9':[1280,720],'3:4':[810,1080]};
+  const expected={'9:16':[720,1280],'16:9':[1280,720],'3:4':[960,1280]};
   const signatures=new Set();
   for(const style of ['minimal','review'])for(const ratio of Object.keys(expected)){
     const payload=make(style,ratio,7),[w,h]=expected[ratio];

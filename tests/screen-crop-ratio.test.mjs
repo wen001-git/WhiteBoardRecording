@@ -31,7 +31,7 @@ function cropHarness(html, width, height, expression) {
     RATIOS: {
       '16:9': { w: 1280, h: 720 },
       '4:3': { w: 1024, h: 768 },
-      '3:4': { w: 810, h: 1080 },
+      '3:4': { w: 960, h: 1280 },
       '9:16': { w: 720, h: 1280 },
       '1:1': { w: 1000, h: 1000 },
     },
