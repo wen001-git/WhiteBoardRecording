@@ -73,7 +73,7 @@
     ['文字框从上到下依次淡入','Text boxes fade in from top to bottom'],['文字输入','Text input'],
     ['文字逐行','Text line by line'],['文本对齐','Text alignment'],['斜线推进','Diagonal reveal'],
     ['新建','New'],['新建画布','New whiteboard'],['复制当前画布','Duplicate current whiteboard'],['复制画布失败','Could not duplicate whiteboard'],['无','None'],['无声音','No sound'],['无转场','No transition'],
-    ['暖白','Warm white'],['暖白 #fdf8f6','Warm white #fdf8f6'],['亮蓝','Bright blue'],['亮蓝 #2B7FD8','Bright blue #2B7FD8'],['深蓝','Navy'],['深蓝 #14213D','Navy #14213D'],['青蓝','Teal'],['青蓝 #2CB1BC','Teal #2CB1BC'],['珊瑚橙','Coral orange'],['珊瑚橙 #F28C5B','Coral orange #F28C5B'],['更亮','Brighter'],
+    ['暖白','Warm white'],['暖白 #fdf8f6','Warm white #fdf8f6'],['米色','Beige'],['米色 #D3C39B','Beige #D3C39B'],['亮蓝','Bright blue'],['亮蓝 #2B7FD8','Bright blue #2B7FD8'],['深蓝','Navy'],['深蓝 #14213D','Navy #14213D'],['青蓝','Teal'],['青蓝 #2CB1BC','Teal #2CB1BC'],['珊瑚橙','Coral orange'],['珊瑚橙 #F28C5B','Coral orange #F28C5B'],['更亮','Brighter'],
     ['未选择幻灯片','No slide selected'],['本机画布','Local whiteboards'],['柔和提示','Soft chime'],
     ['框内内容将进入最终视频','Content inside the frame appears in the final video'],
     ['欢迎使用 白板录制工具','Welcome to Whiteboard Recorder'],['欢迎使用白板录制工具！','Welcome to Whiteboard Recorder!'],
