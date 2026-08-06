@@ -28,7 +28,7 @@ test('both whiteboard variants expose the canvas background popover', async () =
     );
 
     assert.match(html, /id="canvasBgBtn"[^>]*aria-expanded="false"/);
-    assert.equal((controls.match(/data-canvas-bg="#[0-9a-f]{6}"/g) || []).length, 10);
+    assert.equal((controls.match(/data-canvas-bg="#[0-9a-f]{6}"/g) || []).length, 12);
     for (const color of ['#ffffff', '#f8f9fa', '#f5faff', '#fffce8', '#fdf8f6']) {
       assert.match(controls, new RegExp(`data-canvas-bg="${color}"`));
     }

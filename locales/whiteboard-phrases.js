@@ -37,6 +37,7 @@
     ['墨团扩散后融合成彩色','Ink blooms spread and blend into color'],
     ['声音','Sound'],['大','Large'],['大小','Size'],['奶油','Cream'],['奶油 #fffce8','Cream #fffce8'],
     ['书页纸张','Book paper'],['书页纸张纹理','Book paper texture'],
+    ['旧书页','Old book paper'],['旧书页纸张纹理','Old book paper texture'],
     ['字体','Font'],['实线','Solid'],['宽笔触往返铺开颜色','Broad strokes sweep back and forth to fill color'],
     ['导入','Import'],['导入白板','Import whiteboard'],['导入白板文件（.json）','Import whiteboard file (.json)'],
     ['导出','Export'],['导出当前白板','Export current whiteboard'],['导出当前白板（.json）','Export current whiteboard (.json)'],
