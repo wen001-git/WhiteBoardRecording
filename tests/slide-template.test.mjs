@@ -23,7 +23,8 @@ test('template manager stays inside the existing menu and preserves quick contro
     assert.match(html,/id="slideTemplateExportAll"/);
     assert.match(html,/id="docSaveQuick"[^>]*title="保存白板备份（Ctrl\/Cmd\+S）"/);
     assert.match(html,/id="slideAddBtn"[^>]*>\+<\/button>/);
-    assert.match(html,/if\(card\.id==='docNew'\) openSlideTemplateOverlay\(\)/);
+    assert.match(html,/if\(card\.id==='docNew'\)\{\s*closeFileMenu\(\);\s*newDoc\(\);\s*\}/);
+    assert.match(html,/document\.getElementById\('slideTemplateManage'\)\.onclick=openSlideTemplateOverlay/);
     assert.match(html,/document\.getElementById\('slideTemplateBlank'\)\.onclick=.*newDoc\(\)/);
   }
 });

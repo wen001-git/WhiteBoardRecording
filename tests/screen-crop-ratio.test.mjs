@@ -123,7 +123,8 @@ test('Document PiP launcher keeps crop controls visible above the selected app',
     assert.match(pip, /screenCropPipUI\.teleWarning\.hidden=screenDisplaySurface!=='monitor'/);
     assert.match(pip, /function hideScreenCropPipTele\(\)[\s\S]*screenCropPipTeleCollapsed=!screenCropPipTeleCollapsed[\s\S]*teleText\.hidden=screenCropPipTeleCollapsed[\s\S]*teleActionLeft\.hidden=screenCropPipTeleCollapsed[\s\S]*resizeTo\(360,150\)/);
     assert.match(pip, /收起讲稿并保留暂停、停止控制/);
-    assert.match(pip, /if\(\(recState==='recording'\|\|recState==='paused'\) && !screenStreamDetachedFromPip\)[\s\S]*stopRecording\(\);[\s\S]*else if\(recState==='setup'\) showMainScreenCropFallback\(\)/);
+    assert.match(pip, /if\(\(recState==='recording'\|\|recState==='paused'\) && !screenStreamDetachedFromPip && screenStream\)[\s\S]*const detached=detachCapturedStreamFromPip\(screenStream\);[\s\S]*stopRecording\(\);[\s\S]*else if\(recState==='setup'\) showMainScreenCropFallback\(\)/);
+    assert.match(pip, /screenStream=detached;[\s\S]*screenVideo\.srcObject=screenStream;[\s\S]*screenStreamDetachedFromPip=true;[\s\S]*提词器已隐藏，录制仍在继续。/);
     assert.match(pip, /screenCropPipUnavailable=true;[\s\S]*请再次点击“录制”使用白板裁剪页/);
     assert.match(start, /if\(screenCropPipWin\) showScreenCropPipRecording\(\);/);
   }
