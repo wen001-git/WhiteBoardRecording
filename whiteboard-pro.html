@@ -25973,7 +25973,9 @@ function applyTextInputStyle(){
   textInput.style.transform = textAlign === 'center' ? 'translateX(-50%)' : textAlign === 'right' ? 'translateX(-100%)' : 'none';
   textInput.style.height = 'auto';
   textInput.style.height = textInput.scrollHeight + 'px';
-  textInput.style.caretColor=textColor||'var(--ink)';
+  const slide=state.slides[state.activeSlide]||null;
+  const bg=effectiveSlideBackground(slide);
+  textInput.style.caretColor=isDarkBackground(bg)?'#ffffff':'#000000';
 }
 function textObjectFromInput(text,runs=[]){
   return {
@@ -28023,6 +28025,39 @@ function detachCapturedStreamFromPip(stream){
     return null;
   }
 }
+async function detachCapturedStreamFromPipAsync(stream){
+  // 先尝试 structuredClone（同步，快速）
+  const syncResult=detachCapturedStreamFromPip(stream);
+  if(syncResult) return syncResult;
+  // 回退：MessageChannel 跨窗口 transfer
+  if(!stream || !stream.getTracks().length || !screenCropPipWin) return null;
+  try{
+    const channel=new MessageChannel();
+    const tracks=stream.getTracks().map(t=>t.clone());
+    const result=await new Promise((resolve)=>{
+      const timeout=setTimeout(()=>{resolve(null);},2000);
+      channel.port1.onmessage=(e)=>{
+        clearTimeout(timeout);
+        resolve(e.data||[]);
+        channel.port1.close();
+      };
+      channel.port1.start();
+      screenCropPipWin.postMessage(
+        {type:'__pip_transfer_tracks',tracks},
+        '*',
+        [channel.port2,...tracks]
+      );
+    });
+    if(!result || !result.length){
+      tracks.forEach(t=>{ try{t.stop();}catch(_e){} });
+      return null;
+    }
+    return new MediaStream(result);
+  }catch(e){
+    console.warn('MessageChannel track transfer failed',e);
+    return null;
+  }
+}
 function stopScreenCropPipTele(){
   screenCropPipTelePlaying=false;
   if(screenCropPipTeleRAF){
@@ -28049,6 +28084,35 @@ function toggleScreenCropPipTele(){
     screenCropPipTeleRAF=screenCropPipWin.requestAnimationFrame(step);
   };
   screenCropPipTeleRAF=screenCropPipWin.requestAnimationFrame(step);
+}
+async function minimizeOrCloseScreenCropPip(){
+  if(!screenCropPipWin || !screenCropPipUI) return;
+  // 如果共享轨已转移到主文档，直接关闭窗口，录制继续
+  if(screenStreamDetachedFromPip){
+    if(screenCropPipUI.recordingHint) screenCropPipUI.recordingHint.hidden=true;
+    closeScreenCropPip(true);
+    showPlanToast(screenCropPipCopy('置顶窗口已关闭，录制仍在继续。','PiP window closed. Recording continues.'),3600);
+    return;
+  }
+  // 尝试紧急转移共享轨
+  if(screenStream){
+    const detached=await detachCapturedStreamFromPipAsync(screenStream);
+    if(detached){
+      try{ screenStream.getTracks().forEach(t=>t.stop()); }catch(e){}
+      screenStream=detached;
+      screenVideo.srcObject=screenStream;
+      screenStreamDetachedFromPip=true;
+      try{ screenVideo.play(); }catch(e){}
+      if(screenCropPipUI.recordingHint) screenCropPipUI.recordingHint.hidden=true;
+      closeScreenCropPip(true);
+      showPlanToast(screenCropPipCopy('置顶窗口已关闭，录制仍在继续。','PiP window closed. Recording continues.'),3600);
+      return;
+    }
+  }
+  // transfer 失败：改为收起提词器（最小化窗口）
+  hideScreenCropPipTele();
+  if(screenCropPipUI.recordingHint) screenCropPipUI.recordingHint.hidden=true;
+  showPlanToast(screenCropPipCopy('无法关闭窗口（屏幕轨未转移），已改为收起讲稿。录制继续。','Cannot close window (stream not detached). Script hidden instead. Recording continues.'),4800);
 }
 function hideScreenCropPipTele(){
   if(!screenCropPipWin || !screenCropPipUI) return;
@@ -28177,13 +28241,16 @@ async function openScreenCropPipLauncher(){
       .crop-label{position:absolute;left:7px;top:7px;padding:4px 7px;border-radius:6px;background:#15945d;font-size:11px;font-weight:800;white-space:nowrap;pointer-events:none}.handle{position:absolute;width:16px;height:16px;border:2px solid #fff;border-radius:4px;background:#23ad6f;box-shadow:0 1px 5px rgba(0,0,0,.4);touch-action:none}.tl{left:-9px;top:-9px;cursor:nwse-resize}.tr{right:-9px;top:-9px;cursor:nesw-resize}.bl{left:-9px;bottom:-9px;cursor:nesw-resize}.br{right:-9px;bottom:-9px;cursor:nwse-resize}
       .modes{display:flex;align-items:center;justify-content:center;gap:5px;flex-wrap:wrap;padding:8px 10px;background:#18181b;border-top:1px solid #323238}.mode{height:32px;padding:0 10px;border:1px solid #444;border-radius:8px;background:#29292e;color:#ddd;font-size:11px;font-weight:750;cursor:pointer}.mode.active{border-color:#23ad6f;background:#174f38;color:#dff8eb}
       .foot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 12px;background:#18181b;border-top:1px solid #323238}.hint{color:#aaa;font-size:11px;line-height:1.4}.actions{display:flex;gap:8px}.cancel,.confirm{height:36px;padding:0 13px;border-radius:9px;font-size:12px;font-weight:800;cursor:pointer}.cancel{border:1px solid #48484f;background:#29292e;color:#eee}.confirm{border:0;background:#23ad6f;color:#fff}
-      .recording-panel{height:100%;display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;gap:10px;padding:14px;background:#18181b}.recording-panel[hidden]{display:none}.recording-card{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px}.recording-state{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:800}.recording-dot{width:10px;height:10px;border-radius:50%;background:#ef4444;box-shadow:0 0 0 4px rgba(239,68,68,.18)}.recording-actions{display:flex;gap:7px}.recording-actions button,.tele-actions button{height:34px;padding:0 11px;border-radius:8px;font-size:12px;font-weight:800;cursor:pointer}.recording-pause,.tele-play,.tele-reset{border:1px solid #555;background:#2b2b30;color:#fff}.recording-stop{border:0;background:#dc2626;color:#fff}.tele-warning{padding:9px 11px;border:1px solid #9a6a17;border-radius:9px;background:#3b2a0d;color:#ffd991;font-size:12px;line-height:1.45}.tele-warning[hidden]{display:none}.tele-text{min-height:0;overflow:auto;padding:18px 20px 45vh;border:1px solid #37373d;border-radius:12px;background:#0f0f11;color:#fff;line-height:1.65;white-space:pre-wrap}.tele-actions{display:flex;align-items:center;justify-content:space-between;gap:8px}.tele-action-left{display:flex;gap:7px}.hide-tele{border:1px solid #555;background:#29292e;color:#fff}.hide-tele:disabled{cursor:not-allowed;opacity:.5}
+      .recording-panel{height:100%;display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;gap:10px;padding:14px;background:#18181b}.recording-panel[hidden]{display:none}.recording-card{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px}.recording-state{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:800}.recording-dot{width:10px;height:10px;border-radius:50%;background:#ef4444;box-shadow:0 0 0 4px rgba(239,68,68,.18)}.recording-actions{display:flex;gap:7px}.recording-actions button,.tele-actions button{height:34px;padding:0 11px;border-radius:8px;font-size:12px;font-weight:800;cursor:pointer}.recording-pause,.tele-play,.tele-reset{border:1px solid #555;background:#2b2b30;color:#fff}.recording-stop{border:0;background:#dc2626;color:#fff}.recording-minimize{border:1px solid #23ad6f;background:#174f38;color:#dff8eb}.recording-hint{padding:6px 10px;border-radius:7px;background:#1a1a1e;color:#9fd9bc;font-size:11px;line-height:1.5;text-align:center}.recording-hint[hidden]{display:none}.hide-tele{border:1px solid #23ad6f;background:transparent;color:#23ad6f}.tele-warning{padding:9px 11px;border:1px solid #9a6a17;border-radius:9px;background:#3b2a0d;color:#ffd991;font-size:12px;line-height:1.45}.tele-warning[hidden]{display:none}.tele-text{min-height:0;overflow:auto;padding:18px 20px 45vh;border:1px solid #37373d;border-radius:12px;background:#0f0f11;color:#fff;line-height:1.65;white-space:pre-wrap}.tele-actions{display:flex;align-items:center;justify-content:space-between;gap:8px}.tele-action-left{display:flex;gap:7px}.hide-tele:disabled{cursor:not-allowed;opacity:.5}
     </style>`;
+    const pipScript=doc.createElement('script');
+    pipScript.textContent='window.addEventListener("message",function(e){if(e.data&&e.data.type==="__pip_transfer_tracks"&&e.ports&&e.ports.length){var tracks=e.data.tracks||[];try{e.ports[0].postMessage(tracks,"");}catch(_){}}});';
+    doc.head.appendChild(pipScript);
     doc.body.innerHTML=`<section class="launcher"><div class="launch-card"><h1>${screenCropPipCopy('录制窗口或屏幕','Record a window or screen')}</h1><p class="copy">${screenCropPipCopy('点击下方按钮后选择 ChatGPT 等窗口。选择完成后，绿色裁剪框会直接显示在这个置顶小窗中。','Click below and choose a window such as ChatGPT. The green crop frame will then appear in this always-on-top window.')}</p><button class="choose" type="button">${screenCropPipCopy('选择窗口 / 屏幕','Choose window / screen')}</button><div class="launch-status"></div></div></section>
       <section class="editor" hidden><div class="head"><span class="title">${screenCropPipCopy('调整最终录制区域','Adjust final recording area')}</span><span class="size"></span></div><div class="viewport"><canvas class="snap"></canvas><div class="crop"><span class="crop-label">${screenCropPipCopy('框内进入最终视频','Area included in final video')}</span><i class="handle tl" data-h="tl"></i><i class="handle tr" data-h="tr"></i><i class="handle bl" data-h="bl"></i><i class="handle br" data-h="br"></i></div></div>
       <div class="modes">${[['full',screenCropPipCopy('完整','Full')],['16:9','16:9 · YouTube'],['4:3',screenCropPipCopy('4:3 · 经典','4:3 · Classic')],['3:4',screenCropPipCopy('3:4 · 小红书','3:4 · Xiaohongshu')],['9:16',screenCropPipCopy('9:16 · 抖音','9:16 · TikTok')],['1:1',screenCropPipCopy('1:1 · 正方形','1:1 · Square')],['custom','Custom']].map(([mode,label])=>`<button class="mode" data-mode="${mode}" type="button">${label}</button>`).join('')}</div>
       <div class="foot"><span class="hint">${screenCropPipCopy('拖动绿色框移动 · 拖动四角缩放','Drag the green frame to move · Drag corners to resize')}</span><span class="actions"><button class="cancel" type="button">${screenCropPipCopy('取消','Cancel')}</button><button class="confirm" type="button">${screenCropPipCopy('确认并开始录制','Confirm and start')}</button></span></div></section>
-      <section class="recording-panel" hidden><div class="recording-card"><span class="recording-state"><i class="recording-dot"></i><span>${screenCropPipCopy('正在录制所选画面','Recording selected source')}</span></span><span class="recording-actions"><button class="recording-pause" type="button">${screenCropPipCopy('暂停录制','Pause recording')}</button><button class="recording-stop" type="button">${screenCropPipCopy('停止','Stop')}</button></span></div><div class="tele-warning" hidden>${screenCropPipCopy('整屏录制可能把此置顶窗录入绿色框。请把它拖到绿色框外，或收起讲稿减少遮挡。','Full-screen capture may include this window inside the green crop. Move it outside the crop, or hide the script to reduce obstruction.')}</div><div class="tele-text"></div><div class="tele-actions"><span class="tele-action-left"><button class="tele-play" type="button">${screenCropPipCopy('播放','Play')}</button><button class="tele-reset" type="button">${screenCropPipCopy('回到开头','Back to top')}</button></span><button class="hide-tele" type="button">${screenCropPipCopy('收起提词器','Hide teleprompter')}</button></div></section>`;
+      <section class="recording-panel" hidden><div class="recording-card"><span class="recording-state"><i class="recording-dot"></i><span>${screenCropPipCopy('正在录制所选画面','Recording selected source')}</span></span><span class="recording-actions"><button class="recording-minimize" type="button" title="${screenCropPipCopy('最小化窗口，录制继续','Minimize window, recording continues')}">${screenCropPipCopy('最小化','Minimize')}</button><button class="recording-pause" type="button">${screenCropPipCopy('暂停录制','Pause recording')}</button><button class="recording-stop" type="button">${screenCropPipCopy('停止','Stop')}</button></span></div><div class="recording-hint">${screenCropPipCopy('不想看到讲稿？点右下方「收起讲稿」或上方「最小化」，切勿点击窗口右上角关闭按钮以免中断录制。','Don\'t need the script? Click "Hide script" below or "Minimize" above. Do NOT click the window close button or recording will stop.')}</div><div class="tele-warning" hidden>${screenCropPipCopy('整屏录制可能把此置顶窗录入绿色框。请把它拖到绿色框外，或收起讲稿减少遮挡。','Full-screen capture may include this window inside the green crop. Move it outside the crop, or hide the script to reduce obstruction.')}</div><div class="tele-text"></div><div class="tele-actions"><span class="tele-action-left"><button class="tele-play" type="button">${screenCropPipCopy('播放','Play')}</button><button class="tele-reset" type="button">${screenCropPipCopy('回到开头','Back to top')}</button></span><button class="hide-tele" type="button">${screenCropPipCopy('收起讲稿','Hide script')}</button></div></section>`;
     screenCropPipWin=win;
     screenCropPipIntentionalClose=false;
     screenCropPipUI={
@@ -28192,7 +28259,7 @@ async function openScreenCropPipLauncher(){
       viewport:doc.querySelector('.viewport'),canvas:doc.querySelector('.snap'),
       frame:doc.querySelector('.crop'),modes:doc.querySelector('.modes'),size:doc.querySelector('.size'),
       recording:doc.querySelector('.recording-panel'),recordingState:doc.querySelector('.recording-state span'),
-      recordingPause:doc.querySelector('.recording-pause'),teleWarning:doc.querySelector('.tele-warning'),
+      recordingPause:doc.querySelector('.recording-pause'),recordingMinimize:doc.querySelector('.recording-minimize'),recordingHint:doc.querySelector('.recording-hint'),teleWarning:doc.querySelector('.tele-warning'),
       teleText:doc.querySelector('.tele-text'),telePlay:doc.querySelector('.tele-play'),
       teleReset:doc.querySelector('.tele-reset'),teleActionLeft:doc.querySelector('.tele-action-left'),
       hideTele:doc.querySelector('.hide-tele')
@@ -28214,6 +28281,7 @@ async function openScreenCropPipLauncher(){
     screenCropPipUI.telePlay.addEventListener('click',toggleScreenCropPipTele);
     screenCropPipUI.teleReset.addEventListener('click',()=>{ screenCropPipUI.teleText.scrollTop=0; });
     screenCropPipUI.hideTele.addEventListener('click',hideScreenCropPipTele);
+    screenCropPipUI.recordingMinimize.addEventListener('click',minimizeOrCloseScreenCropPip);
     let dragMode=null,startX=0,startY=0,original=null;
     screenCropPipUI.frame.addEventListener('pointerdown',e=>{
       if(recState!=='setup' || !screenCropNorm || e.button!==0) return;
@@ -28501,7 +28569,7 @@ async function enterScreenSetup(){
   }
   screenStreamDetachedFromPip=false;
   if(usingScreenCropPip){
-    const detached=detachCapturedStreamFromPip(selectedScreenStream);
+    const detached=await detachCapturedStreamFromPipAsync(selectedScreenStream);
     if(detached){
       selectedScreenStream.getTracks().forEach(track=>{ try{ track.stop(); }catch(e){} });
       selectedScreenStream=detached;
@@ -30983,7 +31051,21 @@ async function insertSlideTemplate(payload){
 }
 async function replaceCurrentSlideWithTemplate(payload,{diary=false,style=''}={}){
   if(!boardLibraryActionAllowed()) return;
-  if(state.activeSlide<0){ flashStatus(templateT('template.status.noSlide'),true); return; }
+  if(state.activeSlide<0){
+    if(!IS_PRO&&state.slides.length>=3){ requirePro('slides'); return; }
+    commitText(); pushHistory();
+    const day=Math.max(1,Math.round(Number(document.getElementById('slideTemplateDay').value)||nextDiaryDay()));
+    const index=state.slides.length, W=Number(payload.slide.w), H=Number(payload.slide.h);
+    let x,y;
+    if(!state.slides.length){ const center=toWorld(window.innerWidth/2,window.innerHeight/2); x=center.x-W/2; y=center.y-H/2; }
+    else{ const prev=state.slides[index-1]; x=prev.x+prev.w+SLIDE_GAP; y=prev.y; }
+    const created=instantiateSlideTemplate(payload,x,y,day);
+    state.slides.splice(index,0,created.slide); state.scene.push(...created.objects); state.activeSlide=index;
+    syncRecordingRatioToSlide(created.slide); renderSlidePanel(); render(); selectSlide(index,{animate:true}); scheduleSave();
+    if(diary){ setNextDiaryDay(day+1); document.getElementById('slideTemplateDay').value=String(day+1); }
+    closeSlideTemplateOverlay(); flashStatus(templateT('template.status.applied'));
+    return;
+  }
   const currentSlide=state.slides[state.activeSlide];
   const templateW=Number(payload.slide.w),templateH=Number(payload.slide.h);
   const sizeMismatch=Math.abs(currentSlide.w-templateW)>1||Math.abs(currentSlide.h-templateH)>1;

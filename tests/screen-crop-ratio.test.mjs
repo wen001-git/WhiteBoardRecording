@@ -220,6 +220,6 @@ test('screen crop implementation stays aligned between both whiteboard variants'
     const layoutAt = setup.lastIndexOf('layoutScreenSnap(true)');
     const cropAt = setup.lastIndexOf('screenCropNorm=screenCropForAspect');
     assert.ok(layoutAt >= 0 && cropAt > layoutAt, `${file} must size the preview before initializing the preset crop`);
-    assert.match(setup, /if\(usingScreenCropPip\)\{[\s\S]*detachCapturedStreamFromPip\(selectedScreenStream\)[\s\S]*screenStreamDetachedFromPip=true/);
+    assert.match(setup, /if\(usingScreenCropPip\)\{[\s\S]*detachCapturedStreamFromPipAsync\(selectedScreenStream\)[\s\S]*screenStreamDetachedFromPip=true/);
   }
 });

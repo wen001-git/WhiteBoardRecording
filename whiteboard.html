@@ -25492,7 +25492,9 @@ function applyTextInputStyle(){
   textInput.style.transform = textAlign === 'center' ? 'translateX(-50%)' : textAlign === 'right' ? 'translateX(-100%)' : 'none';
   textInput.style.height = 'auto';
   textInput.style.height = textInput.scrollHeight + 'px';
-  textInput.style.caretColor=textColor||'var(--ink)';
+  const slide=state.slides[state.activeSlide]||null;
+  const bg=effectiveSlideBackground(slide);
+  textInput.style.caretColor=isDarkBackground(bg)?'#ffffff':'#000000';
 }
 function textObjectFromInput(text,runs=[]){
   return {
@@ -30566,7 +30568,21 @@ async function insertSlideTemplate(payload){
 }
 async function replaceCurrentSlideWithTemplate(payload,{diary=false,style=''}={}){
   if(!boardLibraryActionAllowed()) return;
-  if(state.activeSlide<0){ flashStatus(templateT('template.status.noSlide'),true); return; }
+  if(state.activeSlide<0){
+    if(!IS_PRO&&state.slides.length>=3){ requirePro('slides'); return; }
+    commitText(); pushHistory();
+    const day=Math.max(1,Math.round(Number(document.getElementById('slideTemplateDay').value)||nextDiaryDay()));
+    const index=state.slides.length, W=Number(payload.slide.w), H=Number(payload.slide.h);
+    let x,y;
+    if(!state.slides.length){ const center=toWorld(window.innerWidth/2,window.innerHeight/2); x=center.x-W/2; y=center.y-H/2; }
+    else{ const prev=state.slides[index-1]; x=prev.x+prev.w+SLIDE_GAP; y=prev.y; }
+    const created=instantiateSlideTemplate(payload,x,y,day);
+    state.slides.splice(index,0,created.slide); state.scene.push(...created.objects); state.activeSlide=index;
+    syncRecordingRatioToSlide(created.slide); renderSlidePanel(); render(); selectSlide(index,{animate:true}); scheduleSave();
+    if(diary){ setNextDiaryDay(day+1); document.getElementById('slideTemplateDay').value=String(day+1); }
+    closeSlideTemplateOverlay(); flashStatus(templateT('template.status.applied'));
+    return;
+  }
   const currentSlide=state.slides[state.activeSlide];
   const templateW=Number(payload.slide.w),templateH=Number(payload.slide.h);
   const sizeMismatch=Math.abs(currentSlide.w-templateW)>1||Math.abs(currentSlide.h-templateH)>1;
