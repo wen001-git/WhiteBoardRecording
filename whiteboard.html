@@ -270,6 +270,9 @@
     outline:none;caret-color:var(--ink);color:var(--ink);font-family:inherit;padding:2px 4px;resize:none;overflow:visible;
     line-height:1.24;min-width:160px;max-width:420px;white-space:pre-wrap;}
   #textInput span{white-space:pre-wrap;}
+  #textCaretIndicator{position:fixed;z-index:42;display:none;width:1.5px;min-height:16px;
+    pointer-events:none;transform:translateX(-.75px);animation:textCaretPulse 1s step-end infinite;}
+  @keyframes textCaretPulse{0%,54%{opacity:1}55%,100%{opacity:.22}}
   /* 文字编辑态的按键提示（DOM 浮层，不进录制） */
   #textHint{position:fixed;z-index:41;display:none;background:rgba(20,20,22,.78);color:#fff;font-size:12px;
     padding:4px 10px;border-radius:8px;white-space:nowrap;pointer-events:none;}
@@ -1339,6 +1342,7 @@
 
 <!-- 文字输入浮层 -->
 <div id="textInput" contenteditable="true" role="textbox" aria-label="文字输入"></div>
+<div id="textCaretIndicator" aria-hidden="true"></div>
 <div id="textHint"><b>Enter</b> 换行 · 点击外部完成 · <b>Esc</b> 取消</div>
 <input id="imageInput" type="file" accept="image/*" style="display:none">
 
@@ -21547,6 +21551,7 @@ const ctx = board.getContext('2d');
 const selectionBox = document.getElementById('selectionBox');
 const marqueeBox = document.getElementById('marqueeBox');
 const textInput = document.getElementById('textInput');
+const textCaretIndicator = document.getElementById('textCaretIndicator');
 const minimapEl = document.getElementById('minimap');
 const minimapCanvas = document.getElementById('minimapCanvas');
 const minimapToggle = document.getElementById('minimapToggle');
@@ -25515,7 +25520,66 @@ function applyTextInputStyle(){
   textInput.style.height = textInput.scrollHeight + 'px';
   const slide=state.slides[state.activeSlide]||null;
   const bg=effectiveSlideBackground(slide);
-  textInput.style.caretColor=isDarkBackground(bg)?'#ffffff':'#000000';
+  const caretColor=isDarkBackground(bg)?'#ffd84d':'#5b57d6';
+  textInput.style.caretColor=caretColor;
+  textCaretIndicator.style.background=caretColor;
+  queueTextCaretIndicatorSync();
+}
+let textCaretSyncFrame=0;
+function queueTextCaretIndicatorSync(){
+  cancelAnimationFrame(textCaretSyncFrame);
+  textCaretSyncFrame=requestAnimationFrame(syncTextCaretIndicator);
+}
+function textCaretScreenRect(range){
+  const collapsed=range.getBoundingClientRect();
+  if(collapsed && collapsed.height>0) return collapsed;
+  const measureCharacter=(node,start,end,useRight)=>{
+    const probe=range.cloneRange();
+    probe.setStart(node,start); probe.setEnd(node,end);
+    const r=probe.getBoundingClientRect();
+    return r&&r.height>0?{left:useRight?r.right:r.left,top:r.top,height:r.height}:null;
+  };
+  const node=range.startContainer,offset=range.startOffset;
+  if(node&&node.nodeType===3&&node.data.length){
+    if(offset>0){
+      const before=measureCharacter(node,offset-1,offset,true);
+      if(before) return before;
+    }
+    if(offset<node.data.length){
+      const after=measureCharacter(node,offset,offset+1,false);
+      if(after) return after;
+    }
+  }
+  // 空输入框或 <br> 后没有字符可测量时，短暂插入零宽标记取位置；不改变保存的文字内容。
+  const marker=document.createElement('span');
+  marker.textContent='\u200b';
+  marker.style.cssText='display:inline-block;width:0;height:1em;padding:0;margin:0;overflow:hidden;';
+  const probe=range.cloneRange();
+  probe.insertNode(marker);
+  const r=marker.getBoundingClientRect();
+  marker.remove();
+  return r&&r.height>0?r:null;
+}
+function syncTextCaretIndicator(){
+  textCaretSyncFrame=0;
+  if(textInput.style.display!=='block' || document.activeElement!==textInput){
+    textCaretIndicator.style.display='none';
+    return;
+  }
+  const info=textSelectionInsideInput();
+  if(!info || !info.range.collapsed){
+    textCaretIndicator.style.display='none';
+    return;
+  }
+  const rect=textCaretScreenRect(info.range);
+  const inputRect=textInput.getBoundingClientRect();
+  const computed=getComputedStyle(textInput);
+  const lineHeight=parseFloat(computed.lineHeight)||parseFloat(computed.fontSize)*1.24||20;
+  const hasCaretRect=!!(rect && rect.height>0);
+  textCaretIndicator.style.left=(hasCaretRect?rect.left:inputRect.left+4)+'px';
+  textCaretIndicator.style.top=(hasCaretRect?rect.top:inputRect.top+2)+'px';
+  textCaretIndicator.style.height=Math.max(16,hasCaretRect?rect.height:lineHeight)+'px';
+  textCaretIndicator.style.display='block';
 }
 function textObjectFromInput(text,runs=[]){
   return {
@@ -25609,6 +25673,7 @@ function openTextInput(sx, sy, w, edit=null){
 }
 function commitText(){
   if(textInput.style.display==='none') return;
+  textCaretIndicator.style.display='none';
   const rich = richTextFromInput();
   const val = rich.text;
   // 形状内文字（label）模式
@@ -25670,6 +25735,7 @@ function commitText(){
 }
 function cancelTextInput(){
   if(textInput.style.display==='none') return;
+  textCaretIndicator.style.display='none';
   if(editingLabelIndex>=0){
     const li=editingLabelIndex; editingLabelIndex=-1;
     textInput.style.display='none'; textInput.style.opacity=''; textInput.style.transform='';
@@ -25713,6 +25779,12 @@ textInput.addEventListener('keydown', (e)=>{
   if(e.key==='Escape'){ e.preventDefault(); cancelTextInput(); }
 });
 textInput.addEventListener('input', ()=>{ applyTextInputStyle(); syncTextHint(); });
+textInput.addEventListener('focus', queueTextCaretIndicatorSync);
+textInput.addEventListener('keyup', queueTextCaretIndicatorSync);
+textInput.addEventListener('pointerup', queueTextCaretIndicatorSync);
+document.addEventListener('selectionchange', ()=>{
+  if(textInput.style.display==='block') queueTextCaretIndicatorSync();
+});
 
 // 编辑态按键提示：跟随输入框下方（贴近底边时翻到上方），输入框隐藏时自动消失
 const textHint=document.getElementById('textHint');
