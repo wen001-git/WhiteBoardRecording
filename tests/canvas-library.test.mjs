@@ -53,7 +53,13 @@ test('canvas library preserves boards and separates clear from delete', async ()
     assert.match(storage, /remove\.dataset\.deleteBoardId/);
     assert.match(storage, /e\.preventDefault\(\); e\.stopPropagation\(\)/);
     assert.match(storage, /className='board-library-open'/);
+    assert.match(storage, /className='board-library-rename'/);
     assert.match(storage, /className='board-library-delete'/);
+    assert.match(storage, /function startBoardRename\(id\)/);
+    assert.match(storage, /rename\.dataset\.renameBoardId/);
+    assert.match(storage, /name\.closest\('\[data-board-id\]'\)/);
+    assert.match(storage, /input\.maxLength=40/);
+    assert.match(storage, /await persistBoardLibrary\(\)/);
     assert.match(storage, /if\(boardLibrary\.boards\.length>1\)/);
     assert.match(storage, /const savedLibrary=await idbGet\('library'\)/);
     assert.match(storage, /let legacy=await idbGet\('current'\)/);

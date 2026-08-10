@@ -23,6 +23,14 @@
     'common.loading': 'Loading…',
     'common.unknown': 'Unknown',
 
+    /* ---- Local whiteboard library ---- */
+    'board.rename': 'Rename whiteboard',
+    'board.renameInput': 'Whiteboard name',
+    'board.renameEmpty': 'Whiteboard name cannot be empty',
+    'board.renameDuplicate': 'A whiteboard with this name already exists',
+    'board.renameFailed': 'Could not rename whiteboard',
+    'board.renamed': 'Whiteboard renamed ✓',
+
     /* ---- Header / chrome ---- */
     'header.language.zh-CN': '简体中文',
     'header.language.en-US': 'English',

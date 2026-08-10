@@ -331,15 +331,20 @@
   .board-library-preview{aspect-ratio:16/10;border:1px solid rgba(30,30,30,.08);border-radius:8px;background:#fff;overflow:hidden;display:grid;place-items:center;}
   .board-library-preview img{width:100%;height:100%;object-fit:cover;display:block;}
   .board-library-preview svg{width:25px;height:25px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
+  .board-library-rename{position:absolute;top:-1px;left:-1px;z-index:2;width:24px;height:24px;border:1px solid rgba(30,30,30,.09);border-radius:7px;background:rgba(255,255,255,.9);color:var(--muted);display:grid;place-items:center;cursor:pointer;opacity:0;pointer-events:none;box-shadow:0 1px 4px rgba(35,31,44,.08);transition:opacity .12s,background .12s,color .12s,transform .12s;}
+  .board-library-rename:hover,.board-library-rename:focus-visible{background:#f1efff;color:var(--accent);border-color:rgba(91,87,214,.18);outline:none;transform:scale(1.04);}
+  .board-library-rename svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
   .board-library-delete{position:absolute;top:-1px;right:-1px;z-index:2;width:24px;height:24px;border:1px solid rgba(30,30,30,.09);border-radius:7px;background:rgba(255,255,255,.9);color:#a16d6d;display:grid;place-items:center;cursor:pointer;opacity:0;pointer-events:none;box-shadow:0 1px 4px rgba(35,31,44,.08);transition:opacity .12s,background .12s,color .12s,transform .12s;}
   .board-library-delete:hover,.board-library-delete:focus-visible{background:#fff0f0;color:var(--danger);border-color:rgba(224,49,49,.18);outline:none;transform:scale(1.04);}
   .board-library-delete svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
-  .board-library-card:hover .board-library-delete,.board-library-card:focus-within .board-library-delete{opacity:1;pointer-events:auto;}
+  .board-library-card:hover .board-library-rename,.board-library-card:hover .board-library-delete,.board-library-card:focus-within .board-library-rename,.board-library-card:focus-within .board-library-delete{opacity:1;pointer-events:auto;}
   .board-library-card.new{padding:6px;border-style:dashed;color:var(--accent);background:#faf9ff;text-align:center;cursor:pointer;}
   .board-library-card.new .board-library-preview{border:0;background:transparent;}
   .board-library-name{display:block;margin-top:6px;font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;color:inherit;}
+  .board-library-name-input{position:absolute;z-index:3;left:5px;right:5px;bottom:4px;width:calc(100% - 10px);height:25px;border:1.5px solid var(--accent);border-radius:7px;background:#fff;color:var(--ink);padding:0 5px;font:700 11px var(--sans);text-align:center;outline:none;box-shadow:0 0 0 3px rgba(91,87,214,.12);}
+  .board-library-card.renaming .board-library-name{visibility:hidden;}
   @media (hover:none),(pointer:coarse){
-    .board-library-delete{width:26px;height:26px;top:-1px;right:-1px;opacity:1;pointer-events:auto;}
+    .board-library-rename,.board-library-delete{width:26px;height:26px;top:-1px;opacity:1;pointer-events:auto;}
   }
   .board-library-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
   #slideTemplateManage{grid-column:1/-1;}
@@ -1923,6 +1928,14 @@ try {
     'common.loading': '加载中…',
     'common.unknown': '未知',
 
+    /* ---- Local whiteboard library ---- */
+    'board.rename': '修改画布名称',
+    'board.renameInput': '画布名称',
+    'board.renameEmpty': '画布名称不能为空',
+    'board.renameDuplicate': '已有同名画布，请换一个名称',
+    'board.renameFailed': '修改画布名称失败',
+    'board.renamed': '画布名称已修改 ✓',
+
     /* ---- Header / chrome ---- */
     'header.language.zh-CN': '简体中文',
     'header.language.en-US': 'English',
@@ -2356,6 +2369,14 @@ try {
     'common.filter': 'Filter',
     'common.loading': 'Loading…',
     'common.unknown': 'Unknown',
+
+    /* ---- Local whiteboard library ---- */
+    'board.rename': 'Rename whiteboard',
+    'board.renameInput': 'Whiteboard name',
+    'board.renameEmpty': 'Whiteboard name cannot be empty',
+    'board.renameDuplicate': 'A whiteboard with this name already exists',
+    'board.renameFailed': 'Could not rename whiteboard',
+    'board.renamed': 'Whiteboard renamed ✓',
 
     /* ---- Header / chrome ---- */
     'header.language.zh-CN': '简体中文',
@@ -30246,6 +30267,11 @@ function renderBoardLibrary(){
     else preview.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v14H5z"/><path d="M8 15l3-3 2 2 3-4"/></svg>';
     const name=document.createElement('span'); name.className='board-library-name'; name.textContent=item.name||'未命名画布';
     open.append(preview,name); card.appendChild(open);
+    const rename=document.createElement('button');
+    rename.className='board-library-rename'; rename.type='button'; rename.dataset.renameBoardId=item.id;
+    const renameLabel=boardT('board.rename'); rename.title=renameLabel; rename.setAttribute('aria-label',renameLabel);
+    rename.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l4.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L4 20z"/><path d="M13.5 7.5l3 3"/></svg>';
+    card.appendChild(rename);
     if(boardLibrary.boards.length>1){
       const remove=document.createElement('button');
       remove.className='board-library-delete'; remove.type='button'; remove.dataset.deleteBoardId=item.id;
@@ -30256,6 +30282,39 @@ function renderBoardLibrary(){
     }
     list.appendChild(card);
   });
+}
+const boardT=(key,params)=>window.i18n?i18n.t(key,params):key;
+function startBoardRename(id){
+  if(!boardLibraryActionAllowed()) return;
+  const entry=boardLibrary.boards.find(item=>item.id===id);
+  const card=document.querySelector(`.board-library-card [data-board-id="${CSS.escape(id)}"]`)?.closest('.board-library-card');
+  if(!entry||!card||card.classList.contains('renaming')) return;
+  card.classList.add('renaming');
+  const input=document.createElement('input');
+  input.className='board-library-name-input'; input.type='text'; input.maxLength=40; input.value=entry.name||'';
+  input.setAttribute('aria-label',boardT('board.renameInput')); card.appendChild(input);
+  let finished=false;
+  const finish=async save=>{
+    if(finished) return;
+    if(!save){ finished=true; renderBoardLibrary(); return; }
+    const next=input.value.trim().slice(0,40);
+    if(!next){ flashStatus(boardT('board.renameEmpty'),true); requestAnimationFrame(()=>input.focus()); return; }
+    if(boardLibrary.boards.some(item=>item.id!==id&&item.name===next)){ flashStatus(boardT('board.renameDuplicate'),true); requestAnimationFrame(()=>{ input.focus(); input.select(); }); return; }
+    finished=true;
+    const oldName=entry.name, oldUpdatedAt=entry.updatedAt;
+    entry.name=next; entry.updatedAt=Date.now();
+    if(!await persistBoardLibrary()){
+      entry.name=oldName; entry.updatedAt=oldUpdatedAt;
+      flashStatus(boardT('board.renameFailed'),true);
+    }else flashStatus(boardT('board.renamed'));
+    renderBoardLibrary();
+  };
+  input.addEventListener('keydown',e=>{
+    if(e.key==='Enter'){ e.preventDefault(); e.stopPropagation(); finish(true); }
+    else if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); finish(false); }
+  });
+  input.addEventListener('blur',()=>finish(true));
+  requestAnimationFrame(()=>{ input.focus(); input.select(); });
 }
 function boardLibraryActionAllowed(){
   if(typeof recState!=='undefined'&&recState!=='idle'){
@@ -30695,6 +30754,19 @@ document.getElementById('docSaveQuick').onclick=exportDoc;
 document.getElementById('docOpen').onclick=()=>{ const fi=document.getElementById('fileInput'); fi.value=''; fi.click(); };
 document.getElementById('fileInput').onchange=(e)=>{ importDocFromFile(e.target.files && e.target.files[0]); };
 document.getElementById('boardLibraryList').addEventListener('click',e=>{
+  const rename=e.target.closest('[data-rename-board-id]');
+  if(rename){
+    e.preventDefault(); e.stopPropagation();
+    startBoardRename(rename.dataset.renameBoardId);
+    return;
+  }
+  const name=e.target.closest('.board-library-name');
+  const namedBoard=name&&name.closest('[data-board-id]');
+  if(namedBoard){
+    e.preventDefault(); e.stopPropagation();
+    startBoardRename(namedBoard.dataset.boardId);
+    return;
+  }
   const remove=e.target.closest('[data-delete-board-id]');
   if(remove){
     e.preventDefault(); e.stopPropagation();
@@ -30711,6 +30783,7 @@ document.getElementById('boardLibraryList').addEventListener('click',e=>{
 });
 document.getElementById('boardClear').onclick=clearCurrentBoard;
 document.getElementById('boardDuplicate').onclick=duplicateCurrentBoard;
+if(window.i18n&&i18n.onChange) i18n.onChange(()=>renderBoardLibrary());
 document.getElementById('boardConfirmCancel').onclick=()=>closeBoardConfirm(false);
 document.getElementById('boardConfirmGo').onclick=()=>closeBoardConfirm(true);
 document.getElementById('boardConfirmOverlay').addEventListener('pointerdown',e=>{ if(e.target===e.currentTarget) closeBoardConfirm(false); });

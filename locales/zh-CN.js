@@ -27,6 +27,14 @@
     'common.loading': '加载中…',
     'common.unknown': '未知',
 
+    /* ---- Local whiteboard library ---- */
+    'board.rename': '修改画布名称',
+    'board.renameInput': '画布名称',
+    'board.renameEmpty': '画布名称不能为空',
+    'board.renameDuplicate': '已有同名画布，请换一个名称',
+    'board.renameFailed': '修改画布名称失败',
+    'board.renamed': '画布名称已修改 ✓',
+
     /* ---- Header / chrome ---- */
     'header.language.zh-CN': '简体中文',
     'header.language.en-US': 'English',
