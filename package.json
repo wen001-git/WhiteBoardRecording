@@ -7,7 +7,8 @@
     "dev": "node --env-file=.env.local server/index.mjs",
     "start": "node server/index.mjs",
     "test": "node --test tests/*.test.mjs",
-    "build:static": "node scripts/build-static.mjs"
+    "build:static": "node scripts/build-static.mjs",
+    "sync:paper-notes": "node scripts/sync-paper-note-assets.mjs"
   },
   "engines": {
     "node": ">=20"
