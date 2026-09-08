@@ -80,9 +80,9 @@ test('window and browser sources use the same adjustable crop setup as full-scre
     assert.match(setup, /const canOpenScreenCropPip=!screenCropPipUnavailable/);
     assert.match(setup, /if\(!screenCropPipWin && canOpenScreenCropPip\)\{\s*await openScreenCropPipLauncher\(\);\s*return;/);
     assert.match(setup, /const usingScreenCropPip=!!screenCropPipWin;/);
-    assert.match(setup, /const captureNavigator=usingScreenCropPip \? screenCropPipWin\.navigator : navigator;/);
+    assert.match(setup, /const captureNavigator=navigator;/);
     assert.match(setup, /const captureMediaDevices=captureNavigator && captureNavigator\.mediaDevices;/);
-    assert.match(setup, /const CaptureControllerCtor=\(usingScreenCropPip && screenCropPipWin\.CaptureController\) \|\| window\.CaptureController;/);
+    assert.match(setup, /const CaptureControllerCtor=window\.CaptureController;/);
     assert.match(setup, /const preferredCaptureFocus=usingScreenCropPip\?'focus-captured-surface':'focus-capturing-application';/);
     assert.match(setup, /typeof CaptureControllerCtor==='function'/);
     assert.match(setup, /displayMediaOptions\.controller=captureController/);
@@ -109,8 +109,6 @@ test('Document PiP launcher keeps crop controls visible above the selected app',
     assert.match(pip, /const launcherSize=\{width:760,height:590\};/);
     assert.match(pip, /documentPictureInPicture\.requestWindow\(\{[\s\S]*\.\.\.launcherSize,[\s\S]*preferInitialWindowPlacement:true/);
     assert.match(pip, /win\.resizeTo\(launcherSize\.width,launcherSize\.height\)/);
-    assert.match(pip, /function detachCapturedStreamFromPip\(stream\)/);
-    assert.match(pip, /structuredClone\(clone,\{transfer:\[clone\]\}\)/);
     assert.match(pip, /screenCropPipUI\.choose\.addEventListener\('click',async\(\)=>\{[\s\S]*await enterScreenSetup\(\)/);
     for (const mode of ['full', '16:9', '4:3', '3:4', '9:16', '1:1', 'custom']) {
       assert.match(pip, new RegExp(`\\['${mode.replace(':', '\\:')}'`));
@@ -120,11 +118,7 @@ test('Document PiP launcher keeps crop controls visible above the selected app',
     assert.match(pip, /recording-pause[\s\S]*recording-stop/);
     assert.match(pip, /tele-warning[\s\S]*tele-text[\s\S]*tele-play[\s\S]*hide-tele/);
     assert.match(pip, /screenCropPipUI\.teleText\.innerHTML=sanitizeTeleHtml\(teleText\.innerHTML\)/);
-    assert.match(pip, /screenCropPipUI\.teleWarning\.hidden=screenDisplaySurface!=='monitor'/);
     assert.match(pip, /function hideScreenCropPipTele\(\)[\s\S]*screenCropPipTeleCollapsed=!screenCropPipTeleCollapsed[\s\S]*teleText\.hidden=screenCropPipTeleCollapsed[\s\S]*teleActionLeft\.hidden=screenCropPipTeleCollapsed[\s\S]*resizeTo\(360,150\)/);
-    assert.match(pip, /收起讲稿并保留暂停、停止控制/);
-    assert.match(pip, /if\(\(recState==='recording'\|\|recState==='paused'\) && !screenStreamDetachedFromPip && screenStream\)[\s\S]*const detached=detachCapturedStreamFromPip\(screenStream\);[\s\S]*stopRecording\(\);[\s\S]*else if\(recState==='setup'\) showMainScreenCropFallback\(\)/);
-    assert.match(pip, /screenStream=detached;[\s\S]*screenVideo\.srcObject=screenStream;[\s\S]*screenStreamDetachedFromPip=true;[\s\S]*提词器已隐藏，录制仍在继续。/);
     assert.match(pip, /screenCropPipUnavailable=true;[\s\S]*请再次点击“录制”使用白板裁剪页/);
     assert.match(start, /if\(screenCropPipWin\) showScreenCropPipRecording\(\);/);
   }
@@ -220,6 +214,5 @@ test('screen crop implementation stays aligned between both whiteboard variants'
     const layoutAt = setup.lastIndexOf('layoutScreenSnap(true)');
     const cropAt = setup.lastIndexOf('screenCropNorm=screenCropForAspect');
     assert.ok(layoutAt >= 0 && cropAt > layoutAt, `${file} must size the preview before initializing the preset crop`);
-    assert.match(setup, /if\(usingScreenCropPip\)\{[\s\S]*detachCapturedStreamFromPipAsync\(selectedScreenStream\)[\s\S]*screenStreamDetachedFromPip=true/);
   }
 });

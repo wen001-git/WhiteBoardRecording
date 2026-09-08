@@ -44,6 +44,13 @@ test('six system diary layouts are independently composed for three ratios',asyn
     const defaultElementCueAudio=()=>({sound:'none',volume:.6});
     const todayDiaryDate=()=> '2026/08/04';
     const SLIDE_TEMPLATE_VERSION=1;
+    const SYSTEM_DIARY_COLORS={
+      sand:{background:'#d3c39b',text:'#f8f5ea',accent:'#f0e32f',panel:'#e8dcc0',panelText:'#494433'},
+      deep:{background:'#14213d',text:'#f8f5ea',accent:'#f0e32f',panel:'#243554',panelText:'#f8f5ea'},
+      forest:{background:'#1b4332',text:'#f8f5ea',accent:'#d4a373',panel:'#2b5b48',panelText:'#f8f5ea'},
+      wine:{background:'#542d3e',text:'#fff7ed',accent:'#f2b5d4',panel:'#6b3b50',panelText:'#fff7ed'},
+      cream:{background:'#f8f5ea',text:'#14213d',accent:'#f28c5b',panel:'#eadfcd',panelText:'#14213d'}
+    };
     ${functions}
     return systemDiaryTemplate;
   `)();
@@ -78,6 +85,32 @@ test('six system diary layouts are independently composed for three ratios',asyn
   assert.equal(signatures.size,6,'all two-style by three-ratio layouts must have distinct coordinates');
 });
 
+test('five remembered color systems apply to both diary styles',async()=>{
+  const html=await source('whiteboard.html');
+  const functions=between(html,'function templateText(','function resolveTemplateDynamicFields(');
+  const colors=between(html,'const SYSTEM_DIARY_COLORS={','};\nlet slideTemplateLibrary').slice('const SYSTEM_DIARY_COLORS={'.length);
+  const make=new Function(`
+    const RATIOS={'9:16':{w:720,h:1280},'16:9':{w:1280,h:720},'3:4':{w:960,h:1280}};
+    const SYSTEM_DIARY_COLORS={${colors}};
+    const templateT=k=>({'template.slide.title.vertical':'视频\\n日记','template.slide.title':'视频日记','template.prompt.event':'发生','template.prompt.feeling':'感受','template.prompt.action':'行动','template.system.review':'复盘','template.system.minimal':'极简'}[k]||k);
+    const normalizeSlideTransition=v=>v||{type:'none'},defaultSlideRevealSetting=()=>({}),defaultElementCueAudio=()=>({});
+    const todayDiaryDate=()=> '2026/09/08',SLIDE_TEMPLATE_VERSION=1;
+    ${functions}
+    return {make:systemDiaryTemplate,colors:SYSTEM_DIARY_COLORS};
+  `)();
+  assert.deepEqual(Object.keys(make.colors),['sand','deep','forest','wine','cream']);
+  for(const colorId of Object.keys(make.colors))for(const style of ['minimal','review']){
+    const payload=make.make(style,'16:9',22,colorId),theme=make.colors[colorId];
+    assert.equal(payload.colorId,colorId);
+    assert.equal(payload.slide.backgroundColor,theme.background);
+    assert.ok(payload.objects.filter(o=>o.type==='text').every(o=>[theme.text,theme.accent].includes(o.color)));
+    const prompts=payload.objects.filter(o=>o.type==='rect');
+    assert.equal(prompts.length,style==='review'?3:0);
+    assert.ok(prompts.every(o=>o.color===theme.accent&&o.fillColor===theme.panel&&o.labelColor===theme.panelText));
+  }
+  assert.equal(make.make('minimal','16:9',1,'deep').slide.backgroundColor,'#14213d');
+});
+
 test('custom templates persist self-contained slide data and remap identities',async()=>{
   for(const file of files){
     const html=await source(file);
@@ -101,9 +134,13 @@ test('diary counter, ratio memory, import and export contracts are explicit',asy
     const html=await source(file);
     assert.match(html,/DIARY_DAY_STORAGE_KEY='wb_video_diary_next_day_v1'/);
     assert.match(html,/DIARY_RATIO_STORAGE_KEY='wb_video_diary_ratio_v1'/);
+    assert.match(html,/DIARY_COLOR_STORAGE_KEY='wb_video_diary_color_v1'/);
     assert.match(html,/SYSTEM_DIARY_RATIOS=\['9:16','16:9','3:4'\]/);
     assert.match(html,/if\(diary\)\{setNextDiaryDay\(day\+1\)/);
     assert.match(html,/slideTemplateRatios'[\s\S]{0,700}classList\.toggle\('active',option\.dataset\.templateRatio===selectedDiaryRatio\)/);
+    assert.match(html,/id="slideTemplateColors"[\s\S]*data-template-color="sand"[\s\S]*data-template-color="deep"[\s\S]*data-template-color="forest"[\s\S]*data-template-color="wine"[\s\S]*data-template-color="cream"/);
+    assert.match(html,/localStorage\.setItem\(DIARY_COLOR_STORAGE_KEY,selectedDiaryColor\)/);
+    assert.match(html,/systemDiaryTemplate\(b\.dataset\.systemTemplate,selectedDiaryRatio,day,selectedDiaryColor\)/);
     assert.match(html,/kind:'whiteboard-slide-template'/);
     assert.match(html,/kind:'whiteboard-slide-template-library'/);
     assert.match(html,/\.wbtemplate\.json/);

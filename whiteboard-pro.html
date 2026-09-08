@@ -393,8 +393,9 @@
   .slide-template-body{padding:16px 20px 20px;overflow:auto;}
   .slide-template-section{margin-top:18px}.slide-template-section:first-child{margin-top:0}.slide-template-section-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:9px;font-size:13px;color:var(--muted);}
   .slide-template-ratios{display:flex;gap:7px;flex-wrap:wrap}.slide-template-ratios button{height:34px;min-width:70px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);font:700 12px var(--mono);cursor:pointer}.slide-template-ratios button.active{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+  .slide-template-colors{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px}.slide-template-color-label{margin-right:2px;color:var(--muted);font-size:12px;font-weight:700}.slide-template-color{position:relative;width:34px;height:34px;border:2px solid #fff;border-radius:50%;background:var(--diary-bg);box-shadow:0 0 0 1px var(--line);cursor:pointer}.slide-template-color::after{content:'';position:absolute;right:3px;bottom:3px;width:9px;height:9px;border:2px solid var(--diary-text);border-radius:50%;background:var(--diary-accent)}.slide-template-color:hover,.slide-template-color:focus-visible{outline:none;box-shadow:0 0 0 2px var(--accent)}.slide-template-color.active{box-shadow:0 0 0 3px var(--accent)}.slide-template-color.active::before{content:'✓';position:absolute;inset:0;display:grid;place-items:center;color:var(--diary-text);font-size:15px;font-weight:900;text-shadow:0 1px 3px rgba(0,0,0,.45)}
   .slide-template-day{display:flex;align-items:center;gap:8px}.slide-template-day input{width:82px;height:34px;border:1px solid var(--line);border-radius:9px;padding:0 9px;font:700 13px var(--mono);outline:none}.slide-template-day input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(91,87,214,.12)}
-  .system-template-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.system-template-card{min-height:132px;border:1.5px solid var(--line);border-radius:14px;background:#f7f1df;color:#27251f;padding:14px;text-align:left;cursor:pointer;position:relative;overflow:hidden}.system-template-card:hover,.system-template-card:focus-visible{border-color:#d2b300;outline:none;transform:translateY(-1px)}.system-template-card::after{content:'';position:absolute;right:-24px;bottom:-30px;width:110px;height:110px;border:22px solid rgba(240,221,46,.35);border-radius:50%}.system-template-card strong{display:block;font-size:17px;position:relative;z-index:1}.system-template-card small{display:block;margin-top:5px;max-width:78%;color:#665f4e;line-height:1.45;position:relative;z-index:1}.system-template-card .template-day-mark{display:block;margin-top:13px;font:900 23px var(--sans);position:relative;z-index:1}.system-template-card .template-day-mark em{font-style:normal;color:#d6bf00}
+  .system-template-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;--diary-preview-bg:#d3c39b;--diary-preview-text:#f8f5ea;--diary-preview-accent:#f0e32f}.system-template-card{min-height:132px;border:1.5px solid var(--line);border-radius:14px;background:var(--diary-preview-bg);color:var(--diary-preview-text);padding:14px;text-align:left;cursor:pointer;position:relative;overflow:hidden;transition:transform .12s,border-color .12s,background .15s,color .15s}.system-template-card:hover,.system-template-card:focus-visible{border-color:var(--diary-preview-accent);outline:none;transform:translateY(-1px)}.system-template-card::after{content:'';position:absolute;right:-24px;bottom:-30px;width:110px;height:110px;border:22px solid var(--diary-preview-accent);border-radius:50%;opacity:.38}.system-template-card strong{display:block;font-size:17px;position:relative;z-index:1}.system-template-card small{display:block;margin-top:5px;max-width:78%;color:inherit;opacity:.78;line-height:1.45;position:relative;z-index:1}.system-template-card .template-day-mark{display:block;margin-top:13px;font:900 23px var(--sans);position:relative;z-index:1}.system-template-card .template-day-mark em{font-style:normal;color:var(--diary-preview-accent)}
   .slide-template-actions{display:flex;gap:8px;flex-wrap:wrap}.slide-template-action{min-height:38px;border:1px solid var(--line);border-radius:10px;background:#f4f2f8;color:var(--ink);padding:8px 11px;font:700 12px var(--sans);cursor:pointer}.slide-template-action:hover{background:#ebe8f2}.slide-template-action.primary{background:var(--accent);border-color:var(--accent);color:#fff}.slide-template-action:disabled{opacity:.42;cursor:not-allowed}
   .user-template-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.user-template-empty{grid-column:1/-1;border:1px dashed var(--line);border-radius:12px;padding:18px;text-align:center;color:var(--muted);font-size:13px}.user-template-card{border:1px solid var(--line);border-radius:12px;background:#faf9fc;padding:9px;min-width:0}.user-template-summary{display:flex;gap:9px;align-items:center}.user-template-preview{width:76px;aspect-ratio:16/10;border-radius:8px;background:#eee8d7 center/cover no-repeat;border:1px solid rgba(30,30,30,.08);display:grid;place-items:center;color:#6a6251;font:800 11px var(--mono);overflow:hidden}.user-template-meta{min-width:0;flex:1}.user-template-meta strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px}.user-template-meta small{display:block;margin-top:4px;color:var(--muted);font:11px var(--mono)}.user-template-buttons{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}.user-template-buttons button{height:29px;border:0;border-radius:7px;background:#eeecf3;color:var(--ink);padding:0 8px;font:700 11px var(--sans);cursor:pointer}.user-template-buttons button:hover{background:#e3e0ea}.user-template-buttons button.danger{color:var(--danger)}
   @media(max-width:600px){.system-template-grid,.user-template-list{grid-template-columns:1fr}.slide-template-modal{max-height:calc(100vh - 16px)}.slide-template-body{padding:14px}}
@@ -1095,6 +1096,7 @@
       <section class="slide-template-section">
         <div class="slide-template-section-title"><strong data-i18n="template.system.title">今日视频日记</strong><div class="slide-template-day"><span>Day</span><input id="slideTemplateDay" type="number" min="1" step="1" value="1" data-i18n-aria="template.day.label" aria-label="下一篇 Day 编号"></div></div>
         <div class="slide-template-ratios" id="slideTemplateRatios" role="group" data-i18n-aria="template.ratio.label" aria-label="模板比例"><button type="button" data-template-ratio="9:16">9:16</button><button type="button" data-template-ratio="16:9">16:9</button><button type="button" data-template-ratio="3:4">3:4</button></div>
+        <div class="slide-template-colors" id="slideTemplateColors" role="group" data-i18n-aria="template.color.label" aria-label="模板配色"><span class="slide-template-color-label" data-i18n="template.color.label">模板配色</span><button class="slide-template-color" type="button" data-template-color="sand" data-i18n-title="template.color.sand" data-i18n-aria="template.color.sand" style="--diary-bg:#d3c39b;--diary-text:#f8f5ea;--diary-accent:#f0e32f" title="暖沙色" aria-label="暖沙色"></button><button class="slide-template-color" type="button" data-template-color="deep" data-i18n-title="template.color.deep" data-i18n-aria="template.color.deep" style="--diary-bg:#14213d;--diary-text:#f8f5ea;--diary-accent:#f0e32f" title="深海蓝" aria-label="深海蓝"></button><button class="slide-template-color" type="button" data-template-color="forest" data-i18n-title="template.color.forest" data-i18n-aria="template.color.forest" style="--diary-bg:#1b4332;--diary-text:#f8f5ea;--diary-accent:#d4a373" title="森林绿" aria-label="森林绿"></button><button class="slide-template-color" type="button" data-template-color="wine" data-i18n-title="template.color.wine" data-i18n-aria="template.color.wine" style="--diary-bg:#542d3e;--diary-text:#fff7ed;--diary-accent:#f2b5d4" title="酒红" aria-label="酒红"></button><button class="slide-template-color" type="button" data-template-color="cream" data-i18n-title="template.color.cream" data-i18n-aria="template.color.cream" style="--diary-bg:#f8f5ea;--diary-text:#14213d;--diary-accent:#f28c5b" title="奶油白" aria-label="奶油白"></button></div>
         <div class="system-template-grid" style="margin-top:10px">
           <button class="system-template-card" type="button" data-system-template="minimal"><strong data-i18n="template.system.minimal">极简视频日记</strong><small data-i18n="template.system.minimal.help">日期、Day 与大面积自由内容区</small><span class="template-day-mark">Day <em id="minimalDayPreview">1</em></span></button>
           <button class="system-template-card" type="button" data-system-template="review"><strong data-i18n="template.system.review">三问复盘日记</strong><small data-i18n="template.system.review.help">发生、感受与明日行动三个可编辑区域</small><span class="template-day-mark">3 <em>Questions</em></span></button>
@@ -2412,6 +2414,12 @@ try {
     'template.system.review.help': '发生、感受与明日行动三个可编辑区域',
     'template.day.label': '下一篇 Day 编号',
     'template.ratio.label': '模板比例',
+    'template.color.label': '模板配色',
+    'template.color.sand': '暖沙色',
+    'template.color.deep': '深海蓝',
+    'template.color.forest': '森林绿',
+    'template.color.wine': '酒红',
+    'template.color.cream': '奶油白',
     'template.mine.title': '我的模板',
     'template.mine.untitled': '未命名模板',
     'template.mine.empty': '还没有自定义模板。编辑好一张幻灯片后，可保存到这里重复使用。',
@@ -2854,6 +2862,12 @@ try {
     'template.system.review.help': 'Editable prompts for events, feelings, and tomorrow',
     'template.day.label': 'Next Day number',
     'template.ratio.label': 'Template ratio',
+    'template.color.label': 'Template colors',
+    'template.color.sand': 'Warm sand',
+    'template.color.deep': 'Deep navy',
+    'template.color.forest': 'Forest green',
+    'template.color.wine': 'Burgundy',
+    'template.color.cream': 'Cream',
     'template.mine.title': 'My templates',
     'template.mine.untitled': 'Untitled template',
     'template.mine.empty': 'No custom templates yet. Finish a slide, then save it here for reuse.',
@@ -30254,7 +30268,6 @@ let screenStream=null, screenReader=null, audioCtx=null, recordingAudioDestinati
 let screenCropNorm=null, screenDisplaySurface='';
 let screenCropMode='16:9';
 let screenCropPipWin=null, screenCropPipUI=null, screenCropPipIntentionalClose=false, screenCropPipUnavailable=false;
-let screenStreamDetachedFromPip=false;
 let screenCropPipTelePlaying=false, screenCropPipTeleRAF=null, screenCropPipTeleLast=0;
 let screenCropPipTeleCollapsed=false;
 let camReader=null, latestCamFrame=null;   // 摄像头帧驱动：后台也实时不冻结
@@ -30352,55 +30365,6 @@ function closeSelfCheck(){
 function screenCropPipCopy(zh,en){
   return String(document.documentElement.lang||'zh-CN').toLowerCase().startsWith('zh')?zh:en;
 }
-function detachCapturedStreamFromPip(stream){
-  if(!stream || typeof structuredClone!=='function') return null;
-  const adopted=[];
-  try{
-    for(const track of stream.getTracks()){
-      const clone=track.clone();
-      try{ adopted.push(structuredClone(clone,{transfer:[clone]})); }
-      catch(error){ try{ clone.stop(); }catch(e){} throw error; }
-    }
-    return new MediaStream(adopted);
-  }catch(e){
-    adopted.forEach(track=>{ try{ track.stop(); }catch(_e){} });
-    console.warn('无法把共享轨转移到主文档，将保留置顶控制窗以避免黑屏',e);
-    return null;
-  }
-}
-async function detachCapturedStreamFromPipAsync(stream){
-  // 先尝试 structuredClone（同步，快速）
-  const syncResult=detachCapturedStreamFromPip(stream);
-  if(syncResult) return syncResult;
-  // 回退：MessageChannel 跨窗口 transfer
-  if(!stream || !stream.getTracks().length || !screenCropPipWin) return null;
-  try{
-    const channel=new MessageChannel();
-    const tracks=stream.getTracks().map(t=>t.clone());
-    const result=await new Promise((resolve)=>{
-      const timeout=setTimeout(()=>{resolve(null);},2000);
-      channel.port1.onmessage=(e)=>{
-        clearTimeout(timeout);
-        resolve(e.data||[]);
-        channel.port1.close();
-      };
-      channel.port1.start();
-      screenCropPipWin.postMessage(
-        {type:'__pip_transfer_tracks',tracks},
-        '*',
-        [channel.port2,...tracks]
-      );
-    });
-    if(!result || !result.length){
-      tracks.forEach(t=>{ try{t.stop();}catch(_e){} });
-      return null;
-    }
-    return new MediaStream(result);
-  }catch(e){
-    console.warn('MessageChannel track transfer failed',e);
-    return null;
-  }
-}
 function stopScreenCropPipTele(){
   screenCropPipTelePlaying=false;
   if(screenCropPipTeleRAF){
@@ -30428,39 +30392,16 @@ function toggleScreenCropPipTele(){
   };
   screenCropPipTeleRAF=screenCropPipWin.requestAnimationFrame(step);
 }
-async function minimizeOrCloseScreenCropPip(){
+function closeScreenCropPipTeleWindow(){
   if(!screenCropPipWin || !screenCropPipUI) return;
-  // 如果共享轨已转移到主文档，直接关闭窗口，录制继续
-  if(screenStreamDetachedFromPip){
-    if(screenCropPipUI.recordingHint) screenCropPipUI.recordingHint.hidden=true;
-    closeScreenCropPip(true);
-    showPlanToast(screenCropPipCopy('置顶窗口已关闭，录制仍在继续。','PiP window closed. Recording continues.'),3600);
-    return;
-  }
-  // 尝试紧急转移共享轨
-  if(screenStream){
-    const detached=await detachCapturedStreamFromPipAsync(screenStream);
-    if(detached){
-      try{ screenStream.getTracks().forEach(t=>t.stop()); }catch(e){}
-      screenStream=detached;
-      screenVideo.srcObject=screenStream;
-      screenStreamDetachedFromPip=true;
-      try{ screenVideo.play(); }catch(e){}
-      if(screenCropPipUI.recordingHint) screenCropPipUI.recordingHint.hidden=true;
-      closeScreenCropPip(true);
-      showPlanToast(screenCropPipCopy('置顶窗口已关闭，录制仍在继续。','PiP window closed. Recording continues.'),3600);
-      return;
-    }
-  }
-  // transfer 失败：改为收起提词器（最小化窗口）
-  hideScreenCropPipTele();
-  if(screenCropPipUI.recordingHint) screenCropPipUI.recordingHint.hidden=true;
-  showPlanToast(screenCropPipCopy('无法关闭窗口（屏幕轨未转移），已改为收起讲稿。录制继续。','Cannot close window (stream not detached). Script hidden instead. Recording continues.'),4800);
+  closeScreenCropPip(true);
+  showPlanToast(screenCropPipCopy('提词器已关闭，录制仍在继续。','Teleprompter closed. Recording continues.'),3600);
 }
 function hideScreenCropPipTele(){
   if(!screenCropPipWin || !screenCropPipUI) return;
   screenCropPipTeleCollapsed=!screenCropPipTeleCollapsed;
   if(screenCropPipTeleCollapsed) stopScreenCropPipTele();
+  screenCropPipUI.recording.classList.toggle('collapsed',screenCropPipTeleCollapsed);
   screenCropPipUI.teleWarning.hidden=screenCropPipTeleCollapsed || screenDisplaySurface!=='monitor';
   screenCropPipUI.teleText.hidden=screenCropPipTeleCollapsed;
   screenCropPipUI.teleActionLeft.hidden=screenCropPipTeleCollapsed;
@@ -30542,13 +30483,9 @@ function showScreenCropPipRecording(){
   screenCropPipUI.teleText.style.fontSize=teleFontInput.value+'px';
   screenCropPipUI.teleText.scrollTop=0;
   screenCropPipTeleCollapsed=false;
-  screenCropPipUI.teleText.hidden=false;
-  screenCropPipUI.teleActionLeft.hidden=false;
-  screenCropPipUI.teleWarning.hidden=screenDisplaySurface!=='monitor';
-  screenCropPipUI.hideTele.textContent=screenCropPipCopy('收起提词器','Hide teleprompter');
-  screenCropPipUI.hideTele.title=screenCropPipCopy('收起讲稿并保留暂停、停止控制','Hide the script but keep pause and stop controls');
+  hideScreenCropPipTele();
+  screenCropPipUI.hideTele.title=screenCropPipCopy('展开或收起讲稿，录制继续','Show or hide the script while recording');
   syncScreenCropPipRecordingUI();
-  try{ screenCropPipWin.resizeTo(560,480); }catch(e){}
   return true;
 }
 function syncScreenCropPipRecordingUI(){
@@ -30584,16 +30521,13 @@ async function openScreenCropPipLauncher(){
       .crop-label{position:absolute;left:7px;top:7px;padding:4px 7px;border-radius:6px;background:#15945d;font-size:11px;font-weight:800;white-space:nowrap;pointer-events:none}.handle{position:absolute;width:16px;height:16px;border:2px solid #fff;border-radius:4px;background:#23ad6f;box-shadow:0 1px 5px rgba(0,0,0,.4);touch-action:none}.tl{left:-9px;top:-9px;cursor:nwse-resize}.tr{right:-9px;top:-9px;cursor:nesw-resize}.bl{left:-9px;bottom:-9px;cursor:nesw-resize}.br{right:-9px;bottom:-9px;cursor:nwse-resize}
       .modes{display:flex;align-items:center;justify-content:center;gap:5px;flex-wrap:wrap;padding:8px 10px;background:#18181b;border-top:1px solid #323238}.mode{height:32px;padding:0 10px;border:1px solid #444;border-radius:8px;background:#29292e;color:#ddd;font-size:11px;font-weight:750;cursor:pointer}.mode.active{border-color:#23ad6f;background:#174f38;color:#dff8eb}
       .foot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 12px;background:#18181b;border-top:1px solid #323238}.hint{color:#aaa;font-size:11px;line-height:1.4}.actions{display:flex;gap:8px}.cancel,.confirm{height:36px;padding:0 13px;border-radius:9px;font-size:12px;font-weight:800;cursor:pointer}.cancel{border:1px solid #48484f;background:#29292e;color:#eee}.confirm{border:0;background:#23ad6f;color:#fff}
-      .recording-panel{height:100%;display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;gap:10px;padding:14px;background:#18181b}.recording-panel[hidden]{display:none}.recording-card{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px}.recording-state{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:800}.recording-dot{width:10px;height:10px;border-radius:50%;background:#ef4444;box-shadow:0 0 0 4px rgba(239,68,68,.18)}.recording-actions{display:flex;gap:7px}.recording-actions button,.tele-actions button{height:34px;padding:0 11px;border-radius:8px;font-size:12px;font-weight:800;cursor:pointer}.recording-pause,.tele-play,.tele-reset{border:1px solid #555;background:#2b2b30;color:#fff}.recording-stop{border:0;background:#dc2626;color:#fff}.recording-minimize{border:1px solid #23ad6f;background:#174f38;color:#dff8eb}.recording-hint{padding:6px 10px;border-radius:7px;background:#1a1a1e;color:#9fd9bc;font-size:11px;line-height:1.5;text-align:center}.recording-hint[hidden]{display:none}.hide-tele{border:1px solid #23ad6f;background:transparent;color:#23ad6f}.tele-warning{padding:9px 11px;border:1px solid #9a6a17;border-radius:9px;background:#3b2a0d;color:#ffd991;font-size:12px;line-height:1.45}.tele-warning[hidden]{display:none}.tele-text{min-height:0;overflow:auto;padding:18px 20px 45vh;border:1px solid #37373d;border-radius:12px;background:#0f0f11;color:#fff;line-height:1.65;white-space:pre-wrap}.tele-actions{display:flex;align-items:center;justify-content:space-between;gap:8px}.tele-action-left{display:flex;gap:7px}.hide-tele:disabled{cursor:not-allowed;opacity:.5}
+      .recording-panel{height:100%;display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;gap:10px;padding:14px;background:#18181b}.recording-panel[hidden]{display:none}.recording-card{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px}.recording-state{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:800}.recording-dot{width:10px;height:10px;border-radius:50%;background:#ef4444;box-shadow:0 0 0 4px rgba(239,68,68,.18)}.recording-actions{display:flex;gap:7px}.recording-actions button,.tele-actions button{height:34px;padding:0 11px;border-radius:8px;font-size:12px;font-weight:800;cursor:pointer}.recording-pause,.tele-play,.tele-reset{border:1px solid #555;background:#2b2b30;color:#fff}.recording-stop{border:0;background:#dc2626;color:#fff}.recording-minimize{border:1px solid #23ad6f;background:#174f38;color:#dff8eb}.hide-tele{border:1px solid #23ad6f;background:transparent;color:#23ad6f}.tele-warning{padding:9px 11px;border:1px solid #9a6a17;border-radius:9px;background:#3b2a0d;color:#ffd991;font-size:12px;line-height:1.45}.tele-warning[hidden]{display:none}.tele-text{min-height:0;overflow:auto;padding:18px 20px 45vh;border:1px solid #37373d;border-radius:12px;background:#0f0f11;color:#fff;line-height:1.65;white-space:pre-wrap}.tele-actions{display:flex;align-items:center;justify-content:space-between;gap:8px}.tele-action-left{display:flex;gap:7px}.tele-action-left[hidden],.tele-text[hidden]{display:none}.recording-panel.collapsed{grid-template-rows:auto auto;padding:10px;gap:8px}.collapsed .recording-card{flex-wrap:wrap;gap:8px}.collapsed .recording-state{font-size:12px}.collapsed .recording-actions{gap:5px}.collapsed .recording-actions button{padding:0 8px}.collapsed .tele-actions{justify-content:flex-end}.hide-tele:disabled{cursor:not-allowed;opacity:.5}
     </style>`;
-    const pipScript=doc.createElement('script');
-    pipScript.textContent='window.addEventListener("message",function(e){if(e.data&&e.data.type==="__pip_transfer_tracks"&&e.ports&&e.ports.length){var tracks=e.data.tracks||[];try{e.ports[0].postMessage(tracks,"");}catch(_){}}});';
-    doc.head.appendChild(pipScript);
     doc.body.innerHTML=`<section class="launcher"><div class="launch-card"><h1>${screenCropPipCopy('录制窗口或屏幕','Record a window or screen')}</h1><p class="copy">${screenCropPipCopy('点击下方按钮后选择 ChatGPT 等窗口。选择完成后，绿色裁剪框会直接显示在这个置顶小窗中。','Click below and choose a window such as ChatGPT. The green crop frame will then appear in this always-on-top window.')}</p><button class="choose" type="button">${screenCropPipCopy('选择窗口 / 屏幕','Choose window / screen')}</button><div class="launch-status"></div></div></section>
       <section class="editor" hidden><div class="head"><span class="title">${screenCropPipCopy('调整最终录制区域','Adjust final recording area')}</span><span class="size"></span></div><div class="viewport"><canvas class="snap"></canvas><div class="crop"><span class="crop-label">${screenCropPipCopy('框内进入最终视频','Area included in final video')}</span><i class="handle tl" data-h="tl"></i><i class="handle tr" data-h="tr"></i><i class="handle bl" data-h="bl"></i><i class="handle br" data-h="br"></i></div></div>
       <div class="modes">${[['full',screenCropPipCopy('完整','Full')],['16:9','16:9 · YouTube'],['4:3',screenCropPipCopy('4:3 · 经典','4:3 · Classic')],['3:4',screenCropPipCopy('3:4 · 小红书','3:4 · Xiaohongshu')],['9:16',screenCropPipCopy('9:16 · 抖音','9:16 · TikTok')],['1:1',screenCropPipCopy('1:1 · 正方形','1:1 · Square')],['custom','Custom']].map(([mode,label])=>`<button class="mode" data-mode="${mode}" type="button">${label}</button>`).join('')}</div>
       <div class="foot"><span class="hint">${screenCropPipCopy('拖动绿色框移动 · 拖动四角缩放','Drag the green frame to move · Drag corners to resize')}</span><span class="actions"><button class="cancel" type="button">${screenCropPipCopy('取消','Cancel')}</button><button class="confirm" type="button">${screenCropPipCopy('确认并开始录制','Confirm and start')}</button></span></div></section>
-      <section class="recording-panel" hidden><div class="recording-card"><span class="recording-state"><i class="recording-dot"></i><span>${screenCropPipCopy('正在录制所选画面','Recording selected source')}</span></span><span class="recording-actions"><button class="recording-minimize" type="button" title="${screenCropPipCopy('最小化窗口，录制继续','Minimize window, recording continues')}">${screenCropPipCopy('最小化','Minimize')}</button><button class="recording-pause" type="button">${screenCropPipCopy('暂停录制','Pause recording')}</button><button class="recording-stop" type="button">${screenCropPipCopy('停止','Stop')}</button></span></div><div class="recording-hint">${screenCropPipCopy('不想看到讲稿？点右下方「收起讲稿」或上方「最小化」，切勿点击窗口右上角关闭按钮以免中断录制。','Don\'t need the script? Click "Hide script" below or "Minimize" above. Do NOT click the window close button or recording will stop.')}</div><div class="tele-warning" hidden>${screenCropPipCopy('整屏录制可能把此置顶窗录入绿色框。请把它拖到绿色框外，或收起讲稿减少遮挡。','Full-screen capture may include this window inside the green crop. Move it outside the crop, or hide the script to reduce obstruction.')}</div><div class="tele-text"></div><div class="tele-actions"><span class="tele-action-left"><button class="tele-play" type="button">${screenCropPipCopy('播放','Play')}</button><button class="tele-reset" type="button">${screenCropPipCopy('回到开头','Back to top')}</button></span><button class="hide-tele" type="button">${screenCropPipCopy('收起讲稿','Hide script')}</button></div></section>`;
+      <section class="recording-panel" hidden><div class="recording-card"><span class="recording-state"><i class="recording-dot"></i><span>${screenCropPipCopy('正在录制所选画面','Recording selected source')}</span></span><span class="recording-actions"><button class="recording-minimize" type="button" title="${screenCropPipCopy('关闭提词器小窗，录制继续','Close the teleprompter window and keep recording')}">${screenCropPipCopy('关闭小窗','Close window')}</button><button class="recording-pause" type="button">${screenCropPipCopy('暂停录制','Pause recording')}</button><button class="recording-stop" type="button">${screenCropPipCopy('停止','Stop')}</button></span></div><div class="tele-warning" hidden>${screenCropPipCopy('整屏录制可能把此置顶窗录入绿色框。请把它拖到绿色框外，或收起讲稿减少遮挡。','Full-screen capture may include this window inside the green crop. Move it outside the crop, or hide the script to reduce obstruction.')}</div><div class="tele-text"></div><div class="tele-actions"><span class="tele-action-left"><button class="tele-play" type="button">${screenCropPipCopy('播放','Play')}</button><button class="tele-reset" type="button">${screenCropPipCopy('回到开头','Back to top')}</button></span><button class="hide-tele" type="button">${screenCropPipCopy('收起讲稿','Hide script')}</button></div></section>`;
     screenCropPipWin=win;
     screenCropPipIntentionalClose=false;
     screenCropPipUI={
@@ -30602,7 +30536,7 @@ async function openScreenCropPipLauncher(){
       viewport:doc.querySelector('.viewport'),canvas:doc.querySelector('.snap'),
       frame:doc.querySelector('.crop'),modes:doc.querySelector('.modes'),size:doc.querySelector('.size'),
       recording:doc.querySelector('.recording-panel'),recordingState:doc.querySelector('.recording-state span'),
-      recordingPause:doc.querySelector('.recording-pause'),recordingMinimize:doc.querySelector('.recording-minimize'),recordingHint:doc.querySelector('.recording-hint'),teleWarning:doc.querySelector('.tele-warning'),
+      recordingPause:doc.querySelector('.recording-pause'),recordingMinimize:doc.querySelector('.recording-minimize'),teleWarning:doc.querySelector('.tele-warning'),
       teleText:doc.querySelector('.tele-text'),telePlay:doc.querySelector('.tele-play'),
       teleReset:doc.querySelector('.tele-reset'),teleActionLeft:doc.querySelector('.tele-action-left'),
       hideTele:doc.querySelector('.hide-tele')
@@ -30624,7 +30558,7 @@ async function openScreenCropPipLauncher(){
     screenCropPipUI.telePlay.addEventListener('click',toggleScreenCropPipTele);
     screenCropPipUI.teleReset.addEventListener('click',()=>{ screenCropPipUI.teleText.scrollTop=0; });
     screenCropPipUI.hideTele.addEventListener('click',hideScreenCropPipTele);
-    screenCropPipUI.recordingMinimize.addEventListener('click',minimizeOrCloseScreenCropPip);
+    screenCropPipUI.recordingMinimize.addEventListener('click',closeScreenCropPipTeleWindow);
     let dragMode=null,startX=0,startY=0,original=null;
     screenCropPipUI.frame.addEventListener('pointerdown',e=>{
       if(recState!=='setup' || !screenCropNorm || e.button!==0) return;
@@ -30658,20 +30592,7 @@ async function openScreenCropPipLauncher(){
       stopScreenCropPipTele();
       screenCropPipWin=null; screenCropPipUI=null; screenCropPipIntentionalClose=false;
       if(!intentional){
-        if((recState==='recording'||recState==='paused') && !screenStreamDetachedFromPip && screenStream){
-          const detached=detachCapturedStreamFromPip(screenStream);
-          if(detached){
-            try{ screenStream.getTracks().forEach(t=>t.stop()); }catch(e){}
-            screenStream=detached;
-            screenVideo.srcObject=screenStream;
-            screenStreamDetachedFromPip=true;
-            try{ screenVideo.play(); }catch(e){}
-            showPlanToast(screenCropPipCopy('提词器已隐藏，录制仍在继续。','Teleprompter hidden. Recording continues.'),3600);
-            return;
-          }
-          showPlanToast(screenCropPipCopy('置顶录制控制窗已关闭，录制将安全停止以避免黑屏。','The always-on-top recording control was closed. Recording will stop safely to avoid a black video.'),5200);
-          stopRecording();
-        }else if(recState==='recording'||recState==='paused'){
+        if(recState==='recording'||recState==='paused'){
           showPlanToast(screenCropPipCopy('提词器已隐藏，录制仍在继续。','Teleprompter hidden. Recording continues.'),3600);
         }else if(recState==='setup') showMainScreenCropFallback();
       }
@@ -30823,7 +30744,6 @@ function stopScreenStream(){
   if(stream) stream.getTracks().forEach(t=>t.stop());
   screenVideo.srcObject=null;
   screenCropNorm=null; screenDisplaySurface=''; cropRect=null;
-  screenStreamDetachedFromPip=false;
   screenCropMode=recConfig.ratio;
   screenCompositeFallbackActive=false;
   resetScreenCursorControl();
@@ -30839,9 +30759,9 @@ async function enterScreenSetup(){
     return;
   }
   const usingScreenCropPip=!!screenCropPipWin;
-  // 第二次点击发生在 PiP 文档中，必须从该 Window 的 navigator 调用，
-  // 才能使用这次点击产生的 transient user activation。
-  const captureNavigator=usingScreenCropPip ? screenCropPipWin.navigator : navigator;
+  // PiP 点击会把用户激活传播给 opener；共享始终由主文档创建，
+  // 关闭提词器只销毁 UI，不会终止画面、系统音轨或其 ended 监听。
+  const captureNavigator=navigator;
   const captureMediaDevices=captureNavigator && captureNavigator.mediaDevices;
   if(!captureMediaDevices || !captureMediaDevices.getDisplayMedia){
     if(usingScreenCropPip){
@@ -30862,7 +30782,7 @@ async function enterScreenSetup(){
   camCue.textContent=cueText; camCue.style.display='block';
   const displayMediaOptions={video:{frameRate:30,displaySurface:'browser'},audio:true};
   let captureController=null;
-  const CaptureControllerCtor=(usingScreenCropPip && screenCropPipWin.CaptureController) || window.CaptureController;
+  const CaptureControllerCtor=window.CaptureController;
   const preferredCaptureFocus=usingScreenCropPip?'focus-captured-surface':'focus-capturing-application';
   if(typeof CaptureControllerCtor==='function'){
     try{
@@ -30886,14 +30806,21 @@ async function enterScreenSetup(){
   }catch(e){
     camCue.style.display='none'; console.warn('已取消/拒绝屏幕共享', e);
     recState='idle'; updateRecUI();
+    if(usingScreenCropPip && e.name==='InvalidStateError'){
+      // 旧浏览器可能不传播 PiP 用户激活或要求主文档聚焦；等待下一次真实点击。
+      screenCropPipUnavailable=true;
+      closeScreenCropPip(true);
+      showPlanToast(screenCropPipCopy('请回到白板，再次点击“录制”选择分享内容。','Return to WhiteBoard and click Record again to choose what to share.'),5200);
+      return;
+    }
     if(screenCropPipUI){
       screenCropPipUI.choose.disabled=false;
       screenCropPipUI.status.textContent=screenCropPipCopy('已取消，请重新选择。','Canceled. Choose again.');
     }
     return;
   }
-  let vtrack=selectedScreenStream.getVideoTracks()[0];
-  let settings=(vtrack && vtrack.getSettings && vtrack.getSettings()) || {};
+  const vtrack=selectedScreenStream.getVideoTracks()[0];
+  const settings=(vtrack && vtrack.getSettings && vtrack.getSettings()) || {};
   screenDisplaySurface=settings.displaySurface||'';
   if(captureController && screenDisplaySurface!=='monitor'){
     try{
@@ -30909,17 +30836,6 @@ async function enterScreenSetup(){
   // 置顶裁剪器存在时保留用户选择的 App 焦点；降级到白板裁剪页时才尝试回焦。
   if(!usingScreenCropPip){
     try{ window.focus(); }catch(e){ console.warn('无法自动返回白板，请手动切回本页面调整录制范围',e); }
-  }
-  screenStreamDetachedFromPip=false;
-  if(usingScreenCropPip){
-    const detached=await detachCapturedStreamFromPipAsync(selectedScreenStream);
-    if(detached){
-      selectedScreenStream.getTracks().forEach(track=>{ try{ track.stop(); }catch(e){} });
-      selectedScreenStream=detached;
-      screenStreamDetachedFromPip=true;
-      vtrack=selectedScreenStream.getVideoTracks()[0];
-      settings={...settings,...((vtrack && vtrack.getSettings && vtrack.getSettings()) || {})};
-    }
   }
   screenStream=selectedScreenStream;
   screenVideo.srcObject=screenStream;
@@ -31177,8 +31093,7 @@ async function startScreenRecording(){
   ow-=ow%2; oh-=oh%2;
   screenOut={ w:Math.max(2,ow), h:Math.max(2,oh) };
   recCanvas.width=screenOut.w; recCanvas.height=screenOut.h;
-  // 所有屏幕来源录制时都自动显示“提词器＋暂停/停止”置顶窗。
-  // 用户可收起讲稿并保留暂停/继续、停止控制；流转移则用于防止原生关闭 PiP 后黑屏。
+  // 默认显示紧凑控制条；共享属于主文档，关闭提词器不影响录制。
   if(screenCropPipWin) showScreenCropPipRecording();
   hideFrame(); screenStage.classList.remove('show');
   // 若共享的是当前显示器，等遮罩/取景框从屏幕消失后再取第一帧，避免辅助 UI 闪进成品开头。
@@ -33276,12 +33191,22 @@ const SLIDE_TEMPLATE_VERSION=1;
 const SLIDE_TEMPLATE_LIBRARY_KEY='template-library';
 const DIARY_DAY_STORAGE_KEY='wb_video_diary_next_day_v1';
 const DIARY_RATIO_STORAGE_KEY='wb_video_diary_ratio_v1';
+const DIARY_COLOR_STORAGE_KEY='wb_video_diary_color_v1';
 const SYSTEM_DIARY_RATIOS=['9:16','16:9','3:4'];
+const SYSTEM_DIARY_COLORS={
+  sand:{background:'#d3c39b',text:'#f8f5ea',accent:'#f0e32f',panel:'#e8dcc0',panelText:'#494433'},
+  deep:{background:'#14213d',text:'#f8f5ea',accent:'#f0e32f',panel:'#243554',panelText:'#f8f5ea'},
+  forest:{background:'#1b4332',text:'#f8f5ea',accent:'#d4a373',panel:'#2b5b48',panelText:'#f8f5ea'},
+  wine:{background:'#542d3e',text:'#fff7ed',accent:'#f2b5d4',panel:'#6b3b50',panelText:'#fff7ed'},
+  cream:{background:'#f8f5ea',text:'#14213d',accent:'#f28c5b',panel:'#eadfcd',panelText:'#14213d'}
+};
 let slideTemplateLibrary={version:SLIDE_TEMPLATE_VERSION,templates:[]};
 let selectedDiaryRatio=loadDiaryRatio();
+let selectedDiaryColor=loadDiaryColor();
 const templateT=(key,params)=>window.i18n?i18n.t(key,params):key;
 function cloneTemplateValue(value){ return typeof structuredClone==='function'?structuredClone(value):JSON.parse(JSON.stringify(value)); }
 function loadDiaryRatio(){ try{ const value=localStorage.getItem(DIARY_RATIO_STORAGE_KEY); return SYSTEM_DIARY_RATIOS.includes(value)?value:'9:16'; }catch(_e){ return '9:16'; } }
+function loadDiaryColor(){ try{ const value=localStorage.getItem(DIARY_COLOR_STORAGE_KEY); return SYSTEM_DIARY_COLORS[value]?value:'sand'; }catch(_e){ return 'sand'; } }
 function nextDiaryDay(){ try{ return Math.max(1,Math.round(Number(localStorage.getItem(DIARY_DAY_STORAGE_KEY))||1)); }catch(_e){ return 1; } }
 function setNextDiaryDay(value){ try{ localStorage.setItem(DIARY_DAY_STORAGE_KEY,String(Math.max(1,Math.round(value)||1))); }catch(_e){} }
 function todayDiaryDate(){ const d=new Date(),pad=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}/${pad(d.getMonth()+1)}/${pad(d.getDate())}`; }
@@ -33304,8 +33229,8 @@ function templateText(text,x,y,fontSize,{align='left',color='#f8f5ea',fontFamily
   if(field) o.templateField=field;
   return o;
 }
-function templateRect(x,y,w,h,{stroke='#f0e32f',fill='transparent',width=4,label='',labelSize=26}={}){
-  return {type:'rect',objectId:'sys_'+Math.random().toString(36).slice(2,10),x,y,w,h,color:stroke,fillColor:fill,width,strokeStyle:'solid',roughness:0,strokeMotion:'none',opacity:1,cornerStyle:'round',seed:23177+Math.round(x+y),label,labelColor:'#494433',labelFontSize:labelSize,labelFontFamily:'hei',labelRuns:[]};
+function templateRect(x,y,w,h,{stroke='#f0e32f',fill='transparent',width=4,label='',labelSize=26,labelColor='#494433'}={}){
+  return {type:'rect',objectId:'sys_'+Math.random().toString(36).slice(2,10),x,y,w,h,color:stroke,fillColor:fill,width,strokeStyle:'solid',roughness:0,strokeMotion:'none',opacity:1,cornerStyle:'round',seed:23177+Math.round(x+y),label,labelColor,labelFontSize:labelSize,labelFontFamily:'hei',labelRuns:[]};
 }
 function templateBracketPair(x,y,w,h,{color='#f0e32f',width=6,arm=34,radius=18}={}){
   const bracket=points=>({type:'pen',objectId:'sys_'+Math.random().toString(36).slice(2,10),points,color,width,strokeStyle:'solid',roughness:'clean',strokeMotion:'none',opacity:1});
@@ -33316,9 +33241,10 @@ function templateBracketPair(x,y,w,h,{color='#f0e32f',width=6,arm=34,radius=18}=
     bracket([{x:x+w-arm,y},...arc(x+w-r,y+r,r,-Math.PI/2,0),{x:x+w,y:y+h-r},...arc(x+w-r,y+h-r,r,0,Math.PI/2),{x:x+w-arm,y:y+h}])
   ];
 }
-function systemDiaryTemplate(style,ratio,day){
+function systemDiaryTemplate(style,ratio,day,colorId='sand'){
   const R=RATIOS[ratio]||RATIOS['9:16'], W=R.w,H=R.h, date=todayDiaryDate();
-  const yellow='#f0e32f', white='#f8f5ea', panel='#e8dcc0';
+  const theme=SYSTEM_DIARY_COLORS[colorId]||SYSTEM_DIARY_COLORS.sand;
+  const yellow=theme.accent, white=theme.text, panel=theme.panel, panelText=theme.panelText;
   const isZh=(typeof window!=='undefined'&&window.i18n&&window.i18n.currentLang?(window.i18n.currentLang()):'zh-CN').startsWith('zh');
   let objects=[];
   if(ratio==='9:16'){
@@ -33331,9 +33257,9 @@ function systemDiaryTemplate(style,ratio,day){
       templateText('Diary',173,295,18,{align:'center',color:yellow,fontFamily:'round'})
     ];
     if(style==='review') objects.push(
-      templateRect(54,500,W-108,154,{stroke:yellow,fill:panel,width:3,label:templateT('template.prompt.event'),labelSize:28}),
-      templateRect(54,704,W-108,154,{stroke:yellow,fill:panel,width:3,label:templateT('template.prompt.feeling'),labelSize:28}),
-      templateRect(54,908,W-108,154,{stroke:yellow,fill:panel,width:3,label:templateT('template.prompt.action'),labelSize:28})
+      templateRect(54,500,W-108,154,{stroke:yellow,fill:panel,width:3,label:templateT('template.prompt.event'),labelSize:28,labelColor:panelText}),
+      templateRect(54,704,W-108,154,{stroke:yellow,fill:panel,width:3,label:templateT('template.prompt.feeling'),labelSize:28,labelColor:panelText}),
+      templateRect(54,908,W-108,154,{stroke:yellow,fill:panel,width:3,label:templateT('template.prompt.action'),labelSize:28,labelColor:panelText})
     );
   }else if(ratio==='16:9'){
     objects=[
@@ -33347,9 +33273,9 @@ function systemDiaryTemplate(style,ratio,day){
     if(style==='review'){
       const gap=28,boxW=(W-140-gap*2)/3;
       objects.push(
-        templateRect(70,390,boxW,178,{stroke:yellow,fill:panel,width:3,label:templateT('template.prompt.event'),labelSize:25}),
-        templateRect(70+boxW+gap,390,boxW,178,{stroke:yellow,fill:panel,width:3,label:templateT('template.prompt.feeling'),labelSize:25}),
-        templateRect(70+(boxW+gap)*2,390,boxW,178,{stroke:yellow,fill:panel,width:3,label:templateT('template.prompt.action'),labelSize:25})
+        templateRect(70,390,boxW,178,{stroke:yellow,fill:panel,width:3,label:templateT('template.prompt.event'),labelSize:25,labelColor:panelText}),
+        templateRect(70+boxW+gap,390,boxW,178,{stroke:yellow,fill:panel,width:3,label:templateT('template.prompt.feeling'),labelSize:25,labelColor:panelText}),
+        templateRect(70+(boxW+gap)*2,390,boxW,178,{stroke:yellow,fill:panel,width:3,label:templateT('template.prompt.action'),labelSize:25,labelColor:panelText})
       );
     }
   }else{
@@ -33362,12 +33288,12 @@ function systemDiaryTemplate(style,ratio,day){
       templateText('Daily Note',240,250,20,{align:'center',color:yellow,fontFamily:'round'})
     ];
     if(style==='review') objects.push(
-      templateRect(62,500,W-124,156,{stroke:yellow,fill:panel,width:3,label:templateT('template.prompt.event'),labelSize:30}),
-      templateRect(62,700,W-124,156,{stroke:yellow,fill:panel,width:3,label:templateT('template.prompt.feeling'),labelSize:30}),
-      templateRect(62,900,W-124,156,{stroke:yellow,fill:panel,width:3,label:templateT('template.prompt.action'),labelSize:30})
+      templateRect(62,500,W-124,156,{stroke:yellow,fill:panel,width:3,label:templateT('template.prompt.event'),labelSize:30,labelColor:panelText}),
+      templateRect(62,700,W-124,156,{stroke:yellow,fill:panel,width:3,label:templateT('template.prompt.feeling'),labelSize:30,labelColor:panelText}),
+      templateRect(62,900,W-124,156,{stroke:yellow,fill:panel,width:3,label:templateT('template.prompt.action'),labelSize:30,labelColor:panelText})
     );
   }
-  return {version:SLIDE_TEMPLATE_VERSION,name:templateT(style==='review'?'template.system.review':'template.system.minimal'),source:'system',style,ratio,slide:{id:'template-slide',x:0,y:0,w:W,h:H,backgroundColor:'#d3c39b',backgroundTexture:'none',transition:normalizeSlideTransition(null),reveal:defaultSlideRevealSetting(),elementCues:[],elementCueAudio:defaultElementCueAudio()},objects};
+  return {version:SLIDE_TEMPLATE_VERSION,name:templateT(style==='review'?'template.system.review':'template.system.minimal'),source:'system',style,ratio,colorId,slide:{id:'template-slide',x:0,y:0,w:W,h:H,backgroundColor:theme.background,backgroundTexture:'none',transition:normalizeSlideTransition(null),reveal:defaultSlideRevealSetting(),elementCues:[],elementCueAudio:defaultElementCueAudio()},objects};
 }
 function resolveTemplateDynamicFields(objects,day){
   const date=todayDiaryDate();
@@ -33536,8 +33462,14 @@ function renderUserTemplateList(){
 }
 function syncSlideTemplateUI(){
   document.querySelectorAll('[data-template-ratio]').forEach(b=>b.classList.toggle('active',b.dataset.templateRatio===selectedDiaryRatio));
+  syncDiaryColorUI();
   const input=document.getElementById('slideTemplateDay');if(input){input.value=String(nextDiaryDay());document.getElementById('minimalDayPreview').textContent=input.value;}
   const save=document.getElementById('slideTemplateSaveCurrent');if(save)save.disabled=state.activeSlide<0||recState!=='idle';renderUserTemplateList();
+}
+function syncDiaryColorUI(){
+  const theme=SYSTEM_DIARY_COLORS[selectedDiaryColor]||SYSTEM_DIARY_COLORS.sand;
+  document.querySelectorAll('[data-template-color]').forEach(b=>{const active=b.dataset.templateColor===selectedDiaryColor;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active));});
+  const grid=document.querySelector('.system-template-grid');if(grid){grid.style.setProperty('--diary-preview-bg',theme.background);grid.style.setProperty('--diary-preview-text',theme.text);grid.style.setProperty('--diary-preview-accent',theme.accent);}
 }
 function openSlideTemplateOverlay(){if(!boardLibraryActionAllowed())return;closeFileMenu();syncSlideTemplateUI();document.getElementById('slideTemplateOverlay').classList.remove('hidden');requestAnimationFrame(()=>document.querySelector('[data-system-template="minimal"]')?.focus());}
 function closeSlideTemplateOverlay(){document.getElementById('slideTemplateOverlay').classList.add('hidden');}
@@ -33546,8 +33478,9 @@ document.getElementById('slideTemplateClose').onclick=closeSlideTemplateOverlay;
 document.getElementById('slideTemplateBlank').onclick=async()=>{closeSlideTemplateOverlay();await newDoc();};
 document.getElementById('slideTemplateOverlay').addEventListener('pointerdown',e=>{if(e.target===e.currentTarget)closeSlideTemplateOverlay();});
 document.getElementById('slideTemplateRatios').addEventListener('click',e=>{const b=e.target.closest('[data-template-ratio]');if(!b)return;selectedDiaryRatio=b.dataset.templateRatio;try{localStorage.setItem(DIARY_RATIO_STORAGE_KEY,selectedDiaryRatio);}catch(_e){}document.querySelectorAll('[data-template-ratio]').forEach(option=>option.classList.toggle('active',option.dataset.templateRatio===selectedDiaryRatio));});
+document.getElementById('slideTemplateColors').addEventListener('click',e=>{const b=e.target.closest('[data-template-color]');if(!b||!SYSTEM_DIARY_COLORS[b.dataset.templateColor])return;selectedDiaryColor=b.dataset.templateColor;try{localStorage.setItem(DIARY_COLOR_STORAGE_KEY,selectedDiaryColor);}catch(_e){}syncDiaryColorUI();});
 document.getElementById('slideTemplateDay').addEventListener('input',e=>{const day=Math.max(1,Math.round(Number(e.target.value)||1));document.getElementById('minimalDayPreview').textContent=String(day);});
-document.querySelectorAll('[data-system-template]').forEach(b=>b.addEventListener('click',()=>{const day=Math.max(1,Math.round(Number(document.getElementById('slideTemplateDay').value)||nextDiaryDay()));replaceCurrentSlideWithTemplate(systemDiaryTemplate(b.dataset.systemTemplate,selectedDiaryRatio,day),{diary:true,style:b.dataset.systemTemplate});}));
+document.querySelectorAll('[data-system-template]').forEach(b=>b.addEventListener('click',()=>{const day=Math.max(1,Math.round(Number(document.getElementById('slideTemplateDay').value)||nextDiaryDay()));replaceCurrentSlideWithTemplate(systemDiaryTemplate(b.dataset.systemTemplate,selectedDiaryRatio,day,selectedDiaryColor),{diary:true,style:b.dataset.systemTemplate});}));
 document.getElementById('slideTemplateSaveCurrent').onclick=saveCurrentSlideAsTemplate;
 document.getElementById('slideTemplateImport').onclick=()=>{const input=document.getElementById('slideTemplateFileInput');input.value='';input.click();};
 document.getElementById('slideTemplateExportAll').onclick=exportAllUserTemplates;
