@@ -32746,6 +32746,10 @@ function templateText(text,x,y,fontSize,{align='left',color='#f8f5ea',fontFamily
   if(field) o.templateField=field;
   return o;
 }
+function templateCenteredText(text,x,boxY,boxH,fontSize,options={}){
+  const lineCount=String(text||'').split('\n').length;
+  return templateText(text,x,boxY+(boxH-lineCount*fontSize*1.24)/2,fontSize,{...options,align:'center'});
+}
 function templateRect(x,y,w,h,{stroke='#f0e32f',fill='transparent',width=4,label='',labelSize=26,labelColor='#494433'}={}){
   return {type:'rect',objectId:'sys_'+Math.random().toString(36).slice(2,10),x,y,w,h,color:stroke,fillColor:fill,width,strokeStyle:'solid',roughness:0,strokeMotion:'none',opacity:1,cornerStyle:'round',seed:23177+Math.round(x+y),label,labelColor,labelFontSize:labelSize,labelFontFamily:'hei',labelRuns:[]};
 }
@@ -32768,7 +32772,7 @@ function systemDiaryTemplate(style,ratio,day,colorId='sand'){
     objects=[
       ...templateBracketPair(54,86,238,218,{color:yellow,width:6,arm:34}),
       templateText('REC',66,50,22,{color:yellow,fontFamily:'round'}),
-      templateText(templateT('template.slide.title.vertical'),173,106,72,{align:'center',color:white,fontFamily:'hei'}),
+      templateCenteredText(templateT('template.slide.title.vertical'),173,86,218,72,{color:white,fontFamily:'hei'}),
       templateText(date,W-54,82,46,{align:'right',color:white,fontFamily:'serif',field:'date'}),
       templateText(`Day ${day}`,W-54,188,92,{align:'right',color:white,fontFamily:'hei',field:'day'}),
       templateText('Diary',173,295,18,{align:'center',color:yellow,fontFamily:'round'})
@@ -32780,12 +32784,12 @@ function systemDiaryTemplate(style,ratio,day,colorId='sand'){
     );
   }else if(ratio==='16:9'){
     objects=[
-      ...templateBracketPair(66,68,350,152,{color:yellow,width:6,arm:42}),
+      ...templateBracketPair(66,68,280,152,{color:yellow,width:6,arm:42}),
       templateText('REC',76,37,20,{color:yellow,fontFamily:'round'}),
-      templateText(templateT('template.slide.title'),241,144,isZh?52:34,{align:'center',color:white,fontFamily:'hei'}),
+      templateCenteredText(templateT('template.slide.title'),206,68,152,isZh?52:34,{color:white,fontFamily:'hei'}),
       templateText(date,W-72,62,40,{align:'right',color:white,fontFamily:'serif',field:'date'}),
       templateText(`Day ${day}`,W-72,138,86,{align:'right',color:white,fontFamily:'hei',field:'day'}),
-      templateText('Video Diary',241,211.5,17,{align:'center',color:yellow,fontFamily:'round'})
+      templateText('Video Diary',206,211.5,17,{align:'center',color:yellow,fontFamily:'round'})
     ];
     if(style==='review'){
       const gap=28,boxW=(W-140-gap*2)/3;
@@ -32799,7 +32803,7 @@ function systemDiaryTemplate(style,ratio,day,colorId='sand'){
     objects=[
       ...templateBracketPair(62,72,356,188,{color:yellow,width:6,arm:44}),
       templateText('REC',74,37,24,{color:yellow,fontFamily:'round'}),
-      templateText(templateT('template.slide.title'),240,166,isZh?56:38,{align:'center',color:white,fontFamily:'hei'}),
+      templateCenteredText(templateT('template.slide.title'),240,72,188,isZh?56:38,{color:white,fontFamily:'hei'}),
       templateText(date,W-62,68,44,{align:'right',color:white,fontFamily:'serif',field:'date'}),
       templateText(`Day ${day}`,W-62,168,92,{align:'right',color:white,fontFamily:'hei',field:'day'}),
       templateText('Daily Note',240,250,20,{align:'center',color:yellow,fontFamily:'round'})

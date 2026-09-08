@@ -64,8 +64,13 @@ test('six system diary layouts are independently composed for three ratios',asyn
     const brackets=payload.objects.filter(o=>o.type==='pen');
     assert.equal(brackets.length,2,`${style} ${ratio} title must use two open brackets`);
     assert.ok(brackets.every(o=>o.roughness==='clean'&&o.points.length>12),'bracket corners must be sampled arcs');
+    const title=payload.objects.find(o=>['视频\n日记','视频日记'].includes(o.text));
+    assert.ok(title,`${style} ${ratio} title`);
+    const bracketPoints=brackets.flatMap(o=>o.points),bracketLeft=Math.min(...bracketPoints.map(p=>p.x)),bracketRight=Math.max(...bracketPoints.map(p=>p.x)),bracketTop=Math.min(...bracketPoints.map(p=>p.y)),bracketBottom=Math.max(...bracketPoints.map(p=>p.y));
+    const titleHeight=title.text.split('\n').length*title.fontSize*1.24;
+    assert.ok(Math.abs(title.x-(bracketLeft+bracketRight)/2)<.01,`${style} ${ratio} title is horizontally centered`);
+    assert.ok(Math.abs(title.y+titleHeight/2-(bracketTop+bracketBottom)/2)<.01,`${style} ${ratio} title is vertically centered`);
     const diaryMark=payload.objects.find(o=>['Diary','Video Diary','Daily Note'].includes(o.text));
-    const bracketBottom=Math.max(...brackets.flatMap(o=>o.points.map(p=>p.y)));
     assert.ok(diaryMark,`${style} ${ratio} diary mark`);
     assert.ok(Math.abs(diaryMark.y+diaryMark.fontSize/2-bracketBottom)<.01,`${style} ${ratio} diary mark sits on bracket baseline`);
     const prompts=payload.objects.filter(o=>['今天发生了什么','我有什么感受','明天做什么'].includes(o.label));
