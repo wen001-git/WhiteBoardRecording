@@ -117,7 +117,7 @@ test('per-slide reveal settings persist and autoplay from the transition target 
     const html = await source(file);
     const reveal = between(html, "const SLIDE_REVEAL_STYLE_KEY=", 'function clearSelection');
     const select = between(html, 'function selectSlide(index,opts={}){', 'function addSlide(){');
-    const history = between(html, 'function snapshot(){', 'function updateHistoryButtons(){');
+    const history = between(html, 'function snapshot(', 'function updateHistoryButtons(){');
     const interaction = between(html, "const slideRevealFloatBtn=document.getElementById('slideRevealFloatBtn')", "document.getElementById('lockBtn').onclick");
 
     assert.match(html, /const DOC_VERSION=10/);

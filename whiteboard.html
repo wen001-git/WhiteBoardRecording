@@ -368,7 +368,7 @@
   .slide-template-ratios{display:flex;gap:7px;flex-wrap:wrap}.slide-template-ratios button{height:34px;min-width:70px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);font:700 12px var(--mono);cursor:pointer}.slide-template-ratios button.active{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
   .slide-template-colors{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px}.slide-template-color-label{margin-right:2px;color:var(--muted);font-size:12px;font-weight:700}.slide-template-color{position:relative;width:34px;height:34px;border:2px solid #fff;border-radius:50%;background:var(--diary-bg);box-shadow:0 0 0 1px var(--line);cursor:pointer}.slide-template-color::after{content:'';position:absolute;right:3px;bottom:3px;width:9px;height:9px;border:2px solid var(--diary-text);border-radius:50%;background:var(--diary-accent)}.slide-template-color:hover,.slide-template-color:focus-visible{outline:none;box-shadow:0 0 0 2px var(--accent)}.slide-template-color.active{box-shadow:0 0 0 3px var(--accent)}.slide-template-color.active::before{content:'✓';position:absolute;inset:0;display:grid;place-items:center;color:var(--diary-text);font-size:15px;font-weight:900;text-shadow:0 1px 3px rgba(0,0,0,.45)}
   .slide-template-day{display:flex;align-items:center;gap:8px}.slide-template-day input{width:82px;height:34px;border:1px solid var(--line);border-radius:9px;padding:0 9px;font:700 13px var(--mono);outline:none}.slide-template-day input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(91,87,214,.12)}
-  .system-template-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;--diary-preview-bg:#d3c39b;--diary-preview-text:#f8f5ea;--diary-preview-accent:#f0e32f}.system-template-card{min-height:132px;border:1.5px solid var(--line);border-radius:14px;background:var(--diary-preview-bg);color:var(--diary-preview-text);padding:14px;text-align:left;cursor:pointer;position:relative;overflow:hidden;transition:transform .12s,border-color .12s,background .15s,color .15s}.system-template-card:hover,.system-template-card:focus-visible{border-color:var(--diary-preview-accent);outline:none;transform:translateY(-1px)}.system-template-card::after{content:'';position:absolute;right:-24px;bottom:-30px;width:110px;height:110px;border:22px solid var(--diary-preview-accent);border-radius:50%;opacity:.38}.system-template-card strong{display:block;font-size:17px;position:relative;z-index:1}.system-template-card small{display:block;margin-top:5px;max-width:78%;color:inherit;opacity:.78;line-height:1.45;position:relative;z-index:1}.system-template-card .template-day-mark{display:block;margin-top:13px;font:900 23px var(--sans);position:relative;z-index:1}.system-template-card .template-day-mark em{font-style:normal;color:var(--diary-preview-accent)}
+  .system-template-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;justify-items:center;align-items:start;--diary-preview-ratio:.5625;--diary-preview-bg:#d3c39b;--diary-preview-text:#f8f5ea;--diary-preview-accent:#f0e32f}.system-template-card{width:min(100%,calc(300px * var(--diary-preview-ratio)));aspect-ratio:var(--diary-preview-ratio);min-width:0;min-height:0;border:1.5px solid var(--line);border-radius:14px;background:var(--diary-preview-bg);color:var(--diary-preview-text);padding:14px;text-align:left;cursor:pointer;position:relative;overflow:hidden;transition:transform .12s,border-color .12s,background .15s,color .15s}.system-template-card:hover,.system-template-card:focus-visible{border-color:var(--diary-preview-accent);outline:none;transform:translateY(-1px)}.system-template-card::after{content:'';position:absolute;right:-24px;bottom:-30px;width:110px;height:110px;border:22px solid var(--diary-preview-accent);border-radius:50%;opacity:.38}.system-template-card strong{display:block;font-size:17px;position:relative;z-index:1}.system-template-card small{display:block;margin-top:5px;max-width:78%;color:inherit;opacity:.78;line-height:1.45;position:relative;z-index:1}.system-template-card .template-day-mark{display:block;margin-top:13px;font:900 23px var(--sans);position:relative;z-index:1}.system-template-card .template-day-mark em{font-style:normal;color:var(--diary-preview-accent)}
   .slide-template-actions{display:flex;gap:8px;flex-wrap:wrap}.slide-template-action{min-height:38px;border:1px solid var(--line);border-radius:10px;background:#f4f2f8;color:var(--ink);padding:8px 11px;font:700 12px var(--sans);cursor:pointer}.slide-template-action:hover{background:#ebe8f2}.slide-template-action.primary{background:var(--accent);border-color:var(--accent);color:#fff}.slide-template-action:disabled{opacity:.42;cursor:not-allowed}
   .user-template-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.user-template-empty{grid-column:1/-1;border:1px dashed var(--line);border-radius:12px;padding:18px;text-align:center;color:var(--muted);font-size:13px}.user-template-card{border:1px solid var(--line);border-radius:12px;background:#faf9fc;padding:9px;min-width:0}.user-template-summary{display:flex;gap:9px;align-items:center}.user-template-preview{width:76px;aspect-ratio:16/10;border-radius:8px;background:#eee8d7 center/cover no-repeat;border:1px solid rgba(30,30,30,.08);display:grid;place-items:center;color:#6a6251;font:800 11px var(--mono);overflow:hidden}.user-template-meta{min-width:0;flex:1}.user-template-meta strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px}.user-template-meta small{display:block;margin-top:4px;color:var(--muted);font:11px var(--mono)}.user-template-buttons{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}.user-template-buttons button{height:29px;border:0;border-radius:7px;background:#eeecf3;color:var(--ink);padding:0 8px;font:700 11px var(--sans);cursor:pointer}.user-template-buttons button:hover{background:#e3e0ea}.user-template-buttons button.danger{color:var(--danger)}
   @media(max-width:600px){.system-template-grid,.user-template-list{grid-template-columns:1fr}.slide-template-modal{max-height:calc(100vh - 16px)}.slide-template-body{padding:14px}}
@@ -571,6 +571,13 @@
   .slideItem .slideDel[disabled]{display:none;}
   .slideAddBtn{width:36px;height:36px;border:1px dashed var(--line);background:transparent;border-radius:10px;cursor:pointer;font-size:16px;color:var(--muted);display:flex;align-items:center;justify-content:center;}
   .slideAddBtn:hover{background:#f3f2f7;color:var(--ink);}
+  .slideActions{display:flex;flex-direction:column;align-items:center;gap:8px;flex-shrink:0;}
+  .slideActions .slideAddBtn{flex-shrink:0;}
+  .slideDuplicateBtn{border-style:solid;}
+  .slideDuplicateBtn svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
+  .slideDuplicateBtn:disabled{opacity:.38;cursor:not-allowed;background:transparent;}
+  .slideActions .slideAddBtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  @media(pointer:coarse){.slideActions .slideAddBtn{width:44px;height:44px;}}
   /* 幻灯片之间的「在此插入」热区：默认几乎不可见，悬停才显出虚线+加号 */
   .slideInsertZone{width:36px;height:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;flex-shrink:0;}
   .slideInsertZone::before{content:"";position:absolute;left:2px;right:2px;top:50%;border-top:2px dashed var(--accent);opacity:0;transition:opacity .12s;}
@@ -1281,7 +1288,12 @@
     <div class="slide-transition-status" id="slideTransitionStatus" aria-live="polite"></div>
   </div>
   <div class="slidesList" id="slidesList"></div>
-  <button class="slideAddBtn" id="slideAddBtn" title="新增幻灯片" aria-label="新增幻灯片">+</button>
+  <div class="slideActions">
+    <button class="slideAddBtn" id="slideAddBtn" title="新增幻灯片" aria-label="新增幻灯片">+</button>
+    <button class="slideAddBtn slideDuplicateBtn" id="slideDuplicateBtn" type="button" title="复制当前幻灯片" aria-label="复制当前幻灯片" data-i18n-title="slide.duplicate.title" data-i18n-aria="slide.duplicate.title" disabled>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="11" height="11" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>
+    </button>
+  </div>
 </div>
 
 <!-- 录制条 -->
@@ -2030,6 +2042,8 @@ try {
     'selection.rotate.title': '拖拽旋转',
 
     /* ---- Slide controls ---- */
+    'slide.duplicate.title': '复制当前幻灯片',
+    'slide.duplicate.done': '已复制幻灯片 ✓',
     'slide.add.title': '新增幻灯片',
     'slide.add.label': '新增幻灯片',
     'slide.delete.title': '删除此幻灯片',
@@ -2478,6 +2492,8 @@ try {
     'selection.rotate.title': 'Drag to rotate',
 
     /* ---- Slide controls ---- */
+    'slide.duplicate.title': 'Duplicate current slide',
+    'slide.duplicate.done': 'Slide duplicated ✓',
     'slide.add.title': 'Add slide',
     'slide.add.label': 'Add slide',
     'slide.delete.title': 'Delete this slide',
@@ -26540,8 +26556,9 @@ if(minimapCanvas){
 }
 
 /* --------------------------- HISTORY ----------------------------------- */
-function snapshot(){
+function snapshot(includeSlides=false){
   return JSON.parse(JSON.stringify({
+    ...(includeSlides?{slides:state.slides,activeSlide:state.activeSlide}:{}),
     scene:state.scene,
     canvasBackground:state.canvasBackground,
     canvasBackgroundTexture:state.canvasBackgroundTexture,
@@ -26555,6 +26572,10 @@ function snapshot(){
 function restoreSnapshot(snap){
   if(Array.isArray(snap)){ state.scene=snap; return; }
   state.scene=Array.isArray(snap&&snap.scene)?snap.scene:[];
+  if(Array.isArray(snap&&snap.slides)){
+    state.slides=snap.slides;
+    state.activeSlide=state.slides.length?Math.max(0,Math.min(snap.activeSlide,state.slides.length-1)):-1;
+  }
   state.canvasBackground=normalizeCanvasColor(snap&&snap.canvasBackground,DEFAULT_CANVAS_BACKGROUND);
   state.canvasBackgroundTexture=normalizeCanvasTexture(snap&&snap.canvasBackgroundTexture,'none');
   const colors=new Map(Array.isArray(snap&&snap.slideBackgrounds)?snap.slideBackgrounds.map(x=>[x.id,normalizeCanvasColor(x.backgroundColor,null)]):[]);
@@ -26574,9 +26595,10 @@ function restoreSnapshot(snap){
   elementCueRenderKey='';
   cancelSlideReveal();
   cancelSlideTransition();
+  if(Array.isArray(snap&&snap.slides)&&state.activeSlide>=0) selectSlide(state.activeSlide,{animate:true,playback:false});
 }
-function pushHistory(){
-  state.undoStack.push(snapshot());
+function pushHistory(includeSlides=false){
+  state.undoStack.push(snapshot(includeSlides));
   if(state.undoStack.length > 100) state.undoStack.shift();
   state.redoStack = [];
   updateHistoryButtons();
@@ -26584,7 +26606,8 @@ function pushHistory(){
 function undo(){
   if(!state.undoStack.length) return;
   canvasBgGesturePushed=false;
-  state.redoStack.push(snapshot());
+  if(state.undoStack.at(-1)?.slides&&recState!=='idle') return;
+  state.redoStack.push(snapshot(!!state.undoStack.at(-1)?.slides));
   restoreSnapshot(state.undoStack.pop());
   clearSelection();
   render(); renderSlidePanel(); updateHistoryButtons(); syncCanvasBackgroundUI(); syncSlideTransitionUI(); syncSlideRevealStyleUI();
@@ -26592,7 +26615,8 @@ function undo(){
 function redo(){
   if(!state.redoStack.length) return;
   canvasBgGesturePushed=false;
-  state.undoStack.push(snapshot());
+  if(state.redoStack.at(-1)?.slides&&recState!=='idle') return;
+  state.undoStack.push(snapshot(!!state.redoStack.at(-1)?.slides));
   restoreSnapshot(state.redoStack.pop());
   clearSelection();
   render(); renderSlidePanel(); updateHistoryButtons(); syncCanvasBackgroundUI(); syncSlideTransitionUI(); syncSlideRevealStyleUI();
@@ -29103,7 +29127,7 @@ function selectSlide(index,opts={}){
   if(previousIndex!==index&&magnifier.visible){ hideMagnifier(false); render({skipSave:true}); }
   const sourceSlide=state.slides[previousIndex]||null;
   const s=state.slides[index];
-  const userNavigation=!!opts.animate&&previousIndex!==index&&!!sourceSlide&&recState!=='paused';
+  const userNavigation=!!opts.animate&&opts.playback!==false&&previousIndex!==index&&!!sourceSlide&&recState!=='paused';
   const revealSetting=slideRevealFor(s);
   const autoReveal=userNavigation&&IS_PRO&&revealSetting.autoPlay&&!slideRevealReduceMotion;
   if(autoReveal){ commitText(); clearSelection(); }
@@ -29151,6 +29175,8 @@ function selectSlide(index,opts={}){
 }
 function addSlide(){
   if(!IS_PRO && state.slides.length>=3){ requirePro('slides'); return; }
+  commitText();
+  pushHistory(true);
   const slide=createSlideAtSmartPosition();
   state.slides.push(slide);
   renderSlidePanel();
@@ -29268,12 +29294,45 @@ function createSlideForDeckInsert(targetIndex){
 function insertSlideAt(targetIndex){
   if(recState!=='idle') return;   // 与删除同样的保护：录制相关状态下禁止插入，避免正在录的目标幻灯片错位
   if(!IS_PRO && state.slides.length>=3){ requirePro('slides'); return; }
+  commitText();
+  pushHistory(true);
   const slide=createSlideForDeckInsert(targetIndex);
   state.slides.splice(targetIndex,0,slide);
   if(state.activeSlide>=targetIndex) state.activeSlide+=1;   // 原选中幻灯片的数组位置后移，保持指向同一张
   renderSlidePanel();
   // 与右栏 / 键盘切页一致：水平居中、保留 view.y 与 view.scale，不强制 fit
   selectSlide(targetIndex, {animate:true});
+}
+function duplicateCurrentSlide(){
+  const source=state.slides[state.activeSlide];
+  if(recState!=='idle'||!source) return;
+  if(!IS_PRO&&state.slides.length>=3){ requirePro('slides'); return; }
+  commitText();
+  ensureSceneObjectIds();
+  const index=state.activeSlide+1, idMap=new Map();
+  // Clone before shifting the following pages; keep literal dates / Day text unchanged.
+  const copy=cloneSceneObject(source);
+  const objects=state.scene.filter(o=>objectBelongsToSlide(o,source)).map(o=>{
+    const cloned=cloneSceneObject(o);
+    cloned.objectId=sceneObjectId();
+    idMap.set(o.objectId,cloned.objectId);
+    return cloned;
+  });
+  pushHistory(true);
+  const position=createSlideForDeckInsert(index);
+  Object.assign(copy,{id:position.id,x:position.x,y:position.y});
+  objects.forEach(o=>translateObject(o,copy.x-source.x,copy.y-source.y));
+  copy.elementCues=normalizeElementCues(copy.elementCues).map(cue=>({
+    ...cue,id:elementCueId(),objectIds:cue.objectIds.map(id=>idMap.get(id)).filter(Boolean)
+  })).filter(cue=>cue.objectIds.length);
+  state.slides.splice(index,0,copy);
+  state.scene.push(...objects);
+  clearSelection();
+  // Focus without starting copied transitions / auto-reveal or carrying playback progress.
+  selectSlide(index,{animate:true,playback:false});
+  document.getElementById('slidesList').querySelector('.slideItem.active')?.scrollIntoView({block:'nearest'});
+  scheduleSave();
+  flashStatus(window.i18n?.t('slide.duplicate.done')||'已复制幻灯片 ✓');
 }
 function deleteSlide(index){
   if(index<0 || index>=state.slides.length) return;
@@ -29291,9 +29350,9 @@ function deleteSlide(index){
       removedObjectIndices.push(i);
     }
   }
+  pushHistory(true);
   state.slides.splice(index,1);
   if(removedObjectIndices.length){
-    pushHistory();
     removedObjectIndices.forEach(i=>state.scene.splice(i,1));
   }
   // 把 index 之后的整段幻灯片连同页内对象一起左移，让后续幻灯片立刻凑上来不留空档
@@ -29387,6 +29446,7 @@ function renderSlidePanel(){
   const list=document.getElementById('slidesList'); if(!list) return;
   updateSlideRatioButton();
   syncSlideTransitionUI();
+  document.getElementById('slideDuplicateBtn').disabled=recState!=='idle'||!state.slides[state.activeSlide];
   list.innerHTML='';
   const delDisabled = recState!=='idle';
   const insertDisabled = recState!=='idle';
@@ -29417,6 +29477,7 @@ function renderSlidePanel(){
   });
 }
 document.getElementById('slideAddBtn').onclick = addSlide;
+document.getElementById('slideDuplicateBtn').onclick = duplicateCurrentSlide;
 document.getElementById('slideRatioBtn').onclick = (e)=>{
   e.stopPropagation();
   closeSlideTransitionPopover();
@@ -32866,6 +32927,7 @@ async function insertSlideTemplate(payload){
   if(!boardLibraryActionAllowed()) return;
   if(!IS_PRO&&state.slides.length>=3){ requirePro('slides'); return; }
   commitText();
+  pushHistory(true);
   const index=state.activeSlide>=0?state.activeSlide+1:state.slides.length, W=payload.slide.w,H=payload.slide.h;
   let x,y;
   if(!state.slides.length){ const center=toWorld(window.innerWidth/2,window.innerHeight/2);x=center.x-W/2;y=center.y-H/2; }
@@ -32882,7 +32944,7 @@ async function replaceCurrentSlideWithTemplate(payload,{diary=false,style=''}={}
   if(!boardLibraryActionAllowed()) return;
   if(state.activeSlide<0){
     if(!IS_PRO&&state.slides.length>=3){ requirePro('slides'); return; }
-    commitText(); pushHistory();
+    commitText(); pushHistory(true);
     const day=Math.max(1,Math.round(Number(document.getElementById('slideTemplateDay').value)||nextDiaryDay()));
     const index=state.slides.length, W=Number(payload.slide.w), H=Number(payload.slide.h);
     let x,y;
@@ -32904,7 +32966,7 @@ async function replaceCurrentSlideWithTemplate(payload,{diary=false,style=''}={}
     const msg=templateT('template.sizeMismatch',{curLabel,tplLabel,curW:Math.round(currentSlide.w),curH:Math.round(currentSlide.h),tplW:Math.round(templateW),tplH:Math.round(templateH)});
     if(!confirm(msg)) return;
   }
-  commitText(); pushHistory();
+  commitText(); pushHistory(true);
   const slideBefore={...currentSlide};
   const existingObjects=state.scene.filter(o=>objectBelongsToSlide(o,slideBefore));
   state.scene=state.scene.filter(o=>!existingObjects.includes(o));
@@ -32983,9 +33045,14 @@ function renderUserTemplateList(){
 }
 function syncSlideTemplateUI(){
   document.querySelectorAll('[data-template-ratio]').forEach(b=>b.classList.toggle('active',b.dataset.templateRatio===selectedDiaryRatio));
+  syncDiaryPreviewRatio();
   syncDiaryColorUI();
   const input=document.getElementById('slideTemplateDay');if(input){input.value=String(nextDiaryDay());document.getElementById('minimalDayPreview').textContent=input.value;}
   const save=document.getElementById('slideTemplateSaveCurrent');if(save)save.disabled=state.activeSlide<0||recState!=='idle';renderUserTemplateList();
+}
+function syncDiaryPreviewRatio(){
+  const size=RATIOS[selectedDiaryRatio]||RATIOS['9:16'];
+  const grid=document.querySelector('.system-template-grid');if(grid)grid.style.setProperty('--diary-preview-ratio',String(size.w/size.h));
 }
 function syncDiaryColorUI(){
   const theme=SYSTEM_DIARY_COLORS[selectedDiaryColor]||SYSTEM_DIARY_COLORS.sand;
@@ -32998,7 +33065,7 @@ document.getElementById('slideTemplateManage').onclick=openSlideTemplateOverlay;
 document.getElementById('slideTemplateClose').onclick=closeSlideTemplateOverlay;
 document.getElementById('slideTemplateBlank').onclick=async()=>{closeSlideTemplateOverlay();await newDoc();};
 document.getElementById('slideTemplateOverlay').addEventListener('pointerdown',e=>{if(e.target===e.currentTarget)closeSlideTemplateOverlay();});
-document.getElementById('slideTemplateRatios').addEventListener('click',e=>{const b=e.target.closest('[data-template-ratio]');if(!b)return;selectedDiaryRatio=b.dataset.templateRatio;try{localStorage.setItem(DIARY_RATIO_STORAGE_KEY,selectedDiaryRatio);}catch(_e){}document.querySelectorAll('[data-template-ratio]').forEach(option=>option.classList.toggle('active',option.dataset.templateRatio===selectedDiaryRatio));});
+document.getElementById('slideTemplateRatios').addEventListener('click',e=>{const b=e.target.closest('[data-template-ratio]');if(!b)return;selectedDiaryRatio=b.dataset.templateRatio;try{localStorage.setItem(DIARY_RATIO_STORAGE_KEY,selectedDiaryRatio);}catch(_e){}document.querySelectorAll('[data-template-ratio]').forEach(option=>option.classList.toggle('active',option.dataset.templateRatio===selectedDiaryRatio));syncDiaryPreviewRatio();});
 document.getElementById('slideTemplateColors').addEventListener('click',e=>{const b=e.target.closest('[data-template-color]');if(!b||!SYSTEM_DIARY_COLORS[b.dataset.templateColor])return;selectedDiaryColor=b.dataset.templateColor;try{localStorage.setItem(DIARY_COLOR_STORAGE_KEY,selectedDiaryColor);}catch(_e){}syncDiaryColorUI();});
 document.getElementById('slideTemplateDay').addEventListener('input',e=>{const day=Math.max(1,Math.round(Number(e.target.value)||1));document.getElementById('minimalDayPreview').textContent=String(day);});
 document.querySelectorAll('[data-system-template]').forEach(b=>b.addEventListener('click',()=>{const day=Math.max(1,Math.round(Number(document.getElementById('slideTemplateDay').value)||nextDiaryDay()));replaceCurrentSlideWithTemplate(systemDiaryTemplate(b.dataset.systemTemplate,selectedDiaryRatio,day,selectedDiaryColor),{diary:true,style:b.dataset.systemTemplate});}));

@@ -119,6 +119,8 @@
     'selection.rotate.title': 'Drag to rotate',
 
     /* ---- Slide controls ---- */
+    'slide.duplicate.title': 'Duplicate current slide',
+    'slide.duplicate.done': 'Slide duplicated ✓',
     'slide.add.title': 'Add slide',
     'slide.add.label': 'Add slide',
     'slide.delete.title': 'Delete this slide',

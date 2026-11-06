@@ -91,6 +91,8 @@
 - 幻灯片数据是 `state.slides[{id,x,y,w,h,backgroundColor,transition,reveal,elementCues,elementCueAudio}]` 与 `state.activeSlide`；`backgroundColor:null` 表示继承 `state.canvasBackground`，`transition:{type,speed,sound,volume}` 保存进入本页的转场，`reveal:{style,autoPlay}` 保存逐页笔迹样式和切入自动播放开关，`elementCues[{id,name,objectIds}]` 保存元素操作栏绑定，`elementCueAudio:{sound,volume}` 保存本页统一动作音效。文档 v10 保留稳定 `objectId` 并新增元素音效设置；旧文档缺失该字段时默认无音效、60% 音量。
 - `addSlide()` 通过 `createSlideAtSmartPosition()`：当前视野接近 active slide 时在右侧找空位；用户已移动到远处空白时按当前 viewport 中心创建。
 - 自动恢复或打开文档后，`syncRecordingRatioToSlide()` 必须从当前幻灯片的真实 `w/h` 反推标准比例或 Custom，并同步右侧幻灯片尺寸与录制设置；不得让未持久化的 `recConfig.ratio` 默认值 16:9 覆盖已恢复的页面比例。切换到历史上尺寸不同的页面时也以当前页为准。
+- `duplicateCurrentSlide()` 通过 `cloneSceneObject()` 深拷贝原页与按 `objectBelongsToSlide()` 归属的对象，再由 `createSlideForDeckInsert()` 为后续页及内容让位；必须重建 slide/object/cue ID 并重映射操作栏绑定。直接保留页属性及实际日期/Day 文本，不调用模板动态字段替换。右侧 `#slideDuplicateBtn` 紧邻“＋”下方，idle 且有选中页时启用，免费版沿用 3 页上限；复制以 `selectSlide(index,{animate:true,playback:false})` 定位并滚动右栏到选中页，保留正常自动适配但不启动转场/自动揭示，临时显隐集合不复制。
+- 页面结构操作（复制、新增、插入、删除及模板应用）使用 `pushHistory(true)`：`snapshot(includeSlides)` 额外保存完整 `slides` 和 `activeSlide`；普通对象编辑沿用默认轻量快照。undo/redo 必须根据目标快照是否含 `slides` 保存对称快照，恢复页面坐标、内容和选中页，且非 idle 时不能执行页面结构的撤销/重做。后续新增页面结构操作也必须接入完整快照，避免覆盖复制后的撤销顺序。
 - `insertSlideAt()` 通过 `createSlideForDeckInsert()` 和 `shiftSlidesAndContents()` 线性插入；后续幻灯片及中心落在其中的对象必须一起右移，保持面板顺序、世界坐标从左到右顺序和录制顺序一致。
 - `selectSlide()` 是选中并对焦的单一入口；idle 状态下新增或切换页面时，若目标页按当前缩放会超出与 `fitViewToRect()` 相同的安全视区，则自动缩小并完整居中到顶部工具栏预留区下方，已经能完整显示时才保留用户缩放和纵向位置并只做水平居中；setup/recording/paused 时不得触发该自动缩放，并继续同步 `recConfig.frame`。比例修改统一走 `setRecordingRatio()` / `setCustomRecordingRatio()`；`resizeSlidesToRatio()` 保持第 1 张中心不变，并按列表顺序以 `SLIDE_GAP` 等距重排后续页面。重排前必须按旧页面范围记录对象归属，再让页内对象获得所属页面的水平位移；不得缩放内容或移动页面外对象。比例变化后新增页面必须通过 `currentSlideSize()` 继承当前页实际宽高，插入页面则优先继承相邻页，不能重新使用比例预设的标准像素尺寸。
 - 缩略图和左右键以 `{animate:true}` 调用 `selectSlide()`：切换前截取当前 board 合成帧，切换后截取目标页，再由 `drawSlideTransitionOverlay()` 在幻灯片范围内绘制淡化、推入或擦除；方向按页码自动决定，暂停录制时瞬时切页，程序化选页不播放。
@@ -180,6 +182,6 @@
 
 | 日期 | 变更内容 |
 |------|----------|
+| 2026-11-07 | 记录单页复制的身份重映射、静默定位与页面结构快照；why：保持副本独立并让连续页面操作可正确撤销 |
 | 2026-09-08 | 记录视频日记配色、标题框内居中与本机选色记忆，并补充主文档持有录屏流、PiP 关闭生命周期；why：防止模板版式与颜色逻辑漂移及提词器窗口销毁再次终止共享 |
 | 2026-08-26 | 记录可书写破纸片的复合对象、素材同步与文字随缩放约束；why：防止后续维护把纸片和文字拆散或让两个白板素材漂移 |
-| 2026-08-10 | 将文字编辑光标收细为无发光的 1.5px，并按浅色/深色背景使用深紫/亮黄；why：兼顾插入位置辨识度与原生光标般的自然观感 |

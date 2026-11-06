@@ -123,6 +123,8 @@
     'selection.rotate.title': '拖拽旋转',
 
     /* ---- Slide controls ---- */
+    'slide.duplicate.title': '复制当前幻灯片',
+    'slide.duplicate.done': '已复制幻灯片 ✓',
     'slide.add.title': '新增幻灯片',
     'slide.add.label': '新增幻灯片',
     'slide.delete.title': '删除此幻灯片',
